@@ -1,0 +1,13 @@
+sqlalchemy
+psycopg2-binary
+fastapi
+uvicorn
+crewai
+langchain
+pydantic
+python-dotenv
+pandas
+reportlab
+streamlit
+requests
+langchain-openai
