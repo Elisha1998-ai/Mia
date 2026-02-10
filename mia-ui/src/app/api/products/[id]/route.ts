@@ -30,7 +30,7 @@ export async function GET(
       description: product.description || undefined,
       image_url: product.imageUrl || undefined,
       platform: product.platform || undefined,
-      created_at: product.createdAt.toISOString()
+      created_at: new Date(product.createdAt).toISOString()
     });
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -53,8 +53,8 @@ export async function PUT(
     const [product] = await db.update(productsTable)
       .set({
         name: body.name,
-        sku: body.sku,
-        price: body.price.toString(),
+        sku: body.sku && body.sku.trim() !== '' ? body.sku : undefined, // Don't overwrite with empty SKU if updating
+        price: (body.price || 0).toString(),
         stockQuantity: body.stock_quantity,
         description: body.description,
         imageUrl: body.image_url,
@@ -80,7 +80,7 @@ export async function PUT(
       description: product.description || undefined,
       image_url: product.imageUrl || undefined,
       platform: product.platform || undefined,
-      created_at: product.createdAt.toISOString()
+      created_at: new Date(product.createdAt).toISOString()
     });
   } catch (error) {
     console.error('Error updating product:', error);

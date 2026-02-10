@@ -3,14 +3,121 @@
 import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Popover from '@radix-ui/react-popover';
-import { X, ShoppingCart, User, Calendar, DollarSign, CreditCard, ChevronDown, Package, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ShoppingCart, User, Calendar, DollarSign, CreditCard, ChevronDown, Package, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+
+interface OrderItem {
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
+}
 
 interface AddOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (order: any) => void;
   customers: { id: string, name: string }[];
+  products: { id: string, name: string, price: number }[];
 }
+
+const SearchableSelect = ({ 
+  value, 
+  onChange, 
+  options, 
+  placeholder,
+  icon: Icon,
+  allowFreeText = false 
+}: { 
+  value: string, 
+  onChange: (val: string, id?: string) => void, 
+  options: { id: string, name: string }[],
+  placeholder: string,
+  icon?: any,
+  allowFreeText?: boolean
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Sync search state with value prop when not open
+  React.useEffect(() => {
+    if (!isOpen) {
+      setSearch(value);
+    }
+  }, [value, isOpen]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt => 
+    opt.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <div className="relative">
+        {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />}
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            if (allowFreeText) {
+              onChange(e.target.value);
+            }
+            if (!isOpen) setIsOpen(true);
+          }}
+          onFocus={() => {
+            setIsOpen(true);
+            setSearch(''); // Clear search on focus to show all options
+          }}
+          placeholder={placeholder}
+          className={`w-full bg-foreground/5 border border-border-custom rounded-xl py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 ring-accent/20 transition-all font-medium ${Icon ? 'pl-10' : 'px-4'}`}
+        />
+        <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
+
+      {isOpen && (filteredOptions.length > 0 || (allowFreeText && search)) && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100 max-h-[200px] overflow-y-auto">
+          {filteredOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => {
+                onChange(option.name, option.id);
+                setIsOpen(false);
+                setSearch('');
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors font-medium"
+            >
+              {option.name}
+            </button>
+          ))}
+          {allowFreeText && search && !filteredOptions.find(o => o.name.toLowerCase() === search.toLowerCase()) && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange(search);
+                setIsOpen(false);
+                setSearch('');
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-accent hover:bg-foreground/5 transition-colors font-medium border-t border-border-custom"
+            >
+              Add new: "{search}"
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CustomSelect = ({ value, onChange, options, icon: Icon }: { 
   value: string, 
@@ -46,7 +153,7 @@ const CustomSelect = ({ value, onChange, options, icon: Icon }: {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100 max-h-[200px] overflow-y-auto">
           {options.map((option) => (
             <button
               key={option}
@@ -159,59 +266,93 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (val: string
   );
 };
 
-export const AddOrderModal = ({ isOpen, onClose, onAdd, customers }: AddOrderModalProps) => {
+export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: AddOrderModalProps) => {
   const [formData, setFormData] = React.useState({
-    orderNumber: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+    orderNumber: '',
     customerName: '',
     customerId: '',
-    productName: 'Premium Cotton T-Shirt',
-    total: '',
+    items: [] as OrderItem[],
+    total: '0',
     status: 'Processing',
-    itemsCount: '1',
-    paymentMethod: 'Credit Card',
+    paymentMethod: 'Bank Transfer',
     shippingMethod: 'Standard Shipping',
     date: new Date().toISOString().split('T')[0],
     address: ''
   });
 
-  // Update order number when modal opens
+  const [selectedProduct, setSelectedProduct] = React.useState<{id: string, name: string, price: number} | null>(null);
+  const [quantity, setQuantity] = React.useState(1);
+
+  // Auto-calculate total whenever items change
+  React.useEffect(() => {
+    const total = formData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    setFormData(prev => ({ ...prev, total: total.toString() }));
+  }, [formData.items]);
+
+  // Reset/Initialize form when modal opens
   React.useEffect(() => {
     if (isOpen) {
-      setFormData(prev => ({
-        ...prev,
+      setFormData({
         orderNumber: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-        customerName: customers.length > 0 ? customers[0].name : '',
-        customerId: customers.length > 0 ? customers[0].id : '',
-        address: 'New Shipping Address',
-        itemsCount: '1',
-        productName: 'Premium Cotton T-Shirt',
-        shippingMethod: 'Standard Shipping'
-      }));
+        customerName: '',
+        customerId: '',
+        items: [],
+        total: '0',
+        status: 'Processing',
+        paymentMethod: 'Bank Transfer',
+        shippingMethod: 'Standard Shipping',
+        date: new Date().toISOString().split('T')[0],
+        address: ''
+      });
+      setSelectedProduct(null);
+      setQuantity(1);
     }
-  }, [isOpen, customers]);
+  }, [isOpen]);
+
+  const addItem = () => {
+    if (selectedProduct) {
+      const existingItemIndex = formData.items.findIndex(item => item.productId === selectedProduct.id);
+      
+      if (existingItemIndex > -1) {
+        const newItems = [...formData.items];
+        newItems[existingItemIndex].quantity += quantity;
+        setFormData({ ...formData, items: newItems });
+      } else {
+        const newItem: OrderItem = {
+          productId: selectedProduct.id,
+          productName: selectedProduct.name,
+          price: selectedProduct.price,
+          quantity: quantity
+        };
+        setFormData({ ...formData, items: [...formData.items, newItem] });
+      }
+      
+      setSelectedProduct(null);
+      setQuantity(1);
+    }
+  };
+
+  const removeItem = (productId: string) => {
+    setFormData({
+      ...formData,
+      items: formData.items.filter(item => item.productId !== productId)
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.items.length === 0) {
+      alert("Please add at least one product to the order.");
+      return;
+    }
     onAdd({
       ...formData,
       id: Math.random().toString(36).substr(2, 9),
       total: parseFloat(formData.total) || 0,
-      itemsCount: parseInt(formData.itemsCount) || 1
+      itemsCount: formData.items.reduce((sum, item) => sum + item.quantity, 0),
+      productName: formData.items[0].productName + (formData.items.length > 1 ? ` (+${formData.items.length - 1} more)` : '')
     });
     onClose();
-    setFormData({
-      orderNumber: '',
-      customerName: '',
-      customerId: '',
-      productName: 'Premium Cotton T-Shirt',
-      total: '',
-      status: 'Processing',
-      itemsCount: '1',
-      paymentMethod: 'Credit Card',
-      shippingMethod: 'Standard Shipping',
-      date: new Date().toISOString().split('T')[0],
-      address: ''
-    });
   };
 
   return (
@@ -261,18 +402,13 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers }: AddOrderMod
                   </div>
                   <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Customer</label>
-                    <CustomSelect 
+                    <SearchableSelect 
                       value={formData.customerName}
-                      onChange={val => {
-                        const customer = customers.find(c => c.name === val);
-                        setFormData({
-                          ...formData, 
-                          customerName: val,
-                          customerId: customer?.id || ''
-                        });
-                      }}
-                      options={customers.map(c => c.name)}
+                      onChange={(name, id) => setFormData({ ...formData, customerName: name, customerId: id || '' })}
+                      options={customers}
+                      placeholder="Search or type customer name..."
                       icon={User}
+                      allowFreeText={true}
                     />
                   </div>
                   <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
@@ -306,52 +442,88 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers }: AddOrderMod
               </section>
 
               <section>
-                <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Payment & Details</h3>
+                <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Products</h3>
                 <div className="grid gap-6">
-                  <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
-                    <label className="text-sm font-semibold text-foreground/80">Total Amount</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/30">₦</span>
-                      <input 
-                        required
-                        type="number"
-                        step="0.01"
-                        value={formData.total}
-                        onChange={e => setFormData({...formData, total: e.target.value})}
-                        placeholder="0.00"
-                        className="w-full bg-foreground/5 border border-border-custom rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all"
+                  {/* Selected Items List */}
+                  {formData.items.length > 0 && (
+                    <div className="bg-foreground/5 rounded-2xl overflow-hidden border border-border-custom">
+                      <div className="px-4 py-3 border-b border-border-custom bg-foreground/5">
+                        <div className="grid grid-cols-[1fr_80px_100px_40px] gap-4 text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
+                          <span>Product</span>
+                          <span className="text-center">Qty</span>
+                          <span className="text-right">Price</span>
+                          <span></span>
+                        </div>
+                      </div>
+                      <div className="divide-y divide-border-custom">
+                        {formData.items.map((item) => (
+                          <div key={item.productId} className="px-4 py-3 grid grid-cols-[1fr_80px_100px_40px] gap-4 items-center group">
+                            <span className="text-sm font-medium text-foreground truncate">{item.productName}</span>
+                            <span className="text-sm text-center text-foreground/60">{item.quantity}</span>
+                            <span className="text-sm text-right font-semibold text-foreground">₦{(item.price * item.quantity).toLocaleString()}</span>
+                            <button 
+                              type="button"
+                              onClick={() => removeItem(item.productId)}
+                              className="p-1 hover:bg-red-500/10 rounded-lg text-foreground/20 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="px-4 py-3 bg-foreground/5 flex justify-between items-center">
+                        <span className="text-xs font-bold text-foreground/40 uppercase">Total Amount</span>
+                        <span className="text-lg font-black text-foreground">₦{parseFloat(formData.total).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add Product Form */}
+                  <div className="bg-foreground/[0.02] border border-dashed border-border-custom rounded-2xl p-6 flex flex-col gap-6">
+                    <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
+                      <label className="text-sm font-semibold text-foreground/80">Select Product</label>
+                      <SearchableSelect 
+                        value={selectedProduct?.name || ''}
+                        onChange={(name, id) => {
+                          const product = products.find(p => p.id === id);
+                          if (product) setSelectedProduct(product);
+                        }}
+                        options={products}
+                        placeholder="Search store products..."
+                        icon={Package}
                       />
                     </div>
-                  </div>
-                  <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
-                    <label className="text-sm font-semibold text-foreground/80">Product</label>
-                    <CustomSelect 
-                      value={formData.productName}
-                      onChange={val => setFormData({...formData, productName: val})}
-                      options={[
-                        'Premium Cotton T-Shirt',
-                        'Heritage Denim Jacket',
-                        'Minimalist Leather Wallet',
-                        'Performance Running Shoes',
-                        'Mia Smart Kettle',
-                        'Organic Bamboo Socks'
-                      ]}
-                      icon={Package}
-                    />
-                  </div>
-                  <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
-                    <label className="text-sm font-semibold text-foreground/80">Quantity</label>
-                    <div className="relative">
-                      <input 
-                        required
-                        type="number"
-                        min="1"
-                        value={formData.itemsCount}
-                        onChange={e => setFormData({...formData, itemsCount: e.target.value})}
-                        className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all"
-                      />
+                    
+                    <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
+                      <label className="text-sm font-semibold text-foreground/80">Quantity</label>
+                      <div className="flex items-center gap-4">
+                        <div className="relative flex-1">
+                          <input 
+                            type="number"
+                            min="1"
+                            value={quantity}
+                            onChange={e => setQuantity(parseInt(e.target.value) || 1)}
+                            className="w-full bg-background border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={addItem}
+                          disabled={!selectedProduct}
+                          className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all disabled:opacity-30 disabled:grayscale"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Payment & Shipping</h3>
+                <div className="grid gap-6">
                   <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Shipping Method</label>
                     <CustomSelect 
@@ -365,7 +537,7 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers }: AddOrderMod
                     <CustomSelect 
                       value={formData.paymentMethod}
                       onChange={val => setFormData({...formData, paymentMethod: val})}
-                      options={['Credit Card', 'PayPal', 'Apple Pay', 'Google Pay']}
+                      options={['Bank Transfer', 'Paystack', 'Flutterwave', 'Cash on Delivery', 'USSD']}
                       icon={CreditCard}
                     />
                   </div>

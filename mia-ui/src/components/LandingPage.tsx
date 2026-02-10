@@ -24,7 +24,9 @@ import {
   Search,
   ShoppingCart,
   BarChart3,
-  Package
+  Package,
+  FileText,
+  Download
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -50,7 +52,7 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
                 <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
                   <Mail className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-serif text-xl font-bold tracking-tight">Manus</span>
+                <span className="font-serif text-xl font-bold tracking-tight">Mia</span>
               </Link>
               <div className="hidden md:flex items-center gap-6 text-sm font-medium text-black/60">
                 <Link href="#" className="hover:text-black transition-colors">Solutions</Link>
@@ -63,7 +65,7 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
               <Link href="/auth/signin" className="text-sm font-medium hover:text-black transition-colors">Log in</Link>
               <button 
                 onClick={onGetStarted}
-                className="bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-black/80 transition-all"
+                className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition-all"
               >
                 Get started
               </button>
@@ -82,7 +84,7 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
             <Link href="#" className="text-sm font-medium">Resources</Link>
             <Link href="#" className="text-sm font-medium">Pricing</Link>
             <Link href="/auth/signin" className="text-sm font-medium">Log in</Link>
-            <Link href="#" className="bg-black text-white px-4 py-2 rounded-full text-sm font-medium text-center">
+            <Link href="#" className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium text-center">
               Get started
             </Link>
           </div>
@@ -101,7 +103,7 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
           <div className="flex items-center justify-center gap-4">
             <button 
               onClick={onGetStarted}
-              className="bg-black text-white px-8 py-3 rounded-full text-lg font-medium hover:bg-black/80 transition-all flex items-center gap-2"
+              className="bg-blue-600 text-white px-8 py-3 rounded-xl text-lg font-medium hover:bg-blue-700 transition-all flex items-center gap-2"
             >
               Request early access.
             </button>
@@ -263,108 +265,56 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
             Built in minutes. Mia builds your online store with everything optimized from speed to SEO in minutes, from just a simple command.
           </p>
           
-          <div className="relative rounded-3xl bg-white border border-black/5 shadow-2xl p-6 md:p-12">
-            <div className="aspect-[16/10] relative bg-[#f9fafb] overflow-hidden rounded-2xl border border-black/5 shadow-sm">
-              {/* Browser/Canvas Header */}
-              <div className="absolute top-0 left-0 right-0 h-12 bg-white border-b border-black/5 flex items-center px-6 z-10">
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-black/10" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-black/10" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-black/10" />
+            <div className="aspect-[16/10] relative bg-[#f9fafb] overflow-hidden rounded-[2.5rem] border border-black/5">
+            {/* Storefront Window tucked out from the bottom right */}
+            <div className="absolute top-[35%] left-[35%] w-[130%] h-[130%] bg-white rounded-tl-[3rem] border-t border-l border-black/5 overflow-hidden flex flex-col font-sans shadow-2xl">
+              {/* Store Navbar */}
+              <div className="h-20 border-b border-black/5 flex items-center justify-between px-12 shrink-0">
+                <div className="flex items-center gap-12">
+                  <div className="font-black text-3xl tracking-tighter">SWOOSH</div>
+                  <div className="hidden md:flex items-center gap-8 text-[12px] font-bold uppercase tracking-widest text-black/40">
+                    <span>New Releases</span>
+                    <span>Men</span>
+                    <span>Women</span>
+                    <span>Kids</span>
+                  </div>
                 </div>
-                <div className="ml-8 mr-auto flex items-center gap-8 text-[11px] font-medium text-black/40">
-                  <div className="w-6 h-6 bg-black rounded flex items-center justify-center -ml-2 mr-4">
-                    <span className="text-white font-bold text-[10px]">V</span>
-                  </div>
-                  <span>New Arrivals</span>
-                  <span>Best-Sellers</span>
-                  <span>Boards</span>
-                  <span>Accessories</span>
-                </div>
-                <div className="w-16" /> {/* Spacer */}
-              </div>
-
-              {/* Main Content Preview */}
-              <div className="absolute inset-0 pt-12 flex items-center justify-center p-8 md:p-12">
-                <div className="w-full h-full rounded-2xl bg-[#e5e7eb] relative overflow-hidden flex items-center justify-center border-4 border-white shadow-lg">
-                  {/* Hero Background (Matching the screenshot) */}
-                  <div className="absolute inset-0 bg-[#eecbcb]/40" />
-                  
-                  {/* Hero Content */}
-                  <div className="relative z-10 text-center px-12">
-                    <h3 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white leading-tight mb-8 drop-shadow-sm font-medium">
-                      Embrace the chill,<br />let nature in
-                    </h3>
-                    <div className="relative inline-block">
-                      <div className="px-8 py-3 bg-white text-black text-sm font-medium rounded-lg shadow-lg">
-                        Shop
-                      </div>
-                      {/* Purple Button Label from Screenshot */}
-                      <div className="absolute -top-3 left-0 px-2 py-0.5 bg-[#6366f1] text-white text-[10px] font-bold rounded-sm shadow-sm">
-                        Button
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Character Image (Matching the screenshot) */}
-                  <div className="absolute bottom-0 right-0 w-1/2 h-full z-0">
-                    <img 
-                      src="https://images.unsplash.com/photo-1544923246-77307dd654ca?auto=format&fit=crop&q=80&w=800" 
-                      alt="Storefront Hero"
-                      className="w-full h-full object-cover object-center translate-x-1/4"
-                    />
-                  </div>
+                <div className="flex items-center gap-8">
+                  <Search className="w-6 h-6 text-black/40" />
+                  <ShoppingCart className="w-6 h-6 text-black/40" />
                 </div>
               </div>
 
-              {/* Floating Editor Panel */}
-              <div className="absolute top-24 left-12 w-64 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-[#e0e7ff] p-4 z-20">
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-black/5">
-                  <ChevronDown className="w-4 h-4 text-black/20" />
-                  <div className="w-6 h-6 rounded bg-emerald-100 flex items-center justify-center">
-                    <div className="w-3 h-3 bg-emerald-500 rounded-sm" />
-                  </div>
-                  <span className="text-xs font-semibold text-black/70">Image Banner</span>
+              {/* Hero Content */}
+              <div className="flex-1 flex items-center relative px-20 overflow-hidden">
+                <div className="relative z-10 max-w-lg">
+                  <div className="text-[12px] font-black uppercase tracking-[0.3em] text-blue-600 mb-6">Just Do It</div>
+                  <h3 className="font-serif text-7xl md:text-8xl lg:text-9xl leading-[0.85] font-black tracking-tighter mb-10 italic uppercase">
+                    Air Max<br />Pulse
+                  </h3>
+                  <p className="text-base text-black/60 mb-10 max-w-md leading-relaxed">
+                    Inspired by the energy of London's music scene, the Air Max Pulse brings an underground touch to the iconic Air Max line.
+                  </p>
+                  <button className="bg-blue-600 text-white px-10 py-4 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-blue-700 transition-all">
+                    Shop Now
+                  </button>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-black/60">
-                    <Type className="w-4 h-4 text-black/30" />
-                    <span>Elevate your skin care ritual</span>
-                  </div>
-                  
-                  <div className="relative">
-                    <div className="flex items-center gap-3 px-3 py-2.5 bg-white rounded-lg border border-[#c7d2fe] shadow-[0_0_20px_rgba(199,210,254,0.6)] text-xs font-bold text-black/80">
-                      <GripVertical className="w-4 h-4 text-black/20" />
-                      <span>Button</span>
-                      <div className="ml-auto">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-black/30"><path d="M12 5v14M5 12h14"/></svg>
-                      </div>
-                    </div>
-                    {/* Hand Cursor Icon */}
-                    <div className="absolute -bottom-2 -right-2 transform translate-x-1 translate-y-1">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 10V5C9 3.34315 10.3431 2 12 2C13.6569 2 15 3.34315 15 5V10" stroke="black" strokeWidth="1.5" strokeLinecap="round"/>
-                        <path d="M15 7V5.5C15 4.11929 16.1193 3 17.5 3C18.8807 3 20 4.11929 20 5.5V12C20 15.866 16.866 19 13 19H12C8.13401 19 5 15.866 5 12V10" stroke="black" strokeWidth="1.5" strokeLinecap="round"/>
-                        <path d="M9 10V12.5C9 13.8807 7.88071 15 6.5 15C5.11929 15 4 13.8807 4 12.5V11" stroke="black" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 px-3 py-2 text-xs font-bold text-blue-600 pt-3">
-                    <div className="w-4 h-4 rounded-full border border-blue-600 flex items-center justify-center">
-                      <Plus className="w-2.5 h-2.5" />
-                    </div>
-                    <span>Add block</span>
-                  </div>
+                {/* Nike Shoe Image */}
+                <div className="absolute top-1/2 right-[5%] -translate-y-1/2 w-[60%] aspect-square select-none pointer-events-none">
+                  <img 
+                    src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1000" 
+                    alt="Nike Air Max"
+                    className="w-full h-full object-contain -rotate-[25deg] drop-shadow-[0_45px_45px_rgba(0,0,0,0.15)]"
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* Draft Badge */}
-              <div className="absolute bottom-8 left-1/4 transform -translate-x-1/2">
-                <div className="px-4 py-1.5 bg-[#e0f2fe] text-[#0369a1] text-xs font-bold rounded-lg shadow-sm border border-[#bae6fd]">
-                  Draft
-                </div>
+            {/* Draft Badge moved to top left */}
+            <div className="absolute top-8 left-8 z-20">
+              <div className="px-4 py-1.5 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg shadow-sm border border-blue-500/20">
+                Storefront Draft
               </div>
             </div>
           </div>
@@ -498,8 +448,98 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
             <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
               <h3 className="text-2xl font-medium mb-2 tracking-tight">Run your finances effortlessly</h3>
               <p className="text-black/60 mb-8 text-sm leading-relaxed">From generating invoices to tracking expenses, calculating taxes, and forecasting revenue, Mia keeps your finances under control while you focus on growth.</p>
-              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
-                {/* Empty Image Frame */}
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0]">
+                <div className="absolute -bottom-6 -left-6 w-[95%] h-[95%] bg-white rounded-2xl border border-black/5 p-6 flex flex-col gap-4 overflow-hidden">
+                  {/* Invoice Header */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-[12px] font-bold text-gray-900 tracking-tight mb-1 uppercase">INV2398-08-087</h4>
+                      <div className="h-[1px] w-12 bg-gray-100" />
+                    </div>
+                  </div>
+
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                    <div className="space-y-1">
+                      <p className="text-[8px] font-medium text-gray-400 uppercase tracking-wider">Due date</p>
+                      <p className="text-[10px] font-bold text-gray-900">10 November 2023</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[8px] font-medium text-gray-400 uppercase tracking-wider">Subject</p>
+                      <p className="text-[10px] font-bold text-gray-900">Order #8429</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[8px] font-medium text-gray-400 uppercase tracking-wider">Billed to</p>
+                      <p className="text-[10px] font-bold text-gray-900 leading-tight">John Smith<br /><span className="text-gray-400 font-medium text-[9px]">john_s@gmail.com</span></p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[8px] font-medium text-gray-400 uppercase tracking-wider">Currency</p>
+                      <p className="text-[10px] font-bold text-gray-900">NGN - Nigerian Naira</p>
+                    </div>
+                  </div>
+
+                  {/* Table Header */}
+                  <div className="bg-gray-50 rounded-lg px-3 py-1.5 grid grid-cols-[1fr_32px_70px_70px] gap-2 items-center mt-2">
+                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Description</span>
+                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider text-center">Qty</span>
+                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider text-right">Unit Price</span>
+                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider text-right">Amount</span>
+                  </div>
+
+                  {/* Table Item */}
+                  <div className="px-3 py-2 grid grid-cols-[1fr_32px_70px_70px] gap-2 items-center border-b border-gray-50">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center shrink-0">
+                        <Package className="w-3 h-3 text-gray-400" />
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-900 truncate">Premium Cotton Tee</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-900 text-center">1</span>
+                    <span className="text-[10px] font-bold text-gray-900 text-right">₦55,000</span>
+                    <span className="text-[10px] font-bold text-gray-900 text-right">₦55,000</span>
+                  </div>
+
+                  {/* Totals */}
+                  <div className="flex flex-col items-end gap-1.5 mt-2 pr-3">
+                    <div className="flex justify-between w-full max-w-[160px]">
+                      <span className="text-[10px] font-medium text-gray-400">Subtotal</span>
+                      <span className="text-[10px] font-bold text-gray-900">₦55,000</span>
+                    </div>
+                    <div className="flex justify-between w-full max-w-[160px]">
+                      <span className="text-[10px] font-medium text-gray-400">Discount (10%)</span>
+                      <span className="text-[10px] font-bold text-gray-900">-₦5,500</span>
+                    </div>
+                    <div className="h-[1px] w-full max-w-[160px] bg-gray-100 my-0.5" />
+                    <div className="flex justify-between w-full max-w-[160px]">
+                      <span className="text-[10px] font-bold text-gray-900">Total</span>
+                      <span className="text-[10px] font-bold text-gray-900">₦49,500</span>
+                    </div>
+                    <div className="flex justify-between w-full max-w-[160px]">
+                      <span className="text-[10px] font-bold text-gray-900">Amount due</span>
+                      <span className="text-[10px] font-bold text-gray-900">₦49,500</span>
+                    </div>
+                  </div>
+
+                  {/* Attachment */}
+                  <div className="mt-auto space-y-2">
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Attachment</p>
+                    <div className="bg-white border border-black/5 rounded-xl p-2.5 flex items-center justify-between group cursor-pointer hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-900">Invoice-8429.pdf</p>
+                          <p className="text-[8px] text-gray-400 font-medium">512kb</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-blue-600">
+                        <span className="text-[9px] font-bold">Download</span>
+                        <Download className="w-3 h-3" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -507,7 +547,7 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
             <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
               <h3 className="text-2xl font-medium mb-2 tracking-tight">Never miss a sale</h3>
               <p className="text-black/60 mb-8 text-sm leading-relaxed">Orders processed, inventory tracked, and suppliers restocked automatically. With Mia handling it all, your store stays fully stocked and customers happy.</p>
-              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex flex-col p-6 gap-3">
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex flex-col justify-center p-6 gap-3">
                 <div className="bg-white rounded-2xl p-4 border border-black/5 flex items-center gap-4">
                   <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                     <ShoppingCart className="w-5 h-5 text-blue-600" />
@@ -524,15 +564,6 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
                   <div className="flex-1">
                     <p className="text-xs font-bold text-gray-900">Inventory Sync Complete</p>
                     <p className="text-[10px] text-gray-500">24 channels updated</p>
-                  </div>
-                </div>
-                <div className="bg-white rounded-2xl p-4 border border-black/5 flex items-center gap-4">
-                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-                    <Package className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-gray-900">Low Stock Restocked</p>
-                    <p className="text-[10px] text-gray-500">Supplier order sent for "Silk Tee"</p>
                   </div>
                 </div>
               </div>
@@ -577,21 +608,58 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
             <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
               <h3 className="text-2xl font-medium mb-2 tracking-tight">Optimize and run your marketing</h3>
               <p className="text-black/60 mb-8 text-sm leading-relaxed">Email campaigns, ads, content creation, and promotion testing — Mia manages it all to drive engagement and sales without the guesswork.</p>
-              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
-                {/* Empty Image Frame */}
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] border border-black/5">
+                <div className="absolute top-6 left-6 w-[120%] bg-white rounded-tl-2xl border-t border-l border-black/5 overflow-hidden font-sans">
+                  {/* Content */}
+                  <div className="p-6 space-y-4">
+                    <div className="flex justify-end">
+                      <div className="bg-[#f3f4f6] rounded-xl rounded-tr-sm px-3 py-1.5 text-[10px] font-medium text-gray-800">
+                        Create a social media campaign for our new collection.
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest pt-1 shrink-0">1 / 1</div>
+                        <div className="text-[11px] leading-relaxed text-gray-700">
+                          I've drafted <span className="text-black font-bold">5 Instagram posts</span> and <span className="text-black font-bold">3 email templates</span>. I'm also running A/B tests on the headlines.
+                        </div>
+                      </div>
+
+                      {/* Workflow Card */}
+                      <div className="bg-white rounded-xl border border-black/5 p-3 space-y-2">
+                        <div className="flex items-center gap-2 text-[8px] font-bold text-gray-400 uppercase tracking-wider">
+                          Active Tasks
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-[10px] text-black font-semibold bg-gray-50 p-2 rounded-lg border border-black/5">
+                            <div className="w-2 h-2 bg-black rounded-full animate-pulse" />
+                            <span>Generating visual assets...</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-gray-600 p-1 px-2">
+                            <Check className="w-3.5 h-3.5 text-green-500" />
+                            <span>Ad copies approved</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Input Area */}
+                    <div className="flex items-center gap-3 px-3 py-2 bg-white border border-black/5 rounded-xl">
+                      <div className="w-[1.5px] h-4 bg-black animate-pulse" />
+                      <span className="text-gray-400 text-[10px]">Review and schedule</span>
+                      <div className="ml-auto">
+                        <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                          <ArrowUp className="w-3.5 h-3.5 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Card 5 */}
-            <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
-              <h3 className="text-2xl font-medium mb-2 tracking-tight">Get instant business insights</h3>
-              <p className="text-black/60 mb-8 text-sm leading-relaxed">Real-time dashboards, sales insights, and product performance reports deliver the data you need to make confident, fast decisions.</p>
-              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
-                {/* Empty Image Frame */}
-              </div>
-            </div>
-
-            {/* Card 6 */}
             <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
               <h3 className="text-2xl font-medium mb-2 tracking-tight">Handle shipping, returns, and delivery seamlessly</h3>
               <p className="text-black/60 mb-8 text-sm leading-relaxed">From labels to carrier updates and returns management, Mia ensures your operations run smoothly, freeing you to focus on growth.</p>
@@ -748,19 +816,19 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
               Frequently asked questions
             </h2>
             <p className="text-black/40 text-lg">
-              Find answers to common questions about Manus AI Website Builder.
+              Find answers to common questions about Mia AI Website Builder.
             </p>
           </div>
           
           <div className="divide-y divide-black/5">
             {[
-              "What is Manus AI website builder?",
-              "Do I need coding experience to use Manus?",
-              "What types of applications can I build with Manus?",
-              "How does Manus handle SEO optimization?",
-              "Can I accept payments through my Manus-built website?",
+              "What is Mia AI website builder?",
+              "Do I need coding experience to use Mia?",
+              "What types of applications can I build with Mia?",
+              "How does Mia handle SEO optimization?",
+              "Can I accept payments through my Mia-built website?",
               "How do I track visitors and leads on my website?",
-              "Can I connect my own domain to my Manus website?",
+              "Can I connect my own domain to my Mia website?",
               "How do I make a website?",
               "How long does it take to build a website?",
               "What is the best website builder for beginners?"
@@ -778,11 +846,11 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
       <section className="py-32 px-4 bg-white text-center">
         <div className="max-w-4xl mx-auto">
           <h2 className="font-serif text-5xl md:text-6xl lg:text-7xl tracking-tight mb-8">
-            Take back your time.<br />Just forward it to Manus.
+            Take back your time.<br />Just forward it to Mia.
           </h2>
           <button 
             onClick={onGetStarted}
-            className="bg-black text-white px-10 py-4 rounded-full text-xl font-medium hover:bg-black/80 transition-all"
+            className="bg-blue-600 text-white px-10 py-4 rounded-xl text-xl font-medium hover:bg-blue-700 transition-all"
           >
             Try it now
           </button>
@@ -797,36 +865,31 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                 <Mail className="w-5 h-5 text-black" />
               </div>
-              <span className="font-serif text-xl font-bold tracking-tight">Manus</span>
+              <span className="font-serif text-xl font-bold tracking-tight">Mia</span>
             </Link>
             <p className="text-white/40 text-sm leading-relaxed max-w-xs">
               Less structure,<br />more intelligence.
             </p>
           </div>
-          {[
-            { title: 'Product', links: ['Features', 'Security', 'Business', 'Resources', 'Email AI', 'Forwarding'] },
-            { title: 'Resources', links: ['Blog', 'Guides', 'Support', 'API', 'Changelog', 'Newsletter'] },
-            { title: 'Company', links: ['About', 'Careers', 'Contact', 'Press', 'Legal', 'Privacy'] }
-          ].map((col, i) => (
-            <div key={i} className="col-span-1">
-              <h4 className="font-bold text-sm mb-6">{col.title}</h4>
-              <ul className="space-y-4">
-                {col.links.map((link, j) => (
-                  <li key={j}>
-                    <Link href="#" className="text-sm text-white/40 hover:text-white transition-colors">{link}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="col-span-1">
+            <h4 className="font-bold text-sm mb-6">Legal</h4>
+            <ul className="space-y-4">
+              <li><Link href="#" className="text-sm text-white/40 hover:text-white transition-colors">Legal</Link></li>
+              <li><Link href="#" className="text-sm text-white/40 hover:text-white transition-colors">Privacy</Link></li>
+              <li><Link href="#" className="text-sm text-white/40 hover:text-white transition-colors">Terms</Link></li>
+            </ul>
+          </div>
+          <div className="col-span-1">
+            <h4 className="font-bold text-sm mb-6">Social</h4>
+            <ul className="space-y-4">
+              <li><Link href="#" className="text-sm text-white/40 hover:text-white transition-colors">Twitter</Link></li>
+              <li><Link href="#" className="text-sm text-white/40 hover:text-white transition-colors">LinkedIn</Link></li>
+              <li><Link href="#" className="text-sm text-white/40 hover:text-white transition-colors">GitHub</Link></li>
+            </ul>
+          </div>
         </div>
         <div className="max-w-7xl mx-auto pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/20">
-          <p>© 2024 Manus AI. All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link href="#" className="hover:text-white transition-colors">Twitter</Link>
-            <Link href="#" className="hover:text-white transition-colors">LinkedIn</Link>
-            <Link href="#" className="hover:text-white transition-colors">GitHub</Link>
-          </div>
+          <p>© 2024 Mia AI. All rights reserved.</p>
         </div>
       </footer>
     </div>

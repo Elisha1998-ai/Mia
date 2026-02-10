@@ -10,9 +10,25 @@ import { PreviewsPage } from '@/components/PreviewsPage';
 import { useChat } from '@/hooks/useChat';
 
 export function DashboardClient() {
+    const [mounted, setMounted] = React.useState(false);
     const { messages, sendMessage, isLoading, markMessageComplete } = useChat();
     const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews'>('chat');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-background">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen bg-background text-foreground overflow-hidden transition-colors relative">

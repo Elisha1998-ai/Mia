@@ -226,15 +226,10 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
         {messages.map((m, idx) => (
           <div key={idx} className={`flex gap-6 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`flex max-w-[90%] gap-4 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border border-border-custom ${
-                m.role === 'user' ? 'bg-accent/10 text-accent/70' : 'bg-foreground/5 text-foreground/40'
-              }`}>
-                {m.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-              </div>
-              <div className={`p-4 rounded-2xl text-sm leading-relaxed relative group/msg ${
+              <div className={`py-2.5 px-4 rounded-2xl text-sm leading-relaxed relative group/msg ${
                 m.role === 'user' 
-                  ? 'bg-accent text-white shadow-sm' 
-                  : 'bg-foreground/5 text-foreground/80'
+                  ? 'bg-foreground/5 text-foreground/80 shadow-sm' 
+                  : 'bg-transparent text-foreground/80'
               }`}>
                 {/* Action Buttons */}
                 <div className={`absolute -top-3 ${m.role === 'user' ? '-left-16' : '-right-16'} flex flex-row gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity`}>
@@ -277,6 +272,9 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
                           h1: ({node, ...props}) => <h1 className="text-xl font-bold mb-2" {...props} />,
                           h2: ({node, ...props}) => <h2 className="text-lg font-bold mb-2" {...props} />,
                           h3: ({node, ...props}) => <h3 className="text-md font-bold mb-1" {...props} />,
+                          code: ({node, inline, ...props}: any) => (
+                            <code className={`${inline ? 'bg-foreground/10 px-1 rounded' : 'block bg-foreground/10 p-2 rounded-lg my-2 overflow-x-auto'}`} {...props} />
+                          ),
                         }}
                       >
                         {m.content}
@@ -311,10 +309,7 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
         {isLoading && (
           <div className="flex gap-6 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex max-w-[90%] gap-4">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 border border-border-custom bg-foreground/5 text-foreground/40">
-                <Bot className="w-5 h-5 animate-bounce" />
-              </div>
-              <div className="p-4 rounded-2xl text-sm bg-foreground/5 text-foreground/40 italic flex items-center gap-2">
+              <div className="py-2.5 px-4 rounded-2xl text-sm text-foreground/40 italic flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 animate-spin" />
                 Mia is thinking...
               </div>

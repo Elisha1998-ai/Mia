@@ -28,6 +28,12 @@ from connectors.shopify import ShopifyConnector
 from fastapi.responses import StreamingResponse
 
 load_dotenv()
+
+# Explicitly load the .env from the project root
+project_root = os.path.dirname(os.path.abspath(__file__))
+dotenv_path = os.path.join(project_root, '.env')
+load_dotenv(dotenv_path=dotenv_path)
+
 app = FastAPI(title="Mia AI Core")
 
 # Initialize DB on startup
@@ -119,159 +125,169 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 async def unified_chat(request: ChatRequest, db: Session = Depends(get_db)):
     message = request.message
-    # Intent classification
-    intent_raw = intent_classifier_task(message).strip().lower()
     
-    valid_intents = ['greeting', 'brand_generation', 'store_setup', 'product_extraction', 'insight_request', 'general_query']
-    intent = 'general_query'
-    for v in valid_intents:
-        if v in intent_raw:
-            intent = v
-            break
-    
-    response_data = {
-        "content": "",
-        "steps": [],
-        "intent": intent
-    }
-
-    if intent == "greeting":
-        # Use an agent to generate a dynamic greeting
-        task = f"User said '{message}'. Respond with a short, friendly greeting as Mia. Mention only ONE thing you can do today. Max 2 sentences."
-        response_data["content"] = support_agent_task(task)
+    try:
+        # Intent classification
+        intent_raw = intent_classifier_task(message).strip().lower()
         
-    elif intent == "brand_generation":
-        # Extract params
-        params_json = parameter_extractor_task(message)
-        try:
-            # Clean JSON string
-            clean_json = params_json.strip()
-            if "```json" in clean_json:
-                clean_json = clean_json.split("```json")[1].split("```")[0].strip()
-            elif "```" in clean_json:
-                clean_json = clean_json.split("```")[1].split("```")[0].strip()
-            
-            # Handle single quotes from AI
-            if "'" in clean_json and '"' not in clean_json:
-                clean_json = clean_json.replace("'", '"')
+        valid_intents = ['greeting', 'brand_generation', 'store_setup', 'product_extraction', 'insight_request', 'general_query']
+        intent = 'general_query'
+        for v in valid_intents:
+            if v in intent_raw:
+                intent = v
+                break
+        
+        response_data = {
+            "content": "",
+            "steps": [],
+            "intent": intent
+        }
+
+        # Route based on intent
+        if intent == "greeting":
+            # Use an agent to generate a dynamic greeting
+            task = f"User said '{message}'. Respond with a short, friendly greeting as Mia. Mention only ONE thing you can do today. Max 2 sentences."
+            response_data["content"] = support_agent_task(task)
+        elif intent == "brand_generation":
+            # Extract params
+            params_json = parameter_extractor_task(message)
+            try:
+                # Clean JSON string
+                clean_json = params_json.strip()
+                if "```json" in clean_json:
+                    clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+                elif "```" in clean_json:
+                    clean_json = clean_json.split("```")[1].split("```")[0].strip()
                 
-            params = json.loads(clean_json)
-            b_name = params.get('business_name', 'your brand')
-            niche = params.get('niche', 'ecommerce')
-            if b_name == "Unknown": b_name = "your brand"
-            if niche == "Unknown": niche = "ecommerce"
-        except Exception:
-            # Fallback regex if JSON fails
-            import re
-            name_match = re.search(r"['\"]business_name['\"]:\s*['\"](.*?)['\"]", params_json)
-            niche_match = re.search(r"['\"]niche['\"]:\s*['\"](.*?)['\"]", params_json)
-            b_name = name_match.group(1) if name_match else "your brand"
-            niche = niche_match.group(1) if niche_match else "ecommerce"
+                # Handle single quotes from AI
+                if "'" in clean_json and '"' not in clean_json:
+                    clean_json = clean_json.replace("'", '"')
+                    
+                params = json.loads(clean_json)
+                b_name = params.get('business_name', 'your brand')
+                niche = params.get('niche', 'ecommerce')
+                if b_name == "Unknown": b_name = "your brand"
+                if niche == "Unknown": niche = "ecommerce"
+            except Exception:
+                # Fallback regex if JSON fails
+                import re
+                name_match = re.search(r"['\"]business_name['\"]:\s*['\"](.*?)['\"]", params_json)
+                niche_match = re.search(r"['\"]niche['\"]:\s*['\"](.*?)['\"]", params_json)
+                b_name = name_match.group(1) if name_match else "your brand"
+                niche = niche_match.group(1) if niche_match else "ecommerce"
 
-        brand_data = await brand_request(b_name, niche)
-        response_data["content"] = brand_data["description"]
-        
-    elif intent == "store_setup":
-        response_data["steps"] = ["Choosing layout", "Writing copy", "Setting up pages"]
-        
-        # Extract params
-        params_json = parameter_extractor_task(message)
-        try:
-            # Clean JSON string
-            clean_json = params_json.strip()
-            if "```json" in clean_json:
-                clean_json = clean_json.split("```json")[1].split("```")[0].strip()
-            elif "```" in clean_json:
-                clean_json = clean_json.split("```")[1].split("```")[0].strip()
+            brand_data = await brand_request(b_name, niche)
+            response_data["content"] = brand_data["description"]
             
-            # Handle single quotes from AI
-            if "'" in clean_json and '"' not in clean_json:
-                clean_json = clean_json.replace("'", '"')
+        elif intent == "store_setup":
+            response_data["steps"] = ["Choosing layout", "Writing copy", "Setting up pages"]
+            
+            # Extract params
+            params_json = parameter_extractor_task(message)
+            try:
+                # Clean JSON string
+                clean_json = params_json.strip()
+                if "```json" in clean_json:
+                    clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+                elif "```" in clean_json:
+                    clean_json = clean_json.split("```")[1].split("```")[0].strip()
                 
-            params = json.loads(clean_json)
-            b_name = params.get('business_name', 'your store')
-            niche = params.get('niche', 'ecommerce')
-            if b_name == "Unknown": b_name = "your store"
-            if niche == "Unknown": niche = "ecommerce"
-        except Exception:
-            # Fallback regex if JSON fails
-            import re
-            name_match = re.search(r"['\"]business_name['\"]:\s*['\"](.*?)['\"]", params_json)
-            niche_match = re.search(r"['\"]niche['\"]:\s*['\"](.*?)['\"]", params_json)
-            b_name = name_match.group(1) if name_match else "your store"
-            niche = niche_match.group(1) if niche_match else "ecommerce"
+                # Handle single quotes from AI
+                if "'" in clean_json and '"' not in clean_json:
+                    clean_json = clean_json.replace("'", '"')
+                    
+                params = json.loads(clean_json)
+                b_name = params.get('business_name', 'your store')
+                niche = params.get('niche', 'ecommerce')
+                if b_name == "Unknown": b_name = "your store"
+                if niche == "Unknown": niche = "ecommerce"
+            except Exception:
+                # Fallback regex if JSON fails
+                import re
+                name_match = re.search(r"['\"]business_name['\"]:\s*['\"](.*?)['\"]", params_json)
+                niche_match = re.search(r"['\"]niche['\"]:\s*['\"](.*?)['\"]", params_json)
+                b_name = name_match.group(1) if name_match else "your store"
+                niche = niche_match.group(1) if niche_match else "ecommerce"
 
-        try:
-            setup_data = await setup_storefront(b_name, niche)
-            if "error" in setup_data:
-                response_data["content"] = f"I ran into an issue: {setup_data['error']}"
-            else:
-                response_data["content"] = f"I've set up your storefront for {b_name}. You can preview it here: http://localhost:3000/preview/{setup_data['template_used']}"
-                response_data["template_data"] = {
-                    "name": setup_data["template_used"],
-                    "copy_fields": setup_data["custom_copy"]
-                }
-                # Fetch actual products to show in wireframe if available
-                products = db.query(Product).limit(4).all()
-                response_data["products"] = [{"name": p.name, "price": p.price} for p in products]
-        except Exception as e:
-            print(f"Store setup error: {e}")
-            response_data["content"] = "I had some trouble setting up the storefront. Could you try again with more details?"
-        
-    elif intent == "product_extraction":
-        response_data["steps"] = ["Parsing text", "Extracting product details", "Mapping to database"]
-        # Bulk product extraction logic
-        task = f"Extract a list of products from this text: '{message}'. For each product, find name, price, and sku if available. Return ONLY a JSON list of objects like [{{'name': '...', 'price': 10.0, 'sku': '...'}}]. No extra text, no code blocks, just the raw JSON list."
-        extracted_json = data_architect_task(task)
-        try:
-            # More aggressive cleaning
-            cleaned_json = extracted_json.strip()
-            if "```" in cleaned_json:
-                cleaned_json = cleaned_json.split("```")[1]
-                if cleaned_json.startswith("json"):
-                    cleaned_json = cleaned_json[4:]
+            try:
+                setup_data = await setup_storefront(b_name, niche)
+                if "error" in setup_data:
+                    response_data["content"] = f"I ran into an issue: {setup_data['error']}"
+                else:
+                    response_data["content"] = f"I've set up your storefront for {b_name}. You can preview it here: http://localhost:3000/preview/{setup_data['template_used']}"
+                    response_data["template_data"] = {
+                        "name": setup_data["template_used"],
+                        "copy_fields": setup_data["custom_copy"]
+                    }
+                    # Fetch actual products to show in wireframe if available
+                    products = db.query(Product).limit(4).all()
+                    response_data["products"] = [{"name": p.name, "price": p.price} for p in products]
+            except Exception as e:
+                print(f"Store setup error: {e}")
+                response_data["content"] = "I had some trouble setting up the storefront. Could you try again with more details?"
             
-            # Find the first '[' and last ']' to extract just the JSON array
-            start = cleaned_json.find('[')
-            end = cleaned_json.rfind(']') + 1
-            if start != -1 and end != -1:
-                cleaned_json = cleaned_json[start:end]
+        elif intent == "product_extraction":
+            response_data["steps"] = ["Parsing text", "Extracting product details", "Mapping to database"]
+            # Bulk product extraction logic
+            task = f"Extract a list of products from this text: '{message}'. For each product, find name, price, and sku if available. Return ONLY a JSON list of objects like [{{'name': '...', 'price': 10.0, 'sku': '...'}}]. No extra text, no code blocks, just the raw JSON list."
+            extracted_json = data_architect_task(task)
+            try:
+                # More aggressive cleaning
+                cleaned_json = extracted_json.strip()
+                if "```" in cleaned_json:
+                    cleaned_json = cleaned_json.split("```")[1]
+                    if cleaned_json.startswith("json"):
+                        cleaned_json = cleaned_json[4:]
+                
+                # Find the first '[' and last ']' to extract just the JSON array
+                start = cleaned_json.find('[')
+                end = cleaned_json.rfind(']') + 1
+                if start != -1 and end != -1:
+                    cleaned_json = cleaned_json[start:end]
 
-            products = json.loads(cleaned_json)
-            for p_data in products:
-                product = Product(
-                    name=p_data.get('name'),
-                    price=float(p_data.get('price', 0)),
-                    sku=p_data.get('sku'),
-                    platform="ai_extraction"
-                )
-                db.add(product)
-            db.commit()
-            response_data["content"] = f"Successfully extracted and saved {len(products)} products to your inventory."
-        except Exception as e:
-            print(f"Error extracting products: {e}")
-            print(f"Raw AI Output: {extracted_json}")
-            response_data["content"] = "I found some products but had trouble saving them. Could you provide them in a clearer list?"
+                products = json.loads(cleaned_json)
+                for p_data in products:
+                    product = Product(
+                        name=p_data.get('name'),
+                        price=float(p_data.get('price', 0)),
+                        sku=p_data.get('sku'),
+                        platform="ai_extraction"
+                    )
+                    db.add(product)
+                db.commit()
+                response_data["content"] = f"Successfully extracted and saved {len(products)} products to your inventory."
+            except Exception as e:
+                print(f"Error extracting products: {e}")
+                print(f"Raw AI Output: {extracted_json}")
+                response_data["content"] = "I found some products but had trouble saving them. Could you provide them in a clearer list?"
+                
+        elif intent == "insight_request":
+            # Data-driven insights
+            total_sales = db.query(Order).count()
+            total_customers = db.query(Customer).count()
             
-    elif intent == "insight_request":
-        # Data-driven insights
-        total_sales = db.query(Order).count()
-        total_customers = db.query(Customer).count()
-        
-        stats_context = f"Store Stats: {total_sales} orders, {total_customers} customers."
-        task = f"{stats_context}\nUser Question: {message}\nProvide a concise, data-informed answer. If the question is general ecommerce advice, ignore the 0 stats and give high-level strategic advice."
-        response_data["content"] = general_advisor_task(task)
+            stats_context = f"Store Stats: {total_sales} orders, {total_customers} customers."
+            task = f"{stats_context}\nUser Question: {message}\nProvide a concise, data-informed answer. If the question is general ecommerce advice, ignore the 0 stats and give high-level strategic advice."
+            response_data["content"] = general_advisor_task(task)
 
-    else:
-        # Default to a general query
-        # Fetch relevant knowledge from KB if available
-        knowledge_entries = db.query(KnowledgeBase).all()
-        context = "\n".join([f"{k.title}: {k.content}" for k in knowledge_entries])
-        
-        task = f"Context: {context}\nQuestion: {message}\nProvide a helpful, concise answer for an ecommerce business owner. Focus on actionable advice."
-        response_data["content"] = general_advisor_task(task)
+        else:
+            # Default to a general query
+            # Fetch relevant knowledge from KB if available
+            knowledge_entries = db.query(KnowledgeBase).all()
+            context = "\n".join([f"{k.title}: {k.content}" for k in knowledge_entries])
+            
+            task = f"Context: {context}\nQuestion: {message}\nProvide a helpful, concise answer for an ecommerce business owner. Focus on actionable advice."
+            response_data["content"] = general_advisor_task(task)
 
-    return response_data
+        return response_data
+
+    except Exception as e:
+        return {
+            "content": "I'm having a bit of trouble thinking clearly right now. This usually happens if my AI connection is unstable. Could you try again in a moment?",
+            "steps": [],
+            "intent": "general_query",
+            "error": str(e)
+        }
 
 @app.post("/mia/generate-brand")
 async def brand_request(business_name: str, niche: str):

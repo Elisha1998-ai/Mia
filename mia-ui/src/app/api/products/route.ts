@@ -31,7 +31,7 @@ export async function GET(request: Request) {
         description: p.description || undefined,
         image_url: p.imageUrl || undefined,
         platform: p.platform || undefined,
-        created_at: p.createdAt.toISOString()
+        created_at: new Date(p.createdAt).toISOString()
       })),
       total,
       skip,
@@ -51,10 +51,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
+    // Generate SKU if not provided
+    const sku = body.sku && body.sku.trim() !== '' 
+      ? body.sku 
+      : `SKU-${Math.random().toString(36).toUpperCase().substring(2, 10)}`;
+
     const [product] = await db.insert(productsTable).values({
       name: body.name,
-      sku: body.sku,
-      price: body.price.toString(),
+      sku: sku,
+      price: (body.price || 0).toString(),
       stockQuantity: body.stock_quantity || 0,
       description: body.description,
       imageUrl: body.image_url,
@@ -70,7 +75,7 @@ export async function POST(request: Request) {
       description: product.description || undefined,
       image_url: product.imageUrl || undefined,
       platform: product.platform || undefined,
-      created_at: product.createdAt.toISOString()
+      created_at: new Date(product.createdAt).toISOString()
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating product:', error);

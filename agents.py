@@ -5,19 +5,30 @@ from langchain_core.messages import SystemMessage, HumanMessage
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
 # Initialize the LLM (using Groq for speed and $0 cost)
-llm = ChatOpenAI(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=os.getenv("GROQ_API_KEY"),
-    model_name="llama-3.3-70b-versatile"
-)
+def get_llm():
+    """
+    Securely loads the LLM using environment variables.
+    """
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    dotenv_path = os.path.join(project_root, '.env')
+    load_dotenv(dotenv_path=dotenv_path, override=True)
+    
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not found in .env file")
+
+    return ChatOpenAI(
+        openai_api_base="https://api.groq.com/openai/v1",
+        openai_api_key=api_key,
+        model_name="llama-3.1-8b-instant"
+    )
 
 def run_agent_task(persona_name, persona_goal, persona_backstory, task_description):
     """
     Simulates a CrewAI agent using LangChain
     """
+    llm = get_llm()
     messages = [
         SystemMessage(content=f"You are a {persona_name}. Your goal is {persona_goal}. Your background: {persona_backstory}"),
         HumanMessage(content=task_description)

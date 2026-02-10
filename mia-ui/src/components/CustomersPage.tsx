@@ -478,7 +478,26 @@ export const CustomersPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-custom">
-            {filteredCustomers.map((customer) => (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
+                  <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+                    <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-medium">Loading customers...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredCustomers.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
+                  <div className="flex flex-col items-center justify-center min-h-[400px] text-foreground/30">
+                    <Users className="w-12 h-12 mb-4 opacity-20" />
+                    <p className="text-sm">No customers found</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredCustomers.map((customer) => (
               <tr 
                 key={customer.id}
                 className={`group transition-colors hover:bg-foreground/[0.02] ${
@@ -542,15 +561,9 @@ export const CustomersPage = () => {
                   <ActionPopover customer={customer} onDelete={handleDelete} />
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
-        {filteredCustomers.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-foreground/30">
-            <Users className="w-12 h-12 mb-4 opacity-20" />
-            <p className="text-sm">No customers found</p>
-          </div>
-        )}
       </div>
 
       {/* Mobile List View */}
@@ -583,7 +596,7 @@ export const CustomersPage = () => {
       </div>
 
       {/* Pagination Footer (Desktop) */}
-      <div className="hidden md:flex px-6 py-4 border-t border-border-custom flex items-center justify-between bg-background">
+      <div className="hidden md:flex px-6 py-4 border-t border-border-custom items-center justify-between bg-background">
         <div className="text-sm text-foreground/40">
           Showing <span className="font-medium text-foreground/60">{filteredCustomers.length}</span> of {customers.length} customers
         </div>

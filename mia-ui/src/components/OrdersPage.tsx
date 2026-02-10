@@ -30,7 +30,7 @@ import {
 import * as Popover from '@radix-ui/react-popover';
 import { AddOrderModal } from './AddOrderModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
-import { useOrders } from '@/hooks/useData';
+import { useOrders, useCustomers, useProducts } from '@/hooks/useData';
 
 interface Order {
   id: string;
@@ -182,15 +182,20 @@ const MobileOrderCard = ({
 
 export const OrdersPage = () => {
   const { orders: apiOrders, loading, fetchOrders, createOrder, deleteOrder } = useOrders();
+  const { customers, fetchCustomers, loading: customersLoading } = useCustomers();
+  const { products, fetchProducts, loading: productsLoading } = useProducts();
+
   const [orders, setOrders] = React.useState<Order[]>([]);
   
   React.useEffect(() => {
     fetchOrders();
+    fetchCustomers();
+    fetchProducts();
   }, []);
 
   React.useEffect(() => {
     if (apiOrders) {
-      const mappedOrders: Order[] = apiOrders.map(o => ({
+      const mappedOrders: Order[] = apiOrders.map((o: any) => ({
         id: o.id,
         orderNumber: o.order_number || o.external_id || `ORD-${o.id.slice(0, 4)}`,
         customerName: o.customer?.full_name || o.customer?.email || 'Unknown Customer',
@@ -198,26 +203,16 @@ export const OrdersPage = () => {
         date: o.created_at ? new Date(o.created_at).toISOString().split('T')[0] : 'Today',
         total: o.total_amount,
         status: (o.status.charAt(0).toUpperCase() + o.status.slice(1)) as Order['status'],
-        itemsCount: 1, // Default if not provided
-        paymentMethod: 'Credit Card',
-        shippingMethod: 'Standard Shipping',
-        productName: 'Premium Product',
-        address: 'Shipping Address'
+        itemsCount: o.items_count || 0,
+        paymentMethod: o.payment_method || 'Bank Transfer',
+        shippingMethod: o.shipping_method || 'Standard Shipping',
+        productName: o.product_name || 'No Product',
+        address: o.address || 'No Address'
       }));
       setOrders(mappedOrders);
     }
   }, [apiOrders]);
-  // Get customers for the modal
-  const customers = [
-    { id: '1', name: 'Alex Johnson' },
-    { id: '2', name: 'Sarah Williams' },
-    { id: '3', name: 'Michael Brown' },
-    { id: '4', name: 'Emily Davis' },
-    { id: '5', name: 'James Wilson' },
-    { id: '6', name: 'Emma Taylor' },
-    { id: '7', name: 'Daniel Miller' },
-    { id: '8', name: 'Olivia Moore' },
-  ];
+
   
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -301,23 +296,22 @@ export const OrdersPage = () => {
   const handleAddOrder = async (orderData: any) => {
     try {
       const payload = {
-        customer_id: orderData.customerId,
+        order_number: orderData.orderNumber,
+        customer_id: orderData.customerId || null,
+        customer_name: orderData.customerName,
         total_amount: orderData.total,
         status: orderData.status.toLowerCase(),
-        items: [
-          {
-            product_id: 'placeholder', // This would need actual product selection
-            quantity: orderData.itemsCount,
-            price: orderData.total / orderData.itemsCount
-          }
-        ]
+        items: orderData.items.map((item: any) => ({
+          product_id: item.productId,
+          quantity: item.quantity,
+          price: item.price
+        }))
       };
       
-      // For now, if no customerId, we might need to create one or handle it.
-      // But the modal provides one from the list.
-      
       await createOrder(payload);
-      // Hook updates the orders state automatically
+      // Re-fetch orders and customers to ensure UI is in sync
+      fetchOrders();
+      fetchCustomers();
     } catch (error) {
       console.error('Failed to add order:', error);
     }
@@ -449,7 +443,8 @@ export const OrdersPage = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddOrder}
-        customers={customers}
+        customers={customers.map(c => ({ id: c.id, name: c.full_name || c.email }))}
+        products={products.map(p => ({ id: p.id, name: p.name, price: p.price }))}
       />
 
       <DeleteConfirmationModal 
@@ -494,7 +489,7 @@ export const OrdersPage = () => {
             {loading ? (
               <tr>
                 <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
-                  <div className="flex flex-col items-center gap-3">
+                  <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
                     <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                     <p className="text-sm font-medium">Loading orders...</p>
                   </div>
@@ -503,9 +498,9 @@ export const OrdersPage = () => {
             ) : filteredOrders.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
-                  <div className="flex flex-col items-center gap-3">
-                    <ShoppingCart className="w-12 h-12 text-foreground/10" />
-                    <p className="text-sm font-medium">No orders found</p>
+                  <div className="flex flex-col items-center justify-center min-h-[400px] text-foreground/30">
+                    <PackageIcon className="w-12 h-12 mb-4 opacity-20" />
+                    <p className="text-sm">No orders found</p>
                   </div>
                 </td>
               </tr>
@@ -556,14 +551,8 @@ export const OrdersPage = () => {
               </tr>
             )))}
           </tbody>
-        </table>
-        {filteredOrders.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-foreground/30">
-            <ShoppingCart className="w-12 h-12 mb-4 opacity-20" />
-            <p className="text-sm">No orders found</p>
-          </div>
-        )}
-      </div>
+          </table>
+        </div>
 
       {/* Mobile List View */}
       <div className="md:hidden flex-1 overflow-auto scrollbar-hide">

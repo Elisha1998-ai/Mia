@@ -42,9 +42,9 @@ export async function GET(request: Request) {
         full_name: c.fullName || undefined,
         phone: c.phone || undefined,
         lifetime_value: Number(c.lifetimeValue),
-        created_at: c.createdAt.toISOString(),
+        created_at: new Date(c.createdAt).toISOString(),
         orders_count: Number(c.ordersCount),
-        last_order_date: c.lastOrderDate ? c.lastOrderDate.toISOString() : null
+        last_order_date: c.lastOrderDate ? new Date(c.lastOrderDate).toISOString() : null
       })),
       total,
       skip,
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       full_name: customer.fullName || undefined,
       phone: customer.phone || undefined,
       lifetime_value: Number(customer.lifetimeValue),
-      created_at: customer.createdAt.toISOString(),
+      created_at: new Date(customer.createdAt).toISOString(),
       orders_count: 0,
       last_order_date: null
     });

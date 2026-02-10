@@ -2,12 +2,12 @@
 
 import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Package, Tag, DollarSign, Layers, Weight, Hash, ChevronDown, Upload, Image as ImageIcon } from 'lucide-react';
+import { X, Package, Tag, DollarSign, Layers, Weight, Hash, ChevronDown, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (product: any) => void;
+  onSave: (product: any) => void;
   product?: any; // Add this for editing
 }
 
@@ -70,13 +70,53 @@ const CustomSelect = ({ value, onChange, options, icon: Icon }: {
 };
 
 const ImageUpload = ({ images, onChange }: { images: string[], onChange: (images: string[]) => void }) => {
+  const [uploading, setUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      onChange([...images, ...newImages]);
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = 5 - images.length;
+    if (remainingSlots <= 0) {
+      alert('You can only upload up to 5 images.');
+      return;
+    }
+
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    setUploading(true);
+
+    try {
+      const uploadPromises = filesToUpload.map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
+        
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Cloudinary Error Detail:', errorData);
+          throw new Error(errorData.error?.message || 'Upload failed');
+        }
+        const data = await response.json();
+        return data.secure_url;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      onChange([...images, ...uploadedUrls]);
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload one or more images. Please check your Cloudinary configuration.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -87,46 +127,61 @@ const ImageUpload = ({ images, onChange }: { images: string[], onChange: (images
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-5 gap-3">
       {images.map((img, index) => (
-        <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-border-custom group">
+        <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-border-custom group bg-foreground/5">
           <img src={img} alt="Product" className="w-full h-full object-cover" />
           <button 
             type="button"
             onClick={() => removeImage(index)}
-            className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
           >
             <X className="w-3 h-3" />
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        className="aspect-square rounded-xl border-2 border-dashed border-border-custom hover:border-accent/40 hover:bg-accent/5 transition-all flex flex-col items-center justify-center gap-2 text-foreground/40 hover:text-accent"
-      >
-        <Upload className="w-5 h-5" />
-        <span className="text-[10px] font-medium uppercase tracking-wider">Upload</span>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          multiple 
-          accept="image/*" 
-          onChange={handleFileChange}
-        />
-      </button>
+      
+      {images.length < 5 && (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => fileInputRef.current?.click()}
+          className="aspect-square rounded-xl border-2 border-dashed border-border-custom hover:border-accent/40 hover:bg-accent/5 transition-all flex flex-col items-center justify-center gap-1 text-foreground/40 hover:text-accent disabled:opacity-50"
+        >
+          {uploading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <Upload className="w-5 h-5" />
+              <span className="text-[10px] font-medium uppercase tracking-wider">Upload</span>
+            </>
+          )}
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            multiple 
+            accept="image/*" 
+            onChange={handleFileChange}
+          />
+        </button>
+      )}
+
+      {/* Placeholder slots to show the "row" structure if empty */}
+      {Array.from({ length: Math.max(0, 4 - images.length - (uploading ? 0 : 0)) }).map((_, i) => (
+        <div key={`empty-${i}`} className="aspect-square rounded-xl border border-dashed border-border-custom/30 bg-foreground/[0.01]" />
+      ))}
     </div>
   );
 };
 
-export const AddProductModal = ({ isOpen, onClose, onAdd, product }: AddProductModalProps) => {
+export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProductModalProps) => {
   const [formData, setFormData] = React.useState({
     name: '',
     sku: '',
     price: '',
     stock: '',
-    category: 'Apparel',
+    category: '',
     weight: '',
     description: '',
     images: [] as string[]
@@ -139,7 +194,7 @@ export const AddProductModal = ({ isOpen, onClose, onAdd, product }: AddProductM
         sku: product.sku || '',
         price: product.price?.toString() || '',
         stock: product.stock?.toString() || '',
-        category: product.category || 'Apparel',
+        category: product.category || '',
         weight: product.weight || '',
         description: product.description || '',
         images: product.image ? [product.image] : []
@@ -150,7 +205,7 @@ export const AddProductModal = ({ isOpen, onClose, onAdd, product }: AddProductM
         sku: '',
         price: '',
         stock: '',
-        category: 'Apparel',
+        category: '',
         weight: '',
         description: '',
         images: []
@@ -160,7 +215,7 @@ export const AddProductModal = ({ isOpen, onClose, onAdd, product }: AddProductM
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd({
+    onSave({
       ...formData,
       id: product?.id || Math.random().toString(36).substr(2, 9),
       price: parseFloat(formData.price) || 0,
@@ -207,23 +262,25 @@ export const AddProductModal = ({ isOpen, onClose, onAdd, product }: AddProductM
                     />
                   </div>
                   <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                    <label className="text-sm font-semibold text-foreground/80">SKU Code</label>
+                    <label className="text-sm font-semibold text-foreground/80">SKU Code (Optional)</label>
                     <input 
-                      required
                       value={formData.sku}
                       onChange={e => setFormData({...formData, sku: e.target.value})}
-                      placeholder="TSH-001"
+                      placeholder="e.g. TSH-001"
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
                     />
                   </div>
                   <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Category</label>
-                    <CustomSelect 
-                      value={formData.category}
-                      onChange={val => setFormData({...formData, category: val})}
-                      options={['Apparel', 'Accessories', 'Electronics', 'Home', 'Footwear']}
-                      icon={Tag}
-                    />
+                    <div className="relative">
+                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
+                      <input 
+                        value={formData.category}
+                        onChange={e => setFormData({...formData, category: e.target.value})}
+                        placeholder="e.g. Apparel"
+                        className="w-full bg-foreground/5 border border-border-custom rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-[140px_1fr] items-start gap-4">
                     <label className="text-sm font-semibold text-foreground/80 pt-2.5">Product Images</label>
@@ -271,11 +328,11 @@ export const AddProductModal = ({ isOpen, onClose, onAdd, product }: AddProductM
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Shipping & Details</h3>
                 <div className="grid gap-6">
                   <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                    <label className="text-sm font-semibold text-foreground/80">Weight (kg)</label>
+                    <label className="text-sm font-semibold text-foreground/80">Weight (kg) (Optional)</label>
                     <input 
                       value={formData.weight}
                       onChange={e => setFormData({...formData, weight: e.target.value})}
-                      placeholder="0.5"
+                      placeholder="e.g. 0.5"
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
                     />
                   </div>

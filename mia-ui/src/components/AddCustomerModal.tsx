@@ -2,7 +2,7 @@
 
 import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, User, Mail, Phone, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { X, User, Mail, Phone, ChevronDown } from 'lucide-react';
 
 interface AddCustomerModalProps {
   isOpen: boolean;
@@ -73,8 +73,7 @@ export const AddCustomerModal = ({ isOpen, onClose, onAdd }: AddCustomerModalPro
     name: '',
     email: '',
     phone: '',
-    status: 'New',
-    avatar: ''
+    status: 'New'
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -85,8 +84,7 @@ export const AddCustomerModal = ({ isOpen, onClose, onAdd }: AddCustomerModalPro
       name: '',
       email: '',
       phone: '',
-      status: 'New',
-      avatar: ''
+      status: 'New'
     });
   };
 
@@ -167,18 +165,6 @@ export const AddCustomerModal = ({ isOpen, onClose, onAdd }: AddCustomerModalPro
                       onChange={val => setFormData({...formData, status: val as any})}
                       options={['Active', 'Inactive', 'New']}
                     />
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                    <label className="text-sm font-semibold text-foreground/80">Avatar URL</label>
-                    <div className="relative">
-                      <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
-                      <input 
-                        value={formData.avatar}
-                        onChange={e => setFormData({...formData, avatar: e.target.value})}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full bg-foreground/5 border border-border-custom rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all"
-                      />
-                    </div>
                   </div>
                 </div>
               </section>

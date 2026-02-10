@@ -522,7 +522,7 @@ export const ProductsPage = () => {
               {loading ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
-                    <div className="flex flex-col items-center gap-3">
+                    <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
                       <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                       <p className="text-sm font-medium">Loading products...</p>
                     </div>
@@ -531,9 +531,9 @@ export const ProductsPage = () => {
               ) : filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
-                    <div className="flex flex-col items-center gap-3">
-                      <Package className="w-12 h-12 text-foreground/10" />
-                      <p className="text-sm font-medium">No products found</p>
+                    <div className="flex flex-col items-center justify-center min-h-[400px] text-foreground/30">
+                      <Package className="w-12 h-12 mb-4 opacity-20" />
+                      <p className="text-sm">No products found</p>
                     </div>
                   </td>
                 </tr>
@@ -603,12 +603,6 @@ export const ProductsPage = () => {
               )))}
             </tbody>
           </table>
-          {filteredProducts.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-foreground/30">
-              <Package className="w-12 h-12 mb-4 opacity-20" />
-              <p className="text-sm">No products found</p>
-            </div>
-          )}
         </div>
 
         {/* Mobile List View */}

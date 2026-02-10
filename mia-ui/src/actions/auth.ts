@@ -4,8 +4,14 @@ import { signIn, signOut } from "@/auth"
 
 export async function login(formData: FormData) {
   const email = formData.get("email") as string
-  // Workaround: Use credentials to bypass failing Resend adapter
-  await signIn("credentials", { email, redirectTo: "/dashboard" })
+  try {
+    await signIn("credentials", { email, redirectTo: "/dashboard" })
+  } catch (error) {
+    if ((error as any).type === "CredentialsSignin") {
+      return { error: "Invalid credentials." }
+    }
+    throw error
+  }
 }
 
 export async function loginWithGoogle() {

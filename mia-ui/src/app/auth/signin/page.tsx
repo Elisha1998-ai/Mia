@@ -6,11 +6,13 @@ import Link from "next/link";
 import { login, loginWithGoogle } from "@/actions/auth";
 
 export default function SignInPage() {
+  const [mounted, setMounted] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // Check initial theme from localStorage or DOM class
     const savedTheme = localStorage.getItem("theme");
     const isDark = savedTheme === "dark" || (!savedTheme && document.documentElement.classList.contains("dark"));
@@ -35,6 +37,19 @@ export default function SignInPage() {
       localStorage.setItem("theme", "light");
     }
   };
+
+  // Add basic error boundary or logging
+  useEffect(() => {
+    console.log("SignInPage mounted");
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300" suppressHydrationWarning>
