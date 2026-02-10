@@ -6,13 +6,19 @@ from models import Base
 
 load_dotenv()
 
-# Default to SQLite if DATABASE_URL is not provided for easy local development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mia_internal.db")
+# Use PostgreSQL database
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(
-    DATABASE_URL, 
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-)
+# Handle different database types
+if "postgresql" in DATABASE_URL:
+    # PostgreSQL configuration
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+else:
+    # Fallback to SQLite for local development
+    engine = create_engine(
+        DATABASE_URL, 
+        connect_args={"check_same_thread": False}
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

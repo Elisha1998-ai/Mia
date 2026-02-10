@@ -30,6 +30,7 @@ import {
 import * as Popover from '@radix-ui/react-popover';
 import { AddOrderModal } from './AddOrderModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { useOrders } from '@/hooks/useData';
 
 interface Order {
   id: string;
@@ -45,113 +46,6 @@ interface Order {
   productName: string;
   address?: string;
 }
-
-const mockOrders: Order[] = [
-  { 
-    id: '1', 
-    orderNumber: 'ORD-7721', 
-    customerName: 'Alex Johnson', 
-    date: '2024-02-08', 
-    total: 129.99, 
-    status: 'Delivered', 
-    itemsCount: 3, 
-    paymentMethod: 'Credit Card',
-    shippingMethod: 'Express Shipping',
-    productName: 'Premium Cotton T-Shirt',
-    address: '123 Main St, Apartment 4B, New York, NY 10001'
-  },
-  { 
-    id: '2', 
-    orderNumber: 'ORD-7722', 
-    customerName: 'Sarah Williams', 
-    date: '2024-02-08', 
-    total: 89.00, 
-    status: 'Shipped', 
-    itemsCount: 1, 
-    paymentMethod: 'PayPal',
-    shippingMethod: 'Standard Shipping',
-    productName: 'Heritage Denim Jacket',
-    address: '456 Oak Ave, Suite 200, Los Angeles, CA 90001'
-  },
-  { 
-    id: '3', 
-    orderNumber: 'ORD-7723', 
-    customerName: 'Michael Brown', 
-    date: '2024-02-07', 
-    total: 245.50, 
-    status: 'Processing', 
-    itemsCount: 5, 
-    paymentMethod: 'Apple Pay',
-    shippingMethod: 'Next Day Delivery',
-    productName: 'Minimalist Leather Wallet',
-    address: '789 Pine Rd, Chicago, IL 60601'
-  },
-  { 
-    id: '4', 
-    orderNumber: 'ORD-7724', 
-    customerName: 'Emily Davis', 
-    date: '2024-02-07', 
-    total: 54.20, 
-    status: 'Cancelled', 
-    itemsCount: 2, 
-    paymentMethod: 'Credit Card',
-    shippingMethod: 'Standard Shipping',
-    productName: 'Performance Running Shoes',
-    address: '321 Elm St, Houston, TX 77001'
-  },
-  { 
-    id: '5', 
-    orderNumber: 'ORD-7725', 
-    customerName: 'James Wilson', 
-    date: '2024-02-06', 
-    total: 159.00, 
-    status: 'Delivered', 
-    itemsCount: 1, 
-    paymentMethod: 'Google Pay',
-    shippingMethod: 'Standard Shipping',
-    productName: 'Mia Smart Kettle',
-    address: '654 Maple Dr, Miami, FL 33101'
-  },
-  { 
-    id: '6', 
-    orderNumber: 'ORD-7726', 
-    customerName: 'Emma Taylor', 
-    date: '2024-02-06', 
-    total: 320.00, 
-    status: 'Refunded', 
-    itemsCount: 4, 
-    paymentMethod: 'Credit Card',
-    shippingMethod: 'Express Shipping',
-    productName: 'Organic Bamboo Socks',
-    address: '987 Cedar Ln, Seattle, WA 98101'
-  },
-  { 
-    id: '7', 
-    orderNumber: 'ORD-7727', 
-    customerName: 'Daniel Miller', 
-    date: '2024-02-05', 
-    total: 75.00, 
-    status: 'Delivered', 
-    itemsCount: 2, 
-    paymentMethod: 'PayPal',
-    shippingMethod: 'Standard Shipping',
-    productName: 'Recycled Plastic Backpack',
-    address: '159 Birch Ct, Denver, CO 80201'
-  },
-  { 
-    id: '8', 
-    orderNumber: 'ORD-7728', 
-    customerName: 'Olivia Moore', 
-    date: '2024-02-05', 
-    total: 210.00, 
-    status: 'Shipped', 
-    itemsCount: 3, 
-    paymentMethod: 'Apple Pay',
-    shippingMethod: 'Express Shipping',
-    productName: 'Noise Cancelling Headphones',
-    address: '753 Willow Way, Boston, MA 02101'
-  },
-];
 
 const ActionPopover = ({ order, onDelete }: { order: Order, onDelete: (id: string) => void }) => {
   return (
@@ -287,7 +181,32 @@ const MobileOrderCard = ({
 };
 
 export const OrdersPage = () => {
-  const [orders, setOrders] = React.useState<Order[]>(mockOrders);
+  const { orders: apiOrders, loading, fetchOrders, createOrder, deleteOrder } = useOrders();
+  const [orders, setOrders] = React.useState<Order[]>([]);
+  
+  React.useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  React.useEffect(() => {
+    if (apiOrders) {
+      const mappedOrders: Order[] = apiOrders.map(o => ({
+        id: o.id,
+        orderNumber: o.order_number || o.external_id || `ORD-${o.id.slice(0, 4)}`,
+        customerName: o.customer?.full_name || o.customer?.email || 'Unknown Customer',
+        customerId: o.customer_id,
+        date: o.created_at ? new Date(o.created_at).toISOString().split('T')[0] : 'Today',
+        total: o.total_amount,
+        status: (o.status.charAt(0).toUpperCase() + o.status.slice(1)) as Order['status'],
+        itemsCount: 1, // Default if not provided
+        paymentMethod: 'Credit Card',
+        shippingMethod: 'Standard Shipping',
+        productName: 'Premium Product',
+        address: 'Shipping Address'
+      }));
+      setOrders(mappedOrders);
+    }
+  }, [apiOrders]);
   // Get customers for the modal
   const customers = [
     { id: '1', name: 'Alex Johnson' },
@@ -358,19 +277,50 @@ export const OrdersPage = () => {
     setDeleteModal({ isOpen: true, id: null, isBulk: true });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteModal.isBulk) {
-      setOrders(orders.filter(o => !selectedIds.includes(o.id)));
-      setSelectedIds([]);
+      try {
+        await Promise.all(selectedIds.map(id => deleteOrder(id)));
+        setOrders(orders.filter(o => !selectedIds.includes(o.id)));
+        setSelectedIds([]);
+      } catch (error) {
+        console.error('Failed to delete orders:', error);
+      }
     } else if (deleteModal.id) {
-      setOrders(orders.filter(o => o.id !== deleteModal.id));
-      setSelectedIds(selectedIds.filter(i => i !== deleteModal.id));
+      try {
+        await deleteOrder(deleteModal.id);
+        setOrders(orders.filter(o => o.id !== deleteModal.id));
+        setSelectedIds(selectedIds.filter(i => i !== deleteModal.id));
+      } catch (error) {
+        console.error('Failed to delete order:', error);
+      }
     }
     setDeleteModal({ isOpen: false, id: null, isBulk: false });
   };
 
-  const handleAddOrder = (newOrder: any) => {
-    setOrders([newOrder, ...orders]);
+  const handleAddOrder = async (orderData: any) => {
+    try {
+      const payload = {
+        customer_id: orderData.customerId,
+        total_amount: orderData.total,
+        status: orderData.status.toLowerCase(),
+        items: [
+          {
+            product_id: 'placeholder', // This would need actual product selection
+            quantity: orderData.itemsCount,
+            price: orderData.total / orderData.itemsCount
+          }
+        ]
+      };
+      
+      // For now, if no customerId, we might need to create one or handle it.
+      // But the modal provides one from the list.
+      
+      await createOrder(payload);
+      // Hook updates the orders state automatically
+    } catch (error) {
+      console.error('Failed to add order:', error);
+    }
   };
 
   return (
@@ -541,7 +491,26 @@ export const OrdersPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-custom">
-            {filteredOrders.map((order) => (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-medium">Loading orders...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredOrders.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
+                  <div className="flex flex-col items-center gap-3">
+                    <ShoppingCart className="w-12 h-12 text-foreground/10" />
+                    <p className="text-sm font-medium">No orders found</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredOrders.map((order) => (
               <tr 
                 key={order.id}
                 className={`group transition-colors hover:bg-foreground/[0.02] ${
@@ -585,7 +554,7 @@ export const OrdersPage = () => {
                   <ActionPopover order={order} onDelete={handleDelete} />
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
         {filteredOrders.length === 0 && (

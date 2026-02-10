@@ -18,6 +18,7 @@ import {
   History
 } from 'lucide-react';
 
+import { useCustomers } from '@/hooks/useData';
 import * as Popover from '@radix-ui/react-popover';
 import { AddCustomerModal } from './AddCustomerModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
@@ -33,17 +34,6 @@ interface Customer {
   lastOrder: string;
   avatar?: string;
 }
-
-const mockCustomers: Customer[] = [
-  { id: '1', name: 'Alex Johnson', email: 'alex.j@example.com', phone: '+1 234 567 890', totalOrders: 12, totalSpent: 1250.50, status: 'Active', lastOrder: '2024-02-01', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop' },
-  { id: '2', name: 'Sarah Williams', email: 'sarah.w@example.com', phone: '+1 234 567 891', totalOrders: 5, totalSpent: 450.00, status: 'Active', lastOrder: '2024-02-05', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop' },
-  { id: '3', name: 'Michael Brown', email: 'm.brown@example.com', phone: '+1 234 567 892', totalOrders: 1, totalSpent: 89.00, status: 'New', lastOrder: '2024-02-07', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop' },
-  { id: '4', name: 'Emily Davis', email: 'emily.d@example.com', phone: '+1 234 567 893', totalOrders: 0, totalSpent: 0, status: 'Inactive', lastOrder: '—', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop' },
-  { id: '5', name: 'James Wilson', email: 'j.wilson@example.com', phone: '+1 234 567 894', totalOrders: 8, totalSpent: 720.00, status: 'Active', lastOrder: '2024-01-28', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop' },
-  { id: '6', name: 'Emma Taylor', email: 'emma.t@example.com', phone: '+1 234 567 895', totalOrders: 15, totalSpent: 2100.00, status: 'Active', lastOrder: '2024-02-03', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop' },
-  { id: '7', name: 'Daniel Miller', email: 'd.miller@example.com', phone: '+1 234 567 896', totalOrders: 3, totalSpent: 150.00, status: 'Active', lastOrder: '2024-01-15', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop' },
-  { id: '8', name: 'Olivia Moore', email: 'olivia.m@example.com', phone: '+1 234 567 897', totalOrders: 2, totalSpent: 310.00, status: 'New', lastOrder: '2024-02-04', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop' },
-];
 
 const ActionPopover = ({ customer, onDelete }: { customer: Customer, onDelete: (id: string) => void }) => {
   return (
@@ -185,8 +175,29 @@ const MobileCustomerCard = ({
 };
 
 export const CustomersPage = () => {
-  const [customers, setCustomers] = React.useState<Customer[]>(mockCustomers);
+  const { customers: apiCustomers, loading, fetchCustomers, createCustomer, deleteCustomer } = useCustomers();
+  const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  React.useEffect(() => {
+    if (apiCustomers) {
+      setCustomers(apiCustomers.map(c => ({
+        id: c.id,
+        name: c.full_name || 'Unknown',
+        email: c.email,
+        phone: c.phone || '-',
+        totalOrders: c.orders_count,
+        totalSpent: Number(c.lifetime_value || 0),
+        status: (c.orders_count > 0 ? 'Active' : 'New') as Customer['status'],
+        lastOrder: c.last_order_date ? new Date(c.last_order_date).toLocaleDateString() : '—',
+        avatar: undefined
+      })));
+    }
+  }, [apiCustomers]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('All Status');
   const [sortBy, setSortBy] = React.useState<string>('Name');
@@ -238,19 +249,35 @@ export const CustomersPage = () => {
     setDeleteModal({ isOpen: true, id: null, isBulk: true });
   };
 
-  const confirmDelete = () => {
-    if (deleteModal.isBulk) {
-      setCustomers(customers.filter(c => !selectedIds.includes(c.id)));
-      setSelectedIds([]);
-    } else if (deleteModal.id) {
-      setCustomers(customers.filter(c => c.id !== deleteModal.id));
-      setSelectedIds(selectedIds.filter(i => i !== deleteModal.id));
+  const confirmDelete = async () => {
+    try {
+      if (deleteModal.isBulk) {
+        await Promise.all(selectedIds.map(id => deleteCustomer(id)));
+        setCustomers(prev => prev.filter(c => !selectedIds.includes(c.id)));
+        setSelectedIds([]);
+      } else if (deleteModal.id) {
+        await deleteCustomer(deleteModal.id);
+        setCustomers(prev => prev.filter(c => c.id !== deleteModal.id));
+        if (selectedIds.includes(deleteModal.id)) {
+          setSelectedIds(selectedIds.filter(id => id !== deleteModal.id));
+        }
+      }
+    } catch (e) {
+      console.error(e);
     }
     setDeleteModal({ isOpen: false, id: null, isBulk: false });
   };
 
-  const handleAddCustomer = (newCustomer: any) => {
-    setCustomers([newCustomer, ...customers]);
+  const handleAddCustomer = async (newCustomer: any) => {
+    try {
+      await createCustomer({
+        name: newCustomer.name,
+        email: newCustomer.email,
+        phone: newCustomer.phone
+      });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (

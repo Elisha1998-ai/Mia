@@ -1,0 +1,136 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { orders as ordersTable, customers as customersTable, orderItems as orderItemsTable, products as productsTable } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
+
+// GET /api/orders/[id] - Get a specific order
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const order = await db.query.orders.findFirst({
+      where: eq(ordersTable.id, id),
+      with: {
+        customer: true,
+        items: {
+          with: {
+            product: true
+          }
+        }
+      }
+    });
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      id: order.id,
+      order_number: order.orderNumber,
+      external_id: order.externalId || undefined,
+      customer_id: order.customerId || undefined,
+      store_id: order.storeId || undefined,
+      total_amount: Number(order.totalAmount),
+      profit_margin: order.profitMargin ? Number(order.profitMargin) : undefined,
+      status: order.status,
+      created_at: order.createdAt.toISOString(),
+      customer: order.customer ? {
+        id: order.customer.id,
+        email: order.customer.email,
+        full_name: order.customer.fullName || undefined
+      } : undefined,
+      items: order.items.map(item => ({
+        id: item.id,
+        product_id: item.productId,
+        product_name: item.product.name,
+        quantity: item.quantity,
+        price: Number(item.price)
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch order' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/orders/[id] - Update an order
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { status, total_amount, customer_id } = body;
+    
+    const [order] = await db.update(ordersTable)
+      .set({
+        status,
+        totalAmount: total_amount?.toString(),
+        customerId: customer_id,
+        updatedAt: new Date()
+      })
+      .where(eq(ordersTable.id, id))
+      .returning();
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      );
+    }
+
+    const customer = order.customerId ? await db.query.customers.findFirst({
+      where: eq(customersTable.id, order.customerId)
+    }) : null;
+
+    return NextResponse.json({
+      id: order.id,
+      order_number: order.orderNumber,
+      external_id: order.externalId || undefined,
+      customer_id: order.customerId || undefined,
+      total_amount: Number(order.totalAmount),
+      status: order.status,
+      created_at: order.createdAt.toISOString(),
+      customer: customer ? {
+        id: customer.id,
+        email: customer.email,
+        full_name: customer.fullName || undefined
+      } : undefined
+    });
+  } catch (error) {
+    console.error('Error updating order:', error);
+    return NextResponse.json(
+      { error: 'Failed to update order' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/orders/[id] - Delete an order
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await db.delete(ordersTable)
+      .where(eq(ordersTable.id, id));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete order' },
+      { status: 500 }
+    );
+  }
+}

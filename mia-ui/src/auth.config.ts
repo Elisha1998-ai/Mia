@@ -9,9 +9,9 @@ export const authConfig = {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
-    Resend({
-      from: process.env.EMAIL_FROM || "onboarding@resend.dev",
-    }),
+    // Resend({
+    //   from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+    // }),
     Credentials({
       name: "Credentials",
       credentials: {

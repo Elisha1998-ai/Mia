@@ -5,6 +5,8 @@ import {
   ArrowRight,
   ArrowLeft,
   ChevronDown,
+  ChevronLeft,
+  Maximize2,
   Menu,
   X,
   Mail,
@@ -19,7 +21,10 @@ import {
   Clock,
   Zap,
   Paperclip,
-  Search
+  Search,
+  ShoppingCart,
+  BarChart3,
+  Package
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -103,19 +108,19 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
           </div>
         </div>
         <div className="mt-16 max-w-5xl mx-auto">
-          <div className="relative rounded-2xl overflow-hidden bg-[#f3f4f6] border border-black/5 shadow-inner p-4 md:p-12 flex justify-center">
-            <div className="w-full max-w-4xl bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-black/5 overflow-hidden font-sans">
+          <div className="relative rounded-2xl overflow-hidden bg-[#f3f4f6] border border-black/5 p-4 md:p-12 flex justify-center">
+            <div className="w-full max-w-4xl bg-white rounded-3xl border border-black/5 overflow-hidden font-sans">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
                 <div className="flex items-center gap-3">
-                  <div className="text-purple-600">
+                  <div className="text-blue-600">
                     <Sparkles className="w-5 h-5" />
                   </div>
-                  <span className="font-semibold text-sm">Ask AI</span>
-                  <span className="px-2 py-0.5 bg-gray-100 text-[10px] font-bold text-gray-400 rounded-md">Q&A Beta</span>
+                  <span className="font-semibold text-sm">Ask Mia</span>
+                  <span className="px-2 py-0.5 bg-gray-100 text-[10px] font-bold text-gray-400 rounded-md">Commerce Beta</span>
                 </div>
                 <div className="flex items-center gap-5">
-                  <button className="flex items-center gap-1.5 text-purple-600 text-sm font-semibold">
+                  <button className="flex items-center gap-1.5 text-blue-600 text-sm font-semibold">
                     <Check className="w-4 h-4" /> Save
                   </button>
                   <Link2 className="w-4 h-4 text-gray-400" />
@@ -125,29 +130,19 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
 
               {/* Content */}
               <div className="p-8 space-y-8">
-                <div className="text-center text-[10px] font-medium text-gray-400">Today 4:08 PM</div>
+                <div className="text-center text-[10px] font-medium text-gray-400">Today 10:24 AM</div>
                 
                 <div className="flex justify-end">
                   <div className="bg-[#f3f4f6] rounded-2xl rounded-tr-sm px-5 py-2.5 text-sm font-medium">
-                    What are design systems?
+                    How is my store performing today compared to last week?
                   </div>
                 </div>
 
                 <div className="space-y-4 max-w-[90%] md:max-w-[85%]">
                   <div className="flex gap-4">
-                    <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest pt-1 shrink-0">2 / 2</div>
+                    <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest pt-1 shrink-0">1 / 1</div>
                     <div className="text-[15px] leading-relaxed text-gray-700">
-                      Design systems are <span className="bg-purple-100 text-purple-700 px-1 rounded font-semibold">essential frameworks <span className="inline-flex items-center justify-center w-4 h-4 bg-purple-600 text-white text-[10px] rounded-full">1</span></span> that stream... ndardize the process of creating digital products. At their core, <span className="text-purple-600 font-semibold underline decoration-2 underline-offset-4">design systems consist of reusable components</span> and clear standards <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-200 text-gray-500 text-[10px] rounded-full font-bold">2</span> for how to use them, ensuring a consistent user experience across a
-                    </div>
-                  </div>
-
-                  {/* Reply Popup */}
-                  <div className="relative">
-                    <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white shadow-xl border border-black/5 rounded-lg px-3 py-1.5 flex items-center gap-2 z-10 whitespace-nowrap">
-                      <span className="text-xs font-bold text-black flex items-center gap-1.5">
-                        <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3"><path d="M3 21l1.65-3.8A9 9 0 1 1 21 9a9 9 0 0 1-9 9 9 9 0 0 1-4.7-1.3L3 21z" fill="currentColor"/></svg>
-                        Reply
-                      </span>
+                      Your store is <span className="bg-green-100 text-green-700 px-1 rounded font-semibold">performing exceptionally well <span className="inline-flex items-center justify-center w-4 h-4 bg-green-600 text-white text-[10px] rounded-full">↑</span></span> today. Revenue is up <span className="text-blue-600 font-semibold">12.5% compared to last Tuesday</span>, primarily driven by a surge in "Winter Collection" sales. I've also noticed your conversion rate has increased to 4.2% following the UI optimizations we applied yesterday.
                     </div>
                   </div>
 
@@ -168,27 +163,27 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 text-sm text-gray-600 hover:bg-gray-50 p-1 rounded-lg transition-colors cursor-pointer">
                         <ArrowRight className="w-4 h-4 text-gray-400 shrink-0" />
-                        <span className="line-clamp-1 sm:line-clamp-none">What are the essential components included in most design systems?</span>
+                        <span className="line-clamp-1 sm:line-clamp-none">Which products from the Winter Collection are selling the most?</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-black font-semibold bg-gray-50 p-2 rounded-xl border border-black/5">
                         <ArrowRight className="w-4 h-4 text-black shrink-0" />
-                        <span className="line-clamp-1 sm:line-clamp-none">How do you ensure consistency in components across different platforms?</span>
+                        <span className="line-clamp-1 sm:line-clamp-none">Can you generate a discount code for customers who abandoned their carts today?</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-gray-600 hover:bg-gray-50 p-1 rounded-lg transition-colors cursor-pointer">
                         <ArrowRight className="w-4 h-4 text-gray-400 shrink-0" />
-                        <span className="line-clamp-1 sm:line-clamp-none">What criteria are used to decide whether a new component should be added to a design system?</span>
+                        <span className="line-clamp-1 sm:line-clamp-none">What is the current stock level for the "Alpine Parka"?</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-gray-600 hover:bg-gray-50 p-1 rounded-lg transition-colors cursor-pointer">
                         <ArrowRight className="w-4 h-4 text-gray-400 shrink-0" />
-                        <span className="line-clamp-1 sm:line-clamp-none">How do you handle version control and updates for components in a design system?</span>
+                        <span className="line-clamp-1 sm:line-clamp-none">Should I increase the ad spend for the top-performing products?</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Input Area */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-white border border-black/5 rounded-2xl shadow-sm">
-                    <div className="w-[2px] h-5 bg-purple-400 animate-pulse" />
-                    <span className="text-gray-400 text-sm line-clamp-1">Ask a question about this answer</span>
+                    <div className="w-[2px] h-5 bg-purple-600 animate-pulse" />
+                    <span className="text-gray-400 text-sm line-clamp-1">Ask Mia about your store analytics</span>
                     <div className="ml-auto flex items-center gap-3 shrink-0">
                       <Clock className="w-4 h-4 text-gray-300" />
                       <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center">
@@ -200,21 +195,21 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
               </div>
 
               {/* Footer Bar */}
-              <div className="bg-purple-50/50 p-1">
-                <div className="bg-white rounded-[18px] border border-purple-100 overflow-hidden">
-                   <div className="bg-purple-100/50 px-4 py-1.5 flex items-center gap-2">
-                     <ArrowRight className="w-3 h-3 text-purple-600" />
-                     <span className="text-xs font-semibold text-purple-700 line-clamp-1">design systems consist of reusable components</span>
-                     <X className="w-3 h-3 text-purple-300 ml-auto cursor-pointer" />
+              <div className="bg-blue-50/50 p-1">
+                <div className="bg-white rounded-[18px] border border-blue-100 overflow-hidden">
+                   <div className="bg-blue-100/50 px-4 py-1.5 flex items-center gap-2">
+                     <ArrowRight className="w-3 h-3 text-blue-600" />
+                     <span className="text-xs font-semibold text-blue-600 line-clamp-1">revenue is up 12.5% compared to last Tuesday</span>
+                     <X className="w-3 h-3 text-blue-300 ml-auto cursor-pointer" />
                    </div>
                    <div className="p-4 space-y-4">
                      <div className="text-sm font-medium">
-                       <span className="text-black">/sug</span><span className="text-gray-300">gest</span>
+                       <span className="text-black">/ana</span><span className="text-gray-300">lyze</span>
                      </div>
                      <div className="flex items-center gap-4">
-                       <div className="flex items-center gap-2 bg-pink-50 text-pink-500 px-3 py-1.5 rounded-full text-[10px] font-bold border border-pink-100">
-                         Speed
-                         <div className="w-6 h-3.5 bg-pink-200 rounded-full relative">
+                       <div className="flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-[10px] font-bold border border-blue-100">
+                         Insights
+                         <div className="w-6 h-3.5 bg-blue-200 rounded-full relative">
                            <div className="absolute right-0.5 top-0.5 w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
                          </div>
                        </div>
@@ -501,8 +496,8 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
           >
             {/* Card 1 */}
             <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
-              <h3 className="text-2xl font-medium mb-2 tracking-tight">Create your receiving emails</h3>
-              <p className="text-black/60 mb-8 text-sm leading-relaxed">Pick your unique email prefix with @manus.bot.</p>
+              <h3 className="text-2xl font-medium mb-2 tracking-tight">Run your finances effortlessly</h3>
+              <p className="text-black/60 mb-8 text-sm leading-relaxed">From generating invoices to tracking expenses, calculating taxes, and forecasting revenue, Mia keeps your finances under control while you focus on growth.</p>
               <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
                 {/* Empty Image Frame */}
               </div>
@@ -510,26 +505,105 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
 
             {/* Card 2 */}
             <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
-              <h3 className="text-2xl font-medium mb-2 tracking-tight">Link your sending emails</h3>
-              <p className="text-black/60 mb-8 text-sm leading-relaxed">Let us know where you'll be sending emails from.</p>
-              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
-                {/* Empty Image Frame */}
+              <h3 className="text-2xl font-medium mb-2 tracking-tight">Never miss a sale</h3>
+              <p className="text-black/60 mb-8 text-sm leading-relaxed">Orders processed, inventory tracked, and suppliers restocked automatically. With Mia handling it all, your store stays fully stocked and customers happy.</p>
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex flex-col p-6 gap-3">
+                <div className="bg-white rounded-2xl p-4 border border-black/5 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <ShoppingCart className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-gray-900">Order #8429 Processed</p>
+                    <p className="text-[10px] text-gray-500">Auto-synced to warehouse</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-black/5 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-gray-900">Inventory Sync Complete</p>
+                    <p className="text-[10px] text-gray-500">24 channels updated</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-black/5 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                    <Package className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-gray-900">Low Stock Restocked</p>
+                    <p className="text-[10px] text-gray-500">Supplier order sent for "Silk Tee"</p>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Card 3 */}
             <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
-              <h3 className="text-2xl font-medium mb-2 tracking-tight">Turn emails into tasks</h3>
-              <p className="text-black/60 mb-8 text-sm leading-relaxed">If you've just got a task on hand, just let manus handle it.</p>
-              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
-                {/* Empty Image Frame */}
+              <h3 className="text-2xl font-medium mb-2 tracking-tight">Deliver 24/7 customer service that converts</h3>
+              <p className="text-black/60 mb-8 text-sm leading-relaxed">Chat support, personalized recommendations, and automated review collection ensure every customer feels valued — even while you sleep.</p>
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] border border-black/5">
+                <div className="absolute top-6 left-6 right-6 bottom-0">
+                  <div className="w-full h-full bg-white rounded-t-2xl border-t border-l border-r border-black/5 overflow-hidden flex flex-col">
+                    {/* Chat Header */}
+                    <div className="px-4 py-3 border-b border-black/5 flex items-center justify-between bg-white">
+                      <div className="flex items-center gap-2">
+                        <ChevronLeft className="w-4 h-4 text-gray-400" />
+                        <span className="text-xs font-bold text-gray-800">Mia</span>
+                      </div>
+                      <Maximize2 className="w-3.5 h-3.5 text-gray-300" />
+                    </div>
+
+                    {/* Chat Messages */}
+                    <div className="flex-1 px-4 py-0 space-y-4 overflow-y-auto scrollbar-hide">
+                      <div className="flex justify-end pt-4">
+                        <div className="bg-gray-100 text-gray-800 rounded-2xl px-4 py-2 text-[11px] font-medium max-w-[80%]">
+                          Hi, I received my order #4291 but the size is too small. How do I start a refund?
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pb-4">
+                        <div className="bg-transparent rounded-2xl px-0 py-2 text-[11px] text-gray-700 leading-relaxed">
+                          <p className="font-bold text-gray-900 mb-1">Mia</p>
+                          Hi Alex, I'm sorry the size didn't fit! I can certainly help with that. I've already initiated a return label for order #4291. You'll receive an email with instructions shortly. Would you like me to suggest the next size up?
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Card 4 */}
             <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
-              <h3 className="text-2xl font-medium mb-2 tracking-tight">Collaborate with your team</h3>
-              <p className="text-black/60 mb-8 text-sm leading-relaxed">Share workflows and automate responses across your organization.</p>
+              <h3 className="text-2xl font-medium mb-2 tracking-tight">Optimize and run your marketing</h3>
+              <p className="text-black/60 mb-8 text-sm leading-relaxed">Email campaigns, ads, content creation, and promotion testing — Mia manages it all to drive engagement and sales without the guesswork.</p>
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
+                {/* Empty Image Frame */}
+              </div>
+            </div>
+
+            {/* Card 5 */}
+            <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
+              <h3 className="text-2xl font-medium mb-2 tracking-tight">Get instant business insights</h3>
+              <p className="text-black/60 mb-8 text-sm leading-relaxed">Real-time dashboards, sales insights, and product performance reports deliver the data you need to make confident, fast decisions.</p>
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
+                {/* Empty Image Frame */}
+              </div>
+            </div>
+
+            {/* Card 6 */}
+            <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
+              <h3 className="text-2xl font-medium mb-2 tracking-tight">Handle shipping, returns, and delivery seamlessly</h3>
+              <p className="text-black/60 mb-8 text-sm leading-relaxed">From labels to carrier updates and returns management, Mia ensures your operations run smoothly, freeing you to focus on growth.</p>
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
+                {/* Empty Image Frame */}
+              </div>
+            </div>
+
+            {/* Card 7 */}
+            <div className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-3xl snap-start border border-black/5">
+              <h3 className="text-2xl font-medium mb-2 tracking-tight">Grow smarter with insights</h3>
+              <p className="text-black/60 mb-8 text-sm leading-relaxed">Market trends, competitor monitoring, pricing optimization, and upsell opportunities give you the edge to scale faster.</p>
               <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#f0f0f0] flex items-center justify-center">
                 {/* Empty Image Frame */}
               </div>
@@ -568,20 +642,20 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
             <div className="space-y-12">
               {[
                 {
-                  title: "AI-Powered Extraction",
-                  desc: "Automatically identify action items, deadlines, and owners from any complex email thread instantly."
+                  title: "Save time and focus on growth",
+                  desc: "Mia automates repetitive tasks like invoicing, inventory tracking, and order management, freeing you to focus on strategy and scaling your business."
                 },
                 {
-                  title: "Seamless Integration",
-                  desc: "Works directly with your existing inbox. No need to migrate or install any new applications."
+                  title: "Increase sales effortlessly",
+                  desc: "From automated marketing campaigns to personalized recommendations, Mia helps you convert more visitors into paying customers without lifting a finger."
                 },
                 {
-                  title: "Deep Research",
-                  desc: "Offload complex research tasks to Manus. Get comprehensive summaries and insights in minutes."
+                  title: "Make smarter decisions",
+                  desc: "With real-time analytics and insights, Mia gives you the data you need to optimize pricing, track performance, and identify growth opportunities instantly."
                 },
                 {
-                  title: "Team Collaboration",
-                  desc: "Share workflows and automate responses across your entire organization with one click."
+                  title: "Deliver a seamless customer experience",
+                  desc: "Mia handles support, returns, and order notifications automatically, ensuring every customer feels valued and comes back for more."
                 }
               ].map((benefit, i) => (
                 <div key={i} className="space-y-3">
@@ -596,10 +670,70 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
             </div>
 
             {/* Right Section: Image Frame */}
-            <div className="h-full min-h-[400px] md:min-h-[600px] bg-[#f0f0f0] rounded-[2.5rem] overflow-hidden relative">
-              {/* Empty Image Frame */}
-              <div className="absolute inset-0 flex items-center justify-center text-black/5 text-sm font-medium uppercase tracking-widest">
-                Benefit Visualization
+            <div className="h-full min-h-[400px] md:min-h-[600px] bg-[#f3f4f6] rounded-[2.5rem] overflow-hidden relative border border-black/5">
+              <div className="absolute top-16 left-16 w-[140%] bg-white rounded-tl-[3rem] border-t border-l border-black/5 overflow-hidden font-sans">
+                {/* Header */}
+                <div className="flex items-center justify-between px-8 py-5 border-b border-black/5">
+                  <div className="flex items-center gap-3">
+                    <div className="text-blue-600">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <span className="font-semibold text-base">Ask Mia</span>
+                    <span className="px-2 py-0.5 bg-gray-100 text-[10px] font-bold text-gray-400 rounded-md">Automation</span>
+                  </div>
+                  <div className="flex items-center gap-5">
+                    <button className="flex items-center gap-1.5 text-blue-600 text-sm font-semibold">
+                      <Check className="w-5 h-5" /> Save
+                    </button>
+                    <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-8 space-y-8">
+                  <div className="flex justify-end">
+                    <div className="bg-[#f3f4f6] rounded-2xl rounded-tr-sm px-6 py-3 text-base font-medium">
+                      Automate my pending invoices and check inventory.
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="flex gap-4">
+                      <div className="text-[12px] font-bold text-gray-300 uppercase tracking-widest pt-1 shrink-0">1 / 1</div>
+                      <div className="text-[16px] leading-relaxed text-gray-700">
+                        I've processed <span className="text-blue-600 font-semibold">12 pending invoices</span> and sent reminders for overdue payments. I also noticed that <span className="text-blue-600 font-semibold">inventory for "Alpine Parka" is low (3 left)</span>. Should I create a restock order with your supplier?
+                      </div>
+                    </div>
+
+                    {/* Automation Card */}
+                    <div className="bg-white rounded-2xl border border-black/5 shadow-[0_15px_40px_rgba(0,0,0,0.08)] p-6 space-y-4">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-wider">
+                        Running Workflows
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 text-base text-black font-semibold bg-blue-50/50 p-3 rounded-xl border border-blue-100/50">
+                          <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse" />
+                          <span>Generating weekly inventory report...</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-base text-gray-600 p-3">
+                          <Check className="w-5 h-5 text-green-500" />
+                          <span>12 Invoices sent to customers</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Input Area */}
+                  <div className="flex items-center gap-4 px-6 py-4 bg-white border border-black/5 rounded-2xl shadow-sm">
+                    <div className="w-[2px] h-6 bg-blue-600 animate-pulse" />
+                    <span className="text-gray-400 text-base">Yes, create the restock order</span>
+                    <div className="ml-auto">
+                      <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center">
+                        <ArrowUp className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

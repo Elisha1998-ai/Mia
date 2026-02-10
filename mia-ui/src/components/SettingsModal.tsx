@@ -11,10 +11,11 @@ import {
   CreditCard, 
   Bell,
   ChevronDown,
-  Globe,
   Shield,
-  Zap
+  Loader2
 } from 'lucide-react';
+import { useSettings } from '@/hooks/useData';
+import { StoreSettings } from '@/lib/api';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ const CustomSelect = ({ value, onChange, options, icon: Icon }: {
   value: string, 
   onChange: (val: string) => void, 
   options: string[],
-  icon?: any
+  icon?: React.ElementType
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -79,10 +80,33 @@ const CustomSelect = ({ value, onChange, options, icon: Icon }: {
 
 export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const [activeTab, setActiveTab] = React.useState('Account');
-  const [role, setRole] = React.useState('Store Owner');
-  const [currency, setCurrency] = React.useState('USD ($)');
-  const [tone, setTone] = React.useState('Professional & Helpful');
-  const [location, setLocation] = React.useState('United States of America');
+  const { settings, loading, fetchSettings, updateSettings } = useSettings();
+  
+  // Local state for form fields
+  const [formData, setFormData] = React.useState<Partial<StoreSettings>>({});
+
+  React.useEffect(() => {
+    if (isOpen) {
+      fetchSettings();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  React.useEffect(() => {
+    if (settings) {
+      setFormData(settings);
+    }
+  }, [settings]);
+
+  const handleSave = async (sectionData: Partial<StoreSettings>) => {
+    try {
+      await updateSettings(sectionData);
+      // Update local state to reflect changes immediately
+      setFormData(prev => ({ ...prev, ...sectionData }));
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+    }
+  };
 
   const navItems = [
     { id: 'Account', icon: User, label: 'Account' },
@@ -133,140 +157,141 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
 
             {/* Scrollable Content Area */}
             <div className="flex-1 overflow-y-auto p-8 scrollbar-hide bg-background">
-              <div className="max-w-[560px] mx-auto flex flex-col gap-8">
-                
-                {activeTab === 'Account' && (
-                  <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <section>
-                      <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Profile Information</h3>
-                      <div className="grid gap-6">
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Full Name</label>
-                          <input 
-                            type="text" 
-                            defaultValue="Jonathan Frazzelle"
-                            className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Email Address</label>
-                          <input 
-                            type="email" 
-                            defaultValue="jon@mia-agents.ai"
-                            className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
-                          />
-                        </div>
-                      </div>
-                    </section>
-
-                    <section>
-                      <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Organization</h3>
-                      <div className="grid gap-6">
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Role</label>
-                          <CustomSelect 
-                            value={role} 
-                            onChange={setRole} 
-                            options={['Store Owner', 'Operations Manager', 'Agent Developer']} 
-                          />
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                )}
-
-                {activeTab === 'Store' && (
-                  <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <section>
-                      <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Store Configuration</h3>
-                      <div className="grid gap-6">
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Store Name</label>
-                          <input 
-                            type="text" 
-                            defaultValue="Mia Electronics"
-                            className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Store Domain</label>
-                          <div className="flex items-center gap-2">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                </div>
+              ) : (
+                <div className="max-w-[560px] mx-auto flex flex-col gap-8">
+                  
+                  {activeTab === 'Account' && (
+                    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <section>
+                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Profile Information</h3>
+                        <div className="grid gap-6">
+                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Full Name</label>
                             <input 
                               type="text" 
-                              defaultValue="mia-electronics"
-                              className="flex-1 bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none text-foreground"
+                              value={formData.adminName || ''}
+                              onChange={(e) => setFormData({...formData, adminName: e.target.value})}
+                              onBlur={() => handleSave({ adminName: formData.adminName })}
+                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
                             />
-                            <span className="text-sm text-foreground/40">.mia.shop</span>
+                          </div>
+                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Email Address</label>
+                            <input 
+                              type="email" 
+                              value={formData.adminEmail || ''}
+                              onChange={(e) => setFormData({...formData, adminEmail: e.target.value})}
+                              onBlur={() => handleSave({ adminEmail: formData.adminEmail })}
+                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
+                            />
                           </div>
                         </div>
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Primary Currency</label>
-                          <CustomSelect 
-                            value={currency} 
-                            onChange={setCurrency} 
-                            options={['USD ($)', 'EUR (€)', 'GBP (£)', 'JPY (¥)', 'CAD ($)']} 
-                            icon={Globe}
-                          />
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                )}
+                      </section>
 
-                {activeTab === 'Agents' && (
-                  <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <section>
-                      <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Agent Intelligence</h3>
-                      <div className="grid gap-6">
-                        <div className="flex items-center justify-between p-4 rounded-xl bg-input-bg border border-border-custom">
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">Auto-pilot Mode</p>
-                            <p className="text-xs text-foreground/40">Allow agents to handle support and logistics automatically.</p>
-                          </div>
-                          <div className="w-10 h-5 rounded-full bg-accent relative cursor-pointer">
-                            <div className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm" />
+                      <section>
+                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Organization</h3>
+                        <div className="grid gap-6">
+                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Role</label>
+                            <CustomSelect 
+                              value={formData.adminRole || 'Store Owner'} 
+                              onChange={(val) => {
+                                setFormData({...formData, adminRole: val});
+                                handleSave({ adminRole: val });
+                              }} 
+                              options={['Store Owner', 'Operations Manager', 'Agent Developer']} 
+                            />
                           </div>
                         </div>
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Agent Tone</label>
-                          <CustomSelect 
-                            value={tone} 
-                            onChange={setTone} 
-                            options={['Professional & Helpful', 'Friendly & Casual', 'Efficient & Direct']} 
-                          />
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                )}
+                      </section>
+                    </div>
+                  )}
 
-                {activeTab === 'Logistics' && (
-                  <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <section>
-                      <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Fulfillment Settings</h3>
-                      <div className="grid gap-6">
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Warehouse Location</label>
-                          <CustomSelect 
-                            value={location} 
-                            onChange={setLocation} 
-                            options={['United States of America', 'United Kingdom', 'European Union', 'Canada', 'Australia']} 
-                          />
-                        </div>
-                        <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                          <label className="text-sm font-semibold text-foreground/80">Carrier Priority</label>
-                          <div className="flex gap-2">
-                            <span className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs font-bold border border-accent/20">FedEx</span>
-                            <span className="px-3 py-1.5 rounded-lg bg-foreground/5 text-foreground/60 text-xs font-bold border border-border-custom">UPS</span>
-                            <span className="px-3 py-1.5 rounded-lg bg-foreground/5 text-foreground/60 text-xs font-bold border border-border-custom">DHL</span>
+                  {activeTab === 'Store' && (
+                    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <section>
+                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Store Configuration</h3>
+                        <div className="grid gap-6">
+                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Store Name</label>
+                            <input 
+                              type="text" 
+                              value={formData.storeName || ''}
+                              onChange={(e) => setFormData({...formData, storeName: e.target.value})}
+                              onBlur={() => handleSave({ storeName: formData.storeName })}
+                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
+                            />
+                          </div>
+                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Store Domain</label>
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="text" 
+                                value={formData.storeDomain || ''}
+                                onChange={(e) => setFormData({...formData, storeDomain: e.target.value})}
+                                onBlur={() => handleSave({ storeDomain: formData.storeDomain })}
+                                className="flex-1 bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none text-foreground"
+                              />
+                              <span className="text-sm text-foreground/40">.mia.shop</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Currency</label>
+                            <CustomSelect 
+                              value={formData.currency || 'USD ($)'} 
+                              onChange={(val) => {
+                                setFormData({...formData, currency: val});
+                                handleSave({ currency: val });
+                              }} 
+                              options={['USD ($)', 'EUR (€)', 'GBP (£)', 'JPY (¥)']} 
+                            />
+                          </div>
+                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Location</label>
+                            <CustomSelect 
+                              value={formData.location || 'United States'} 
+                              onChange={(val) => {
+                                setFormData({...formData, location: val});
+                                handleSave({ location: val });
+                              }} 
+                              options={['United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France']} 
+                            />
                           </div>
                         </div>
-                      </div>
-                    </section>
-                  </div>
-                )}
+                      </section>
 
-              </div>
+                      <section>
+                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">AI Preferences</h3>
+                        <div className="grid gap-6">
+                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Agent Tone</label>
+                            <CustomSelect 
+                              value={formData.aiTone || 'Professional & Helpful'} 
+                              onChange={(val) => {
+                                setFormData({...formData, aiTone: val});
+                                handleSave({ aiTone: val });
+                              }} 
+                              options={['Professional & Helpful', 'Casual & Friendly', 'Formal & Direct', 'Enthusiastic & Sales-focused']} 
+                            />
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+                  )}
+
+                  {/* Placeholders for other tabs */}
+                  {['Agents', 'Logistics', 'Payments', 'Security', 'Notifications'].includes(activeTab) && (
+                    <div className="flex flex-col items-center justify-center h-[300px] text-foreground/40 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <Bot className="w-12 h-12 mb-4 opacity-20" />
+                      <p className="text-sm">This section is coming soon.</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

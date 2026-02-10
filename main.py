@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Request, Depends
+from fastapi import FastAPI, UploadFile, File, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import pandas as pd
@@ -6,6 +6,8 @@ import io
 import os
 import json
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from datetime import datetime, timedelta
 from agents import (
     data_architect_task, 
     brand_designer_task, 
@@ -476,6 +478,193 @@ async def connect_shopify(shop_url: str, access_token: str, db: Session = Depend
     db.commit()
     db.refresh(store)
     return {"status": "Store connected", "store_id": store.id}
+
+# --- DASHBOARD API ENDPOINTS ---
+
+@app.get("/api/products")
+async def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Get all products with pagination"""
+    products = db.query(Product).offset(skip).limit(limit).all()
+    total = db.query(Product).count()
+    return {
+        "products": [{
+            "id": p.id,
+            "name": p.name,
+            "sku": p.sku,
+            "price": float(p.price) if p.price else 0,
+            "stock_quantity": float(p.stock_quantity) if p.stock_quantity else 0,
+            "description": p.description,
+            "image_url": p.image_url,
+            "platform": p.platform,
+            "created_at": p.created_at.isoformat() if p.created_at else None
+        } for p in products],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+@app.get("/api/products/{product_id}")
+async def get_product(product_id: str, db: Session = Depends(get_db)):
+    """Get a specific product by ID"""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {
+        "id": product.id,
+        "name": product.name,
+        "sku": product.sku,
+        "price": float(product.price) if product.price else 0,
+        "stock_quantity": float(product.stock_quantity) if product.stock_quantity else 0,
+        "description": product.description,
+        "image_url": product.image_url,
+        "platform": product.platform,
+        "created_at": product.created_at.isoformat() if product.created_at else None
+    }
+
+@app.post("/api/products")
+async def create_product(product_data: dict, db: Session = Depends(get_db)):
+    """Create a new product"""
+    product = Product(
+        name=product_data.get("name"),
+        sku=product_data.get("sku"),
+        price=float(product_data.get("price", 0)),
+        stock_quantity=float(product_data.get("stock_quantity", 0)),
+        description=product_data.get("description"),
+        image_url=product_data.get("image_url"),
+        platform=product_data.get("platform", "manual")
+    )
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return {
+        "id": product.id,
+        "name": product.name,
+        "sku": product.sku,
+        "price": float(product.price),
+        "stock_quantity": float(product.stock_quantity),
+        "description": product.description,
+        "image_url": product.image_url,
+        "platform": product.platform,
+        "created_at": product.created_at.isoformat()
+    }
+
+@app.put("/api/products/{product_id}")
+async def update_product(product_id: str, product_data: dict, db: Session = Depends(get_db)):
+    """Update an existing product"""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Update fields if provided
+    if "name" in product_data:
+        product.name = product_data["name"]
+    if "sku" in product_data:
+        product.sku = product_data["sku"]
+    if "price" in product_data:
+        product.price = float(product_data["price"])
+    if "stock_quantity" in product_data:
+        product.stock_quantity = float(product_data["stock_quantity"])
+    if "description" in product_data:
+        product.description = product_data["description"]
+    if "image_url" in product_data:
+        product.image_url = product_data["image_url"]
+    if "platform" in product_data:
+        product.platform = product_data["platform"]
+    
+    db.commit()
+    db.refresh(product)
+    return {
+        "id": product.id,
+        "name": product.name,
+        "sku": product.sku,
+        "price": float(product.price),
+        "stock_quantity": float(product.stock_quantity),
+        "description": product.description,
+        "image_url": product.image_url,
+        "platform": product.platform,
+        "created_at": product.created_at.isoformat()
+    }
+
+@app.delete("/api/products/{product_id}")
+async def delete_product(product_id: str, db: Session = Depends(get_db)):
+    """Delete a product"""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    db.delete(product)
+    db.commit()
+    return {"message": "Product deleted successfully"}
+
+@app.get("/api/orders")
+async def get_orders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Get all orders with pagination"""
+    orders = db.query(Order).offset(skip).limit(limit).all()
+    total = db.query(Order).count()
+    return {
+        "orders": [{
+            "id": o.id,
+            "external_id": o.external_id,
+            "customer_id": o.customer_id,
+            "store_id": o.store_id,
+            "total_amount": float(o.total_amount) if o.total_amount else 0,
+            "profit_margin": float(o.profit_margin) if o.profit_margin else 0,
+            "status": o.status,
+            "created_at": o.created_at.isoformat() if o.created_at else None,
+            "customer": {
+                "id": o.customer.id,
+                "email": o.customer.email,
+                "full_name": o.customer.full_name
+            } if o.customer else None
+        } for o in orders],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+@app.get("/api/customers")
+async def get_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Get all customers with pagination"""
+    customers = db.query(Customer).offset(skip).limit(limit).all()
+    total = db.query(Customer).count()
+    return {
+        "customers": [{
+            "id": c.id,
+            "email": c.email,
+            "full_name": c.full_name,
+            "phone": c.phone,
+            "lifetime_value": float(c.lifetime_value) if c.lifetime_value else 0,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+            "orders_count": len(c.orders) if hasattr(c, 'orders') else 0
+        } for c in customers],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+@app.get("/api/dashboard/stats")
+async def get_dashboard_stats(db: Session = Depends(get_db)):
+    """Get dashboard statistics"""
+    total_products = db.query(Product).count()
+    total_orders = db.query(Order).count()
+    total_customers = db.query(Customer).count()
+    total_revenue = db.query(func.sum(Order.total_amount)).scalar() or 0
+    
+    # Recent orders (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent_orders = db.query(Order).filter(Order.created_at >= thirty_days_ago).count()
+    
+    # Low stock products
+    low_stock_products = db.query(Product).filter(Product.stock_quantity < 10).count()
+    
+    return {
+        "total_products": total_products,
+        "total_orders": total_orders,
+        "total_customers": total_customers,
+        "total_revenue": float(total_revenue),
+        "recent_orders": recent_orders,
+        "low_stock_products": low_stock_products
+    }
 
 @app.get("/sync/{store_id}")
 async def sync_store(store_id: str, db: Session = Depends(get_db)):

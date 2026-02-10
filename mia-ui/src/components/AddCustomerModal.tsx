@@ -79,13 +79,7 @@ export const AddCustomerModal = ({ isOpen, onClose, onAdd }: AddCustomerModalPro
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd({
-      ...formData,
-      id: Math.random().toString(36).substr(2, 9),
-      totalOrders: 0,
-      totalSpent: 0,
-      lastOrder: '—'
-    });
+    onAdd(formData);
     onClose();
     setFormData({
       name: '',
