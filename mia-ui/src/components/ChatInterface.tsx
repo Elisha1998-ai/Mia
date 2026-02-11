@@ -1,8 +1,17 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, User, Bot, Sparkles, Plus, ArrowUp, ChevronDown, Copy, Reply, Check } from 'lucide-react';
+import { Send, User, Bot, Sparkles, Plus, ArrowUp, ChevronDown, Copy, Reply, Check, Loader2, FileText, ChevronUp, Download, Eye, ExternalLink, X, Edit2, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useSettings } from '@/hooks/useData';
+
+interface Widget {
+  type: 'invoice' | 'document' | 'link';
+  title: string;
+  description: string;
+  imageUrl?: string;
+  link?: string;
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -13,73 +22,362 @@ interface Message {
   template_data?: any;
   products?: any[];
   isComplete?: boolean;
+  widgets?: Widget[];
 }
 
-const StepProgress = ({ steps, isComplete, onComplete }: { steps: string[], isComplete?: boolean, onComplete?: () => void }) => {
-  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+const WidgetModal = ({ widget, onClose }: { widget: Widget, onClose: () => void }) => {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-background border border-border-custom w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+        <div className="p-4 border-b border-border-custom flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-accent" />
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground/90">{widget.title}</h3>
+              <p className="text-xs text-foreground/40">{widget.type.toUpperCase()}</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-foreground/5 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5 text-foreground/40" />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-8 bg-foreground/[0.02] min-h-[400px] flex items-center justify-center">
+          {widget.type === 'invoice' ? (
+            <div className="bg-background text-foreground p-8 w-full max-w-md shadow-lg rounded-sm font-mono text-[10px] space-y-4 border border-border-custom">
+              <div className="flex justify-between border-b border-border-custom pb-4">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-tighter">Mia Storefront</h2>
+                  <p>123 Design Avenue</p>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-sm font-bold uppercase tracking-tighter">Invoice</h2>
+                  <p>#INV-2026-001</p>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p><strong>Bill To:</strong> HomePC</p>
+                <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
+              </div>
+              <table className="w-full border-t border-b border-border-custom py-2">
+                <thead>
+                  <tr className="text-left border-b border-border-custom">
+                    <th className="py-1">Description</th>
+                    <th className="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="py-2">Storefront Design Implementation</td>
+                    <td className="text-right">$499.00</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2">Product Catalog Setup</td>
+                    <td className="text-right">$150.00</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div className="text-right pt-2">
+                <p className="text-xs font-bold">Total: $649.00</p>
+              </div>
+            </div>
+          ) : widget.type === 'document' ? (
+            <div className="bg-background text-foreground p-10 w-full max-w-2xl shadow-xl rounded-sm border border-border-custom min-h-[500px]">
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown>{widget.description}</ReactMarkdown>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center space-y-4">
+              <div className="w-20 h-20 rounded-2xl bg-foreground/5 mx-auto flex items-center justify-center">
+                <FileText className="w-10 h-10 text-foreground/10" />
+              </div>
+              <p className="text-sm text-foreground/40 italic">Preview for {widget.type} is coming soon...</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="p-4 border-t border-border-custom bg-background flex justify-end gap-3">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors"
+          >
+            Close
+          </button>
+          <button className="flex items-center gap-2 px-5 py-2 bg-accent text-white rounded-xl text-sm font-bold hover:bg-accent/90 transition-all shadow-lg shadow-accent/20">
+            <Download className="w-4 h-4" /> Download {widget.type}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ThinkingState = () => (
+  <div className="flex items-center gap-2 py-2 px-1 text-sm text-foreground/50 font-medium">
+    <Loader2 className="w-4 h-4 animate-spin text-accent" />
+    <span className="animate-pulse">Thinking...</span>
+  </div>
+);
+
+const ThinkingProcess = ({ steps, isComplete, onComplete }: { steps: string[], isComplete?: boolean, onComplete?: () => void }) => {
+  const [currentStep, setCurrentStep] = useState(isComplete ? steps.length : 0);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    if (isComplete) return;
+    if (isComplete) {
+      setCurrentStep(steps.length);
+      return;
+    }
     
     const interval = setInterval(() => {
-      setCurrentStepIdx(prev => {
-        if (prev < steps.length - 1) {
-          return prev + 1;
-        } else {
-          clearInterval(interval);
-          // Wait a bit after the last step before calling onComplete
-          setTimeout(() => {
-            if (onComplete) onComplete();
-          }, 1000);
-          return prev;
+      setCurrentStep(prev => {
+        if (prev < steps.length) {
+          const next = prev + 1;
+          if (next === steps.length) {
+            clearInterval(interval);
+            setTimeout(() => {
+              if (onComplete) onComplete();
+            }, 800);
+          }
+          return next;
         }
+        return prev;
       });
-    }, 1500); // 1.5 seconds per step
+    }, 2500); // Slower, more natural reading pace
 
     return () => clearInterval(interval);
   }, [steps.length, isComplete, onComplete]);
 
-  if (isComplete) return null;
-
   return (
-    <div className="mb-4 space-y-2 pt-1">
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
-        <span className="text-[10px] uppercase tracking-wider font-bold text-accent/70">Mia is working</span>
-      </div>
-      {steps.map((step, idx) => {
-        const isPast = idx < currentStepIdx;
-        const isCurrent = idx === currentStepIdx;
+    <div className="my-8 w-full max-w-xl animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="space-y-5">
+        <div className="space-y-4">
+          {steps.map((step, idx) => {
+            const isFinished = idx < currentStep;
+            const isActive = idx === currentStep;
+            const isWaiting = idx > currentStep;
 
-        return (
-          <div 
-            key={idx} 
-            className={`flex items-center gap-2 text-[11px] transition-all duration-500 ${
-              isPast ? 'opacity-40 line-through' : 
-              isCurrent ? 'opacity-100 font-medium text-accent' : 
-              'opacity-30'
-            }`}
-          >
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-              isPast ? 'bg-foreground/10' : 
-              isCurrent ? 'bg-accent/20' : 
-              'bg-foreground/5'
-            }`}>
-              {isPast ? (
-                <Check className="w-2.5 h-2.5 text-foreground/50" />
-              ) : isCurrent ? (
-                <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              ) : (
-                <div className="w-1 h-1 rounded-full bg-foreground/20" />
-              )}
-            </div>
-            {step}
-          </div>
-        );
-      })}
+            if (isWaiting && !isComplete) return null;
+
+            return (
+              <div 
+                key={idx} 
+                className={`flex gap-4 transition-all duration-500 ${isFinished ? 'opacity-50' : 'opacity-100'}`}
+              >
+                <div className="flex flex-col items-center">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all duration-500 ${
+                    isFinished 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                      : isActive 
+                        ? 'bg-accent/10 border-accent/20 text-accent animate-pulse' 
+                        : 'bg-transparent border-foreground/10 text-foreground/20'
+                  }`}>
+                    {isFinished ? (
+                      <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                    ) : (
+                      <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-accent' : 'bg-foreground/20'}`} />
+                    )}
+                  </div>
+                  {idx < steps.length - 1 && (
+                    <div className={`w-[1px] h-full my-1 transition-colors duration-500 ${isFinished ? 'bg-emerald-500/20' : 'bg-foreground/5'}`} />
+                  )}
+                </div>
+                <div className="flex-1 pt-0.5">
+                  <p className={`text-sm leading-relaxed transition-all duration-500 ${
+                    isFinished 
+                      ? 'text-foreground/50' 
+                      : isActive 
+                        ? 'text-foreground font-medium' 
+                        : 'text-foreground/20'
+                  }`}>
+                    {step}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
+
+const DocumentCanvas = ({ widget }: { widget: Widget }) => {
+  const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [content, setContent] = useState(widget.description || '');
+  const [isSaved, setIsSaved] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSave = () => {
+    setIsEditing(false);
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
+  };
+
+  if (isCollapsed) {
+    return (
+      <div 
+        onClick={() => setIsCollapsed(false)}
+        className="my-4 flex items-center gap-4 p-4 border border-border-custom rounded-2xl bg-background hover:border-accent/30 transition-all cursor-pointer group shadow-sm max-w-xl w-full"
+      >
+        <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+          <FileText className="w-6 h-6 text-accent" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-bold text-foreground/80 truncate">{widget.title || 'Document Canvas'}</h4>
+          <p className="text-xs text-foreground/40 mt-0.5">Click to expand document</p>
+        </div>
+        <ChevronDown className="w-5 h-5 text-foreground/20 group-hover:text-foreground/40 transition-colors" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-6 border border-border-custom/50 dark:border-border-custom/20 rounded-2xl bg-foreground/[0.05] dark:bg-foreground/[0.1] overflow-hidden animate-in fade-in slide-in-from-top-4 duration-700 max-w-4xl w-full border-t-4 border-t-accent/20">
+      {/* Canvas Header */}
+      <div className="px-6 py-4 border-b border-border-custom flex items-center justify-between bg-foreground/[0.02] backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsCollapsed(true)}
+            className="p-1.5 hover:bg-foreground/5 rounded-lg transition-colors group"
+            title="Collapse document"
+          >
+            <ChevronUp className="w-4 h-4 text-foreground/40 group-hover:text-foreground" />
+          </button>
+          <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+          <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/40">{widget.title || 'Document Canvas'}</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleCopy}
+            className="text-[11px] font-bold text-foreground/40 hover:text-foreground transition-colors flex items-center gap-1.5"
+          >
+            {copied ? <Check className="w-3 h-3 text-accent" /> : <Copy className="w-3 h-3" />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+          <button 
+            onClick={() => setIsEditing(!isEditing)}
+            className={`text-[11px] font-bold transition-colors flex items-center gap-1.5 ${isEditing ? 'text-accent' : 'text-foreground/40 hover:text-foreground'}`}
+          >
+            <Edit2 className="w-3 h-3" />
+            {isEditing ? 'Preview' : 'Edit'}
+          </button>
+          <button 
+            onClick={handleSave}
+            className="text-[11px] font-bold text-foreground/40 hover:text-foreground transition-colors flex items-center gap-1.5"
+          >
+            {isSaved ? <Check className="w-3 h-3 text-accent" /> : <Save className="w-3 h-3" />}
+            {isSaved ? 'Saved' : 'Save'}
+          </button>
+        </div>
+      </div>
+
+      {/* Canvas Content */}
+      <div className="p-8 md:p-12 text-foreground/90 min-h-[400px]">
+        {isEditing ? (
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full h-full min-h-[600px] bg-transparent border-none outline-none resize-none font-sans text-[16px] leading-relaxed text-foreground/80 selection:bg-accent/20 placeholder:text-foreground/20"
+            placeholder="Start typing your document..."
+            autoFocus
+          />
+        ) : (
+          <div className="markdown-content max-w-none">
+            <ReactMarkdown
+              components={{
+                h1: ({node, ...props}) => <h1 className="text-3xl font-bold mb-8 tracking-tight text-foreground border-b border-border-custom pb-4" {...props} />,
+                h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-12 mb-6 tracking-tight text-foreground border-l-4 border-accent/30 pl-4" {...props} />,
+                h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-8 mb-4 tracking-tight text-foreground/90" {...props} />,
+                p: ({node, ...props}) => <p className="text-[16px] leading-relaxed mb-6 text-foreground/70" {...props} />,
+                ul: ({node, ...props}) => <ul className="space-y-3 mb-8 ml-4 list-disc marker:text-accent" {...props} />,
+                li: ({node, ...props}) => <li className="text-[16px] text-foreground/70 pl-2" {...props} />,
+                strong: ({node, ...props}) => <strong className="font-bold text-foreground" {...props} />,
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ChatWidget = ({ widget, onPreview }: { widget: Widget, onPreview?: (w: Widget) => void }) => {
+  const handleWhatsAppShare = (widget: Widget) => {
+    // Basic WhatsApp share link - in a real app, you'd probably want to share a hosted PDF link
+    const text = `Hi, here is your invoice for ${widget.title}: ${widget.description.substring(0, 100)}...`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  return (
+    <div className="my-3 flex items-center gap-4 p-4 border border-border-custom/50 dark:border-border-custom/20 rounded-2xl bg-foreground/[0.05] dark:bg-foreground/[0.1] hover:border-accent/30 transition-all cursor-pointer group shadow-sm">
+      <div className="w-16 h-16 rounded-xl bg-foreground/5 flex-shrink-0 flex items-center justify-center overflow-hidden border border-foreground/5 group-hover:bg-accent/5 transition-colors">
+        {widget.imageUrl ? (
+          <img src={widget.imageUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <FileText className="w-7 h-7 text-foreground/20 group-hover:text-accent/40 transition-colors" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-bold text-foreground/80 truncate">{widget.title}</h4>
+        <p className="text-xs text-foreground/40 mt-0.5 line-clamp-2 leading-relaxed">
+          {widget.description}
+        </p>
+      </div>
+      
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {widget.type === 'invoice' && (
+          <>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onPreview?.(widget); }}
+              className="p-2 rounded-lg bg-foreground/5 text-foreground/40 hover:text-accent hover:bg-accent/10 transition-all"
+              title="Preview invoice"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleWhatsAppShare(widget); }}
+              className="p-2 rounded-lg bg-foreground/5 text-foreground/40 hover:text-accent hover:bg-accent/10 transition-all"
+              title="Share on WhatsApp"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </>
+        )}
+        
+        {widget.type === 'link' && (
+          <a 
+            href={widget.link} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="p-2 rounded-lg bg-foreground/5 text-foreground/40 hover:text-accent hover:bg-accent/10 transition-all"
+            title="Open link"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 const StorefrontWireframe = ({ template, products }: { template: any, products: any[] }) => {
   return (
@@ -132,13 +430,20 @@ interface ChatInterfaceProps {
   onSend: (content: string) => void;
   isLoading: boolean;
   onMessageComplete?: (idx: number) => void;
+  onTriggerDemo?: () => void;
 }
 
-export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }: ChatInterfaceProps) => {
+export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, onTriggerDemo }: ChatInterfaceProps) => {
   const [input, setInput] = useState('');
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [greeting, setGreeting] = useState('Hello');
+  const [activePreviewWidget, setActivePreviewWidget] = useState<Widget | null>(null);
+  const { settings, fetchSettings } = useSettings();
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleCopy = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
@@ -152,11 +457,11 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
 
   useEffect(() => {
     const hour = new Date().getHours();
-    const username = "HomePC"; // Placeholder or can be dynamic
+    const username = settings?.adminName?.split(' ')[0] || "there";
     if (hour < 12) setGreeting(`Good morning, ${username}`);
     else if (hour < 18) setGreeting(`Good afternoon, ${username}`);
     else setGreeting(`Good evening, ${username}`);
-  }, []);
+  }, [settings]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -174,7 +479,7 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
   return (
     <div className="flex-1 flex flex-col h-full w-full max-w-3xl mx-auto px-4 relative">
       {/* Message List */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto pt-20 pb-48 space-y-8 scrollbar-hide">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pt-20 pb-60 space-y-8 scrollbar-hide">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-10">
             <div className="flex items-center gap-3">
@@ -226,11 +531,13 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
         {messages.map((m, idx) => (
           <div key={idx} className={`flex gap-6 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`flex max-w-[90%] gap-4 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`py-2.5 px-4 rounded-2xl text-sm leading-relaxed relative group/msg ${
-                m.role === 'user' 
-                  ? 'bg-foreground/5 text-foreground/80 shadow-sm' 
-                  : 'bg-transparent text-foreground/80'
-              }`}>
+              <div 
+                 className={`py-2.5 px-4 rounded-2xl text-sm leading-relaxed relative group/msg ${
+                   m.role === 'user' 
+                     ? 'bg-foreground/[0.05] dark:bg-foreground/[0.1] text-foreground/80' 
+                     : 'bg-transparent text-foreground/80'
+                 }`}
+               >
                 {/* Action Buttons */}
                 <div className={`absolute -top-3 ${m.role === 'user' ? '-left-16' : '-right-16'} flex flex-row gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity`}>
                   <button 
@@ -250,11 +557,11 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
                 </div>
 
                 {/* Task Performing State / Steps - SHOWN BEFORE CONTENT */}
-                {m.steps && m.steps.length > 0 && !m.isComplete && (
-                  <StepProgress 
+                {m.steps && m.steps.length > 0 && (
+                  <ThinkingProcess 
                     steps={m.steps} 
                     isComplete={m.isComplete} 
-                    onComplete={() => onMessageComplete && onMessageComplete(idx)}
+                    onComplete={() => onMessageComplete?.(idx)} 
                   />
                 )}
 
@@ -280,6 +587,21 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
                         {m.content}
                       </ReactMarkdown>
                     </div>
+
+                {/* Widgets Rendering */}
+                {m.widgets && m.widgets.length > 0 && (
+                  <div className="mt-4">
+                    {m.widgets.map((widget, wIdx) => (
+                      widget.type === 'document' ? (
+                        <DocumentCanvas key={wIdx} widget={widget} />
+                      ) : (
+                        <div key={wIdx} className="space-y-4">
+                          <ChatWidget widget={widget} onPreview={setActivePreviewWidget} />
+                        </div>
+                      )
+                    ))}
+                  </div>
+                )}
 
                     {/* Assets Rendering */}
                     {m.assets && m.assets.length > 0 && !m.template_data && (
@@ -309,10 +631,7 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
         {isLoading && (
           <div className="flex gap-6 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex max-w-[90%] gap-4">
-              <div className="py-2.5 px-4 rounded-2xl text-sm text-foreground/40 italic flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                Mia is thinking...
-              </div>
+              <ThinkingState />
             </div>
           </div>
         )}
@@ -324,11 +643,11 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
           <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative pointer-events-auto">
             <div className="bg-input-bg rounded-2xl p-2 border border-border-custom focus-within:border-foreground/10 transition-all">
               <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask Mia anything..."
-                className="w-full bg-transparent border-none outline-none text-foreground/90 placeholder-foreground/40 resize-none min-h-[40px] max-h-40 px-2 pt-1"
-                rows={1}
+                     value={input}
+                     onChange={(e) => setInput(e.target.value)}
+                     placeholder="Ask Mia anything..."
+                     className="w-full bg-transparent border-none focus:ring-0 text-foreground/80 placeholder:text-foreground/30 resize-none py-3 px-4 min-h-[80px] max-h-[250px] text-base leading-relaxed outline-none"
+                     rows={1}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -351,6 +670,14 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete }
             </div>
           </form>
         </div>
+      )}
+
+      {/* Widget Preview Modal */}
+      {activePreviewWidget && (
+        <WidgetModal 
+          widget={activePreviewWidget} 
+          onClose={() => setActivePreviewWidget(null)} 
+        />
       )}
     </div>
   );

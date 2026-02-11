@@ -2,14 +2,28 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { storeSettings as storeSettingsTable } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
+import { auth } from '@/auth';
 
 export async function GET() {
   try {
-    const settings = await db.query.storeSettings.findFirst();
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const settings = await db.query.storeSettings.findFirst({
+      where: eq(storeSettingsTable.userId, session.user.id)
+    });
     
-    // If no settings exist, create default
+    // If no settings exist, create default for this user
     if (!settings) {
-      const [defaultSettings] = await db.insert(storeSettingsTable).values({}).returning();
+      const [defaultSettings] = await db.insert(storeSettingsTable).values({
+        userId: session.user.id,
+        adminName: session.user.name || '',
+        adminEmail: session.user.email || '',
+        currency: 'Nigerian Naira (₦)',
+        location: 'Nigeria',
+      }).returning();
       return NextResponse.json(defaultSettings);
     }
 
@@ -25,40 +39,30 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { 
-      storeName, 
-      storeDomain, 
-      currency, 
-      location, 
-      aiTone,
-      adminRole
-    } = body;
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const existingSettings = await db.query.storeSettings.findFirst();
+    const body = await request.json();
+    
+    const existingSettings = await db.query.storeSettings.findFirst({
+      where: eq(storeSettingsTable.userId, session.user.id)
+    });
 
     let settings;
     if (!existingSettings) {
       [settings] = await db.insert(storeSettingsTable).values({
-        storeName,
-        storeDomain,
-        currency,
-        location,
-        aiTone,
-        adminRole
+        ...body,
+        userId: session.user.id,
       }).returning();
     } else {
       [settings] = await db.update(storeSettingsTable)
         .set({
-          storeName,
-          storeDomain,
-          currency,
-          location,
-          aiTone,
-          adminRole,
+          ...body,
           updatedAt: new Date()
         })
-        .where(eq(storeSettingsTable.id, existingSettings.id))
+        .where(eq(storeSettingsTable.userId, session.user.id))
         .returning();
     }
 

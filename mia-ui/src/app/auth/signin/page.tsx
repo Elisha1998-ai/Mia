@@ -77,7 +77,7 @@ export default function SignInPage() {
           <p className="text-muted-foreground mb-8">Welcome back! Please enter your details.</p>
 
           <form
-            className="space-y-5"
+            className="space-y-6"
             onSubmit={async (e) => {
               e.preventDefault();
               setIsLoading(true);
@@ -91,8 +91,8 @@ export default function SignInPage() {
               }
             }}
           >
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
+            <div className="space-y-2.5">
+              <label className="block text-sm font-medium">
                 Email
               </label>
               <input
@@ -100,7 +100,7 @@ export default function SignInPage() {
                 type="email"
                 required
                 placeholder="Enter your email"
-                className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/50"
+                className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
               />
             </div>
 

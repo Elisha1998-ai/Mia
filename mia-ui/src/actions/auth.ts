@@ -4,8 +4,16 @@ import { signIn, signOut } from "@/auth"
 
 export async function login(formData: FormData) {
   const email = formData.get("email") as string
+  const firstName = formData.get("firstName") as string
+  const lastName = formData.get("lastName") as string
+  
   try {
-    await signIn("credentials", { email, redirectTo: "/dashboard" })
+    await signIn("credentials", { 
+      email, 
+      firstName, 
+      lastName, 
+      redirectTo: "/dashboard" 
+    })
   } catch (error) {
     if ((error as any).type === "CredentialsSignin") {
       return { error: "Invalid credentials." }
@@ -19,5 +27,5 @@ export async function loginWithGoogle() {
 }
 
 export async function logout() {
-  await signOut({ redirectTo: "/auth/signin" })
+  await signOut({ redirectTo: "/" })
 }

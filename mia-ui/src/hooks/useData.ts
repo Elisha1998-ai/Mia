@@ -244,15 +244,13 @@ export const useSettings = () => {
 
   const updateSettings = async (data: Partial<StoreSettings>) => {
     try {
-      setLoading(true);
+      setError(null);
       const updatedSettings = await apiService.updateSettings(data);
       setSettings(updatedSettings);
       return updatedSettings;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update settings');
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 

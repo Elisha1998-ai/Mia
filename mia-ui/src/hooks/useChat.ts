@@ -25,7 +25,7 @@ export const useChat = () => {
 
       const data = await response.json();
       
-      setMessages(prev => [...prev, { 
+      const assistantMsg: any = { 
          role: 'assistant', 
          content: data.content,
          steps: data.steps,
@@ -34,7 +34,21 @@ export const useChat = () => {
          template_data: data.template_data,
          products: data.products,
          isComplete: !data.steps || data.steps.length === 0
-       }]);
+       };
+
+       if (data.widget) {
+         assistantMsg.widgets = [{
+           type: data.widget.type,
+           title: data.widget.title,
+           description: data.widget.content, // We map 'content' to 'description' for the markdown preview
+           imageUrl: data.widget.imageUrl,
+           link: data.widget.link
+         }];
+       } else if (data.widgets) {
+         assistantMsg.widgets = data.widgets;
+       }
+
+       setMessages(prev => [...prev, assistantMsg]);
     } catch (error) {
       console.error("Error:", error);
       setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting to my brain right now. Please make sure the backend is running." }]);
@@ -49,5 +63,48 @@ export const useChat = () => {
     ));
   };
 
-  return { messages, sendMessage, isLoading, markMessageComplete };
+  const triggerDemoMode = () => {
+    setIsLoading(true);
+    
+    // Simulate thinking state first
+    setTimeout(() => {
+      setIsLoading(false);
+      
+      const demoMessages = [
+        {
+          role: 'assistant',
+          content: "I've started working on your request. Here's a checklist of what I'm doing:",
+          steps: [
+            "Analyzing your requirements",
+            "Searching for design inspiration",
+            "Generating layout options",
+            "Finalizing the storefront wireframe"
+          ],
+          isComplete: false
+        },
+        {
+          role: 'assistant',
+          content: "I've also prepared some resources for you:",
+          widgets: [
+            {
+              type: 'document',
+              title: 'Project Brief',
+              description: 'The initial requirements for your storefront design.'
+            },
+            {
+              type: 'link',
+              title: 'Design Inspiration',
+              description: 'A curated list of modern ecommerce designs.',
+              link: 'https://example.com'
+            }
+          ],
+          isComplete: true
+        }
+      ];
+      
+      setMessages(demoMessages);
+    }, 2000);
+  };
+
+  return { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode };
 };

@@ -98,20 +98,25 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
             AI built ready for business.
           </h1>
           <p className="text-xl md:text-2xl text-black/60 mb-8 max-w-3xl mx-auto leading-relaxed">
-            There's no better way to say it, imagine your business in the hands of a team of 50 experts, tracking orders, designing your store, writing your copies, running email campaigns, invoicing, accounting for your business and so on.
+            Mia is your AI commerce agent. From building your store to managing operations, tracking orders, and handling support, she handles the heavy lifting while you focus on scaling.
           </p>
           <div className="flex items-center justify-center gap-4">
             <button 
               onClick={onGetStarted}
-              className="bg-blue-600 text-white px-8 py-3 rounded-xl text-lg font-medium hover:bg-blue-700 transition-all flex items-center gap-2"
+              className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-base font-medium hover:bg-blue-700 transition-all flex items-center gap-2"
             >
               Request early access.
             </button>
           </div>
         </div>
-        <div className="mt-16 max-w-5xl mx-auto">
+        <div className="mt-16 max-w-7xl mx-auto px-4">
           <div className="relative rounded-2xl overflow-hidden bg-[#f3f4f6] border border-black/5 p-4 md:p-12 flex justify-center">
-            <div className="w-full max-w-4xl bg-white rounded-3xl border border-black/5 overflow-hidden font-sans">
+            <img 
+              src="https://i.pinimg.com/736x/3c/c3/eb/3cc3ebf6643083cd45e58e58405589c8.jpg"
+              alt="Hero Background"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="relative z-10 w-full max-w-4xl bg-white rounded-3xl border border-black/5 overflow-hidden font-sans">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
                 <div className="flex items-center gap-3">
@@ -739,6 +744,11 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
 
             {/* Right Section: Image Frame */}
             <div className="h-full min-h-[400px] md:min-h-[600px] bg-[#f3f4f6] rounded-[2.5rem] overflow-hidden relative border border-black/5">
+              <img 
+                src="https://i.pinimg.com/736x/6a/7e/9f/6a7e9f7cddb02d4610fdf8bb148efa4f.jpg"
+                alt="Growth and Automation"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <div className="absolute top-16 left-16 w-[140%] bg-white rounded-tl-[3rem] border-t border-l border-black/5 overflow-hidden font-sans">
                 {/* Header */}
                 <div className="flex items-center justify-between px-8 py-5 border-b border-black/5">
@@ -816,22 +826,22 @@ export const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => {
               Frequently asked questions
             </h2>
             <p className="text-black/40 text-lg">
-              Find answers to common questions about Mia AI Website Builder.
+              Find answers to common questions about Mia AI.
             </p>
           </div>
           
           <div className="divide-y divide-black/5">
             {[
-              "What is Mia AI website builder?",
-              "Do I need coding experience to use Mia?",
-              "What types of applications can I build with Mia?",
-              "How does Mia handle SEO optimization?",
-              "Can I accept payments through my Mia-built website?",
-              "How do I track visitors and leads on my website?",
-              "Can I connect my own domain to my Mia website?",
-              "How do I make a website?",
-              "How long does it take to build a website?",
-              "What is the best website builder for beginners?"
+              "Is Mia just a website builder?",
+              "What can Mia do for my e-commerce business?",
+              "How does Mia handle customer support?",
+              "Can Mia help with marketing and copywriting?",
+              "Do I need to be tech-savvy to use Mia?",
+              "Which African payment gateways does Mia support?",
+              "How does order tracking work with Mia?",
+              "Can Mia manage my inventory across different platforms?",
+              "What makes Mia different from Shopify or Wix?",
+              "How can I get early access to Mia?"
             ].map((q, i) => (
               <div key={i} className="py-7 flex items-center justify-between group cursor-pointer transition-all">
                 <span className="text-lg font-medium text-black/80 tracking-tight">{q}</span>

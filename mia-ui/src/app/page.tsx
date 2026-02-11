@@ -1,5 +1,20 @@
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
+import { LandingPage } from '@/components/LandingPage';
 
-export default function Home() {
-  redirect('/auth/signin');
+export default async function Home() {
+  const session = await auth();
+
+  if (session) {
+    redirect('/dashboard');
+  }
+
+  return (
+    <LandingPage 
+      onGetStarted={async () => {
+        'use server';
+        redirect('/auth/signin');
+      }} 
+    />
+  );
 }

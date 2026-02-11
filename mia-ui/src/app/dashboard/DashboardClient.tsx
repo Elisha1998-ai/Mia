@@ -11,7 +11,7 @@ import { useChat } from '@/hooks/useChat';
 
 export function DashboardClient() {
     const [mounted, setMounted] = React.useState(false);
-    const { messages, sendMessage, isLoading, markMessageComplete } = useChat();
+    const { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode } = useChat();
     const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews'>('chat');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
 
@@ -60,6 +60,7 @@ export function DashboardClient() {
                         onSend={sendMessage}
                         isLoading={isLoading}
                         onMessageComplete={markMessageComplete}
+                        onTriggerDemo={triggerDemoMode}
                     />
                 )}
                 {activeView === 'products' && <ProductsPage />}

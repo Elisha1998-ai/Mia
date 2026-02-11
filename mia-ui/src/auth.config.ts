@@ -16,10 +16,18 @@ export const authConfig = {
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
+        firstName: { label: "First Name", type: "text" },
+        lastName: { label: "Last Name", type: "text" },
       },
       async authorize(credentials) {
         if (credentials?.email) {
-          return { id: "dev-user", name: "Developer", email: credentials.email as string }
+          return { 
+            id: "dev-user", 
+            name: `${credentials.firstName} ${credentials.lastName}`.trim() || "Developer", 
+            email: credentials.email as string,
+            firstName: credentials.firstName as string,
+            lastName: credentials.lastName as string,
+          }
         }
         return null
       },

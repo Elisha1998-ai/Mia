@@ -9,55 +9,89 @@ Base = declarative_base()
 def generate_uuid():
     return str(uuid.uuid4())
 
-class Product(Base):
-    __tablename__ = 'products'
+class User(Base):
+    __tablename__ = 'user'
     id = Column(String, primary_key=True, default=generate_uuid)
-    external_id = Column(String, unique=True) # ID from platform (Shopify/Amazon)
+    name = Column(String)
+    first_name = Column(String, name='firstName')
+    last_name = Column(String, name='lastName')
+    email = Column(String, unique=True, nullable=False)
+    image = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
+
+class StoreSettings(Base):
+    __tablename__ = 'storeSettings'
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey('user.id'), name='userId')
+    store_name = Column(String, default='Mia Electronics', name='storeName')
+    store_domain = Column(String, default='mia-electronics', name='storeDomain')
+    niche = Column(String)
+    store_address = Column(Text, name='storeAddress')
+    store_phone = Column(String, name='storePhone')
+    bank_name = Column(String, name='bankName')
+    account_name = Column(String, name='accountName')
+    account_number = Column(String, name='accountNumber')
+    social_instagram = Column(String, name='socialInstagram')
+    social_twitter = Column(String, name='socialTwitter')
+    social_facebook = Column(String, name='socialFacebook')
+    currency = Column(String, default='USD ($)')
+    location = Column(String, default='United States of America')
+    ai_tone = Column(String, default='Professional & Helpful', name='aiTone')
+    admin_name = Column(String, name='adminName')
+    admin_email = Column(String, name='adminEmail')
+    admin_role = Column(String, default='Store Owner', name='adminRole')
+    onboarding_completed = Column(Boolean, default=False, name='onboardingCompleted')
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), name='updatedAt')
+
+class Product(Base):
+    __tablename__ = 'product'
+    id = Column(String, primary_key=True, default=generate_uuid)
+    external_id = Column(String, unique=True, name='externalId') # ID from platform (Shopify/Amazon)
     name = Column(String, nullable=False)
     description = Column(Text)
     price = Column(Float)
-    cost_of_goods = Column(Float) # New: Track margins
+    cost_of_goods = Column(Float, name='costOfGoods') # New: Track margins
     sku = Column(String, unique=True)
-    stock_quantity = Column(Float, default=0)
-    image_url = Column(Text)
+    stock_quantity = Column(Float, default=0, name='stockQuantity')
+    image_url = Column(Text, name='imageUrl')
     platform = Column(String) # e.g., 'shopify'
-    ai_notes = Column(Text) # New: AI agent insights
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    ai_notes = Column(Text, name='aiNotes') # New: AI agent insights
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
 
 class Customer(Base):
-    __tablename__ = 'customers'
+    __tablename__ = 'customer'
     id = Column(String, primary_key=True, default=generate_uuid)
     email = Column(String, unique=True, nullable=False)
-    full_name = Column(String)
+    full_name = Column(String, name='fullName')
     phone = Column(String)
-    lifetime_value = Column(Float, default=0.0) # New: Calculated LTV
-    ai_notes = Column(Text) # New: AI agent insights
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    lifetime_value = Column(Float, default=0.0, name='lifetimeValue') # New: Calculated LTV
+    ai_notes = Column(Text, name='aiNotes') # New: AI agent insights
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
 
 class Store(Base):
-    __tablename__ = 'stores'
+    __tablename__ = 'store'
     id = Column(String, primary_key=True, default=generate_uuid)
     name = Column(String, nullable=False)
     platform = Column(String, nullable=False) # 'shopify', 'amazon', etc.
-    store_url = Column(String, unique=True, nullable=False)
-    access_token = Column(String)
+    store_url = Column(String, unique=True, nullable=False, name='storeUrl')
+    access_token = Column(String, name='accessToken')
     api_key = Column(String)
     api_secret = Column(String)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, name='isActive')
     last_sync = Column(DateTime(timezone=True))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
 
 class Order(Base):
-    __tablename__ = 'orders'
+    __tablename__ = 'order'
     id = Column(String, primary_key=True, default=generate_uuid)
-    external_id = Column(String, unique=True)
-    customer_id = Column(String, ForeignKey('customers.id'))
-    store_id = Column(String, ForeignKey('stores.id'))
-    total_amount = Column(DECIMAL(10, 2))
-    profit_margin = Column(Float) # New: Calculated profit for this order
+    external_id = Column(String, unique=True, name='externalId')
+    customer_id = Column(String, ForeignKey('customer.id'), name='customerId')
+    store_id = Column(String, ForeignKey('store.id'), name='storeId')
+    total_amount = Column(DECIMAL(10, 2), name='totalAmount')
+    profit_margin = Column(Float, name='profitMargin') # New: Calculated profit for this order
     status = Column(String, default='pending')
-    ai_notes = Column(Text) # New: AI agent insights
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    ai_notes = Column(Text, name='aiNotes') # New: AI agent insights
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
     
     customer = relationship("Customer")
     store = relationship("Store")
@@ -74,7 +108,7 @@ class MarketingAsset(Base):
 class SupportTicket(Base):
     __tablename__ = 'support_tickets'
     id = Column(String, primary_key=True, default=generate_uuid)
-    customer_id = Column(String, ForeignKey('customers.id'))
+    customer_id = Column(String, ForeignKey('customer.id'))
     subject = Column(String)
     content = Column(Text)
     status = Column(String, default='open') # 'open', 'resolved', 'closed'
@@ -100,7 +134,7 @@ class FinancialLedger(Base):
     category = Column(String) # 'ads', 'logistics', 'software', 'sale'
     amount = Column(DECIMAL(10, 2))
     description = Column(Text)
-    order_id = Column(String, ForeignKey('orders.id'), nullable=True)
+    order_id = Column(String, ForeignKey('order.id'), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class KnowledgeBase(Base):
@@ -114,7 +148,7 @@ class KnowledgeBase(Base):
 class Shipment(Base):
     __tablename__ = 'shipments'
     id = Column(String, primary_key=True, default=generate_uuid)
-    order_id = Column(String, ForeignKey('orders.id'))
+    order_id = Column(String, ForeignKey('order.id'))
     tracking_number = Column(String)
     carrier = Column(String) # 'fedex', 'ups', 'dhl'
     status = Column(String) # 'shipped', 'in_transit', 'delivered'
@@ -138,7 +172,7 @@ class Campaign(Base):
 class InventoryLog(Base):
     __tablename__ = 'inventory_logs'
     id = Column(String, primary_key=True, default=generate_uuid)
-    product_id = Column(String, ForeignKey('products.id'))
+    product_id = Column(String, ForeignKey('product.id'))
     change_amount = Column(Float) # Positive for restock, negative for sale
     reason = Column(String) # 'sale', 'restock', 'return', 'adjustment'
     created_at = Column(DateTime(timezone=True), server_default=func.now())

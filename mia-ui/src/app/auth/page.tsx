@@ -2,38 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { Sun, Moon, Loader2 } from "lucide-react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { login, loginWithGoogle } from "@/actions/auth";
 
 export default function AuthPage() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  useEffect(() => {
-    // Check initial theme from localStorage or DOM class
-    const savedTheme = localStorage.getItem("theme");
-    const isDark = savedTheme === "dark" || (!savedTheme && document.documentElement.classList.contains("dark"));
-
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else if (savedTheme === "light") {
-      document.documentElement.classList.remove("dark");
-    }
-
-    setIsDarkMode(isDark);
-  }, []);
+  const isDarkMode = resolvedTheme === "dark";
 
   const toggleTheme = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    if (newMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    setTheme(isDarkMode ? "light" : "dark");
   };
 
   return (
@@ -64,7 +45,7 @@ export default function AuthPage() {
           </p>
 
           <form
-            className="space-y-5"
+            className="space-y-6"
             onSubmit={async (e) => {
               e.preventDefault();
               setIsLoading(true);
@@ -78,8 +59,35 @@ export default function AuthPage() {
               }
             }}
           >
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2.5">
+                <label className="block text-sm font-medium">
+                  First Name
+                </label>
+                <input
+                  name="firstName"
+                  type="text"
+                  required
+                  placeholder="Jonathan"
+                  className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
+                />
+              </div>
+              <div className="space-y-2.5">
+                <label className="block text-sm font-medium">
+                  Last Name
+                </label>
+                <input
+                  name="lastName"
+                  type="text"
+                  required
+                  placeholder="Frazzelle"
+                  className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <label className="block text-sm font-medium">
                 Email
               </label>
               <input
@@ -87,7 +95,7 @@ export default function AuthPage() {
                 type="email"
                 required
                 placeholder="Enter your email"
-                className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/50"
+                className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
               />
             </div>
 

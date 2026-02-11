@@ -9,23 +9,27 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from agents import (
-    data_architect_task, 
-    brand_designer_task, 
-    accountant_task, 
-    copywriter_task, 
-    support_agent_task, 
-    marketing_agent_task, 
+    mia_unified_agent,
+    run_agent_task,
+    data_architect_task,
+    brand_designer_task,
+    accountant_task,
+    copywriter_task,
+    support_agent_task,
+    marketing_agent_task,
     logistics_agent_task,
     intent_classifier_task,
     parameter_extractor_task,
-    general_advisor_task
+    general_advisor_task,
+    document_specialist_task
 )
 from modules.creative import generate_marketing_asset
 from modules.finance import create_invoice_pdf
 from database import get_db, init_db
 from models import Product, Store, Customer, Order, SupportTicket, Campaign, Shipment, KnowledgeBase
 from connectors.shopify import ShopifyConnector
-from fastapi.responses import StreamingResponse
+from business_data import get_business_summary
+from fastapi.responses import StreamingResponse, JSONResponse
 
 load_dotenv()
 
@@ -35,6 +39,16 @@ dotenv_path = os.path.join(project_root, '.env')
 load_dotenv(dotenv_path=dotenv_path)
 
 app = FastAPI(title="Mia AI Core")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"GLOBAL ERROR caught: {exc}")
+    import traceback
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "type": str(type(exc))}
+    )
 
 # Initialize DB on startup
 @app.on_event("startup")
@@ -124,170 +138,138 @@ class ChatRequest(BaseModel):
 
 @app.post("/chat")
 async def unified_chat(request: ChatRequest, db: Session = Depends(get_db)):
-    message = request.message
-    
+    print(f"\n--- NEW CHAT REQUEST (UNIFIED) ---")
+    print(f"DEBUG: Received message: {request.message}")
     try:
-        # Intent classification
-        intent_raw = intent_classifier_task(message).strip().lower()
+        message = request.message
         
-        valid_intents = ['greeting', 'brand_generation', 'store_setup', 'product_extraction', 'insight_request', 'general_query']
-        intent = 'general_query'
-        for v in valid_intents:
-            if v in intent_raw:
-                intent = v
-                break
+        # 1. Get business context for Mia
+        business_context = get_business_summary(db)
+        # Force a print to the console so we can see the TRUTH
+        print("\n" + "="*50)
+        print("CRITICAL DEBUG: DATA INJECTED INTO AI")
+        print(business_context)
+        print("="*50 + "\n")
+        
+        # 2. Call the Unified Mia Agent (Function Calling)
+        mia_response = mia_unified_agent(message, business_context)
         
         response_data = {
-            "content": "",
+            "content": mia_response.get("content", ""),
             "steps": [],
-            "intent": intent
+            "intent": "general_query",
+            "widget": None
         }
 
-        # Route based on intent
-        if intent == "greeting":
-            # Use an agent to generate a dynamic greeting
-            task = f"User said '{message}'. Respond with a short, friendly greeting as Mia. Mention only ONE thing you can do today. Max 2 sentences."
-            response_data["content"] = support_agent_task(task)
-        elif intent == "brand_generation":
-            # Extract params
-            params_json = parameter_extractor_task(message)
-            try:
-                # Clean JSON string
-                clean_json = params_json.strip()
-                if "```json" in clean_json:
-                    clean_json = clean_json.split("```json")[1].split("```")[0].strip()
-                elif "```" in clean_json:
-                    clean_json = clean_json.split("```")[1].split("```")[0].strip()
-                
-                # Handle single quotes from AI
-                if "'" in clean_json and '"' not in clean_json:
-                    clean_json = clean_json.replace("'", '"')
-                    
-                params = json.loads(clean_json)
-                b_name = params.get('business_name', 'your brand')
-                niche = params.get('niche', 'ecommerce')
-                if b_name == "Unknown": b_name = "your brand"
-                if niche == "Unknown": niche = "ecommerce"
-            except Exception:
-                # Fallback regex if JSON fails
-                import re
-                name_match = re.search(r"['\"]business_name['\"]:\s*['\"](.*?)['\"]", params_json)
-                niche_match = re.search(r"['\"]niche['\"]:\s*['\"](.*?)['\"]", params_json)
-                b_name = name_match.group(1) if name_match else "your brand"
-                niche = niche_match.group(1) if niche_match else "ecommerce"
+        # 3. Handle Tool Calls
+        tool_name = mia_response.get("tool")
+        tool_args = mia_response.get("args", {})
 
-            brand_data = await brand_request(b_name, niche)
-            response_data["content"] = brand_data["description"]
-            
-        elif intent == "store_setup":
-            response_data["steps"] = ["Choosing layout", "Writing copy", "Setting up pages"]
-            
-            # Extract params
-            params_json = parameter_extractor_task(message)
-            try:
-                # Clean JSON string
-                clean_json = params_json.strip()
-                if "```json" in clean_json:
-                    clean_json = clean_json.split("```json")[1].split("```")[0].strip()
-                elif "```" in clean_json:
-                    clean_json = clean_json.split("```")[1].split("```")[0].strip()
-                
-                # Handle single quotes from AI
-                if "'" in clean_json and '"' not in clean_json:
-                    clean_json = clean_json.replace("'", '"')
-                    
-                params = json.loads(clean_json)
-                b_name = params.get('business_name', 'your store')
-                niche = params.get('niche', 'ecommerce')
-                if b_name == "Unknown": b_name = "your store"
-                if niche == "Unknown": niche = "ecommerce"
-            except Exception:
-                # Fallback regex if JSON fails
-                import re
-                name_match = re.search(r"['\"]business_name['\"]:\s*['\"](.*?)['\"]", params_json)
-                niche_match = re.search(r"['\"]niche['\"]:\s*['\"](.*?)['\"]", params_json)
-                b_name = name_match.group(1) if name_match else "your store"
-                niche = niche_match.group(1) if niche_match else "ecommerce"
+        if not tool_name:
+            # Direct response from AI
+            print(f"DEBUG: AI responded directly: {response_data['content'][:50]}...")
+            return response_data
 
-            try:
-                setup_data = await setup_storefront(b_name, niche)
-                if "error" in setup_data:
-                    response_data["content"] = f"I ran into an issue: {setup_data['error']}"
-                else:
-                    response_data["content"] = f"I've set up your storefront for {b_name}. You can preview it here: http://localhost:3000/preview/{setup_data['template_used']}"
-                    response_data["template_data"] = {
-                        "name": setup_data["template_used"],
-                        "copy_fields": setup_data["custom_copy"]
-                    }
-                    # Fetch actual products to show in wireframe if available
-                    products = db.query(Product).limit(4).all()
-                    response_data["products"] = [{"name": p.name, "price": p.price} for p in products]
-            except Exception as e:
-                print(f"Store setup error: {e}")
-                response_data["content"] = "I had some trouble setting up the storefront. Could you try again with more details?"
+        # If a tool was called, handle the logic
+        print(f"DEBUG: AI called tool: {tool_name} with args: {tool_args}")
+        
+        if tool_name == "create_document":
+            # ... existing logic ...
+            response_data["intent"] = "document_generation"
+            response_data["steps"] = ["Analyzing requirements", "Drafting document structure", "Polishing final text"]
+            doc_type = tool_args.get("doc_type", "policy")
+            details = tool_args.get("details", message)
             
-        elif intent == "product_extraction":
-            response_data["steps"] = ["Parsing text", "Extracting product details", "Mapping to database"]
-            # Bulk product extraction logic
-            task = f"Extract a list of products from this text: '{message}'. For each product, find name, price, and sku if available. Return ONLY a JSON list of objects like [{{'name': '...', 'price': 10.0, 'sku': '...'}}]. No extra text, no code blocks, just the raw JSON list."
-            extracted_json = data_architect_task(task)
+            doc_content = document_specialist_task(f"Create a {doc_type} with these details: {details}", business_context)
+            response_data["content"] = f"I've drafted the {doc_type.replace('_', ' ')} for you. You can review it below."
+            response_data["widget"] = {
+                "type": "document",
+                "title": doc_type.replace("_", " ").title(),
+                "content": doc_content,
+                "actions": ["download", "copy", "edit"]
+            }
+
+        elif tool_name == "import_products":
+            # ... existing logic ...
+            response_data["intent"] = "product_extraction"
+            response_data["steps"] = ["Parsing text", "Extracting product details", "Saving to inventory"]
+            product_text = tool_args.get("product_list_text", message)
+            
+            task = f"Extract products from: '{product_text}'. Return ONLY a JSON list of [{{'name': '...', 'price': 10.0, 'sku': '...'}}]."
+            extracted_json = data_architect_task(task, business_context)
             try:
-                # More aggressive cleaning
+                # Clean and parse JSON
                 cleaned_json = extracted_json.strip()
                 if "```" in cleaned_json:
                     cleaned_json = cleaned_json.split("```")[1]
-                    if cleaned_json.startswith("json"):
-                        cleaned_json = cleaned_json[4:]
+                    if cleaned_json.startswith("json"): cleaned_json = cleaned_json[4:]
                 
-                # Find the first '[' and last ']' to extract just the JSON array
                 start = cleaned_json.find('[')
                 end = cleaned_json.rfind(']') + 1
                 if start != -1 and end != -1:
-                    cleaned_json = cleaned_json[start:end]
-
-                products = json.loads(cleaned_json)
-                for p_data in products:
-                    product = Product(
-                        name=p_data.get('name'),
-                        price=float(p_data.get('price', 0)),
-                        sku=p_data.get('sku'),
-                        platform="ai_extraction"
-                    )
-                    db.add(product)
-                db.commit()
-                response_data["content"] = f"Successfully extracted and saved {len(products)} products to your inventory."
+                    products = json.loads(cleaned_json[start:end])
+                    for p_data in products:
+                        product = Product(
+                            name=p_data.get('name'),
+                            price=float(p_data.get('price', 0)),
+                            sku=p_data.get('sku'),
+                            platform="ai_extraction"
+                        )
+                        db.add(product)
+                    db.commit()
+                    response_data["content"] = f"Successfully imported {len(products)} products to your inventory."
+                else:
+                    response_data["content"] = "I couldn't find a valid product list to import. Could you provide the list more clearly?"
             except Exception as e:
-                print(f"Error extracting products: {e}")
-                print(f"Raw AI Output: {extracted_json}")
-                response_data["content"] = "I found some products but had trouble saving them. Could you provide them in a clearer list?"
-                
-        elif intent == "insight_request":
-            # Data-driven insights
-            total_sales = db.query(Order).count()
-            total_customers = db.query(Customer).count()
-            
-            stats_context = f"Store Stats: {total_sales} orders, {total_customers} customers."
-            task = f"{stats_context}\nUser Question: {message}\nProvide a concise, data-informed answer. If the question is general ecommerce advice, ignore the 0 stats and give high-level strategic advice."
-            response_data["content"] = general_advisor_task(task)
+                response_data["content"] = f"I found some products but had trouble saving them: {str(e)}"
 
-        else:
-            # Default to a general query
-            # Fetch relevant knowledge from KB if available
-            knowledge_entries = db.query(KnowledgeBase).all()
-            context = "\n".join([f"{k.title}: {k.content}" for k in knowledge_entries])
+        elif tool_name == "generate_brand_assets":
+            response_data["intent"] = "brand_generation"
+            b_name = tool_args.get("business_name", "your brand")
+            niche = tool_args.get("niche", "ecommerce")
+            brand_data = await brand_request(b_name, niche)
+            response_data["content"] = brand_data["description"]
+
+        elif tool_name == "setup_storefront_action":
+            response_data["intent"] = "store_setup"
+            response_data["steps"] = ["Choosing layout", "Writing custom copy", "Organizing site structure"]
+            b_name = tool_args.get("business_name", "your store")
+            niche = tool_args.get("niche", "ecommerce")
             
-            task = f"Context: {context}\nQuestion: {message}\nProvide a helpful, concise answer for an ecommerce business owner. Focus on actionable advice."
-            response_data["content"] = general_advisor_task(task)
+            setup_data = await setup_storefront(b_name, niche)
+            if "error" in setup_data:
+                response_data["content"] = f"I ran into an issue: {setup_data['error']}"
+            else:
+                response_data["content"] = f"I've set up your storefront for {b_name}. You can preview it here: http://localhost:3000/preview/{setup_data['template_used']}"
+                response_data["template_data"] = {
+                    "name": setup_data["template_used"],
+                    "copy_fields": setup_data["custom_copy"]
+                }
+                products = db.query(Product).limit(4).all()
+                response_data["products"] = [{"name": p.name, "price": p.price} for p in products]
+        
+        else:
+            # Fallback if AI calls an unknown tool or a tool we didn't explicitly handle here
+            print(f"DEBUG: Fallback for unknown tool: {tool_name}")
+            if response_data["content"]:
+                return response_data
+            else:
+                response_data["content"] = "I understood your request but I'm having trouble executing that specific action right now. How else can I help?"
 
         return response_data
 
     except Exception as e:
-        return {
-            "content": "I'm having a bit of trouble thinking clearly right now. This usually happens if my AI connection is unstable. Could you try again in a moment?",
-            "steps": [],
-            "intent": "general_query",
-            "error": str(e)
-        }
+        print(f"CRITICAL ERROR in /chat: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+    except Exception as e:
+        print(f"CRITICAL ERROR in /chat: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/mia/generate-brand")
 async def brand_request(business_name: str, niche: str):
@@ -460,10 +442,17 @@ async def add_knowledge(title: str, content: str, category: str = "business_rule
 async def ask_mia(question: str, db: Session = Depends(get_db)):
     # 1. Fetch relevant knowledge from KB
     knowledge_entries = db.query(KnowledgeBase).all()
-    context = "\n".join([f"{k.title}: {k.content}" for k in knowledge_entries])
+    kb_context = "\n".join([f"{k.title}: {k.content}" for k in knowledge_entries])
     
-    # 2. Use Data Architect (or a general "Business Intelligence" agent) to answer
-    task = f"Context: {context}\nQuestion: {question}\nAnswer the question based on the business context provided."
+    # 2. Fetch Live Business Summary
+    from business_data import get_business_summary
+    live_summary = get_business_summary(db)
+    
+    # 3. Combine contexts
+    full_context = f"{live_summary}\n\nKNOWLEDGE BASE CONTEXT:\n{kb_context}"
+    
+    # 4. Use Data Architect to answer
+    task = f"Context: {full_context}\nQuestion: {question}\nAnswer the question based on the live business context and knowledge base provided."
     answer = data_architect_task(task)
     
     return {"answer": answer}

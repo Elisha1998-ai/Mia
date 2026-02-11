@@ -9,17 +9,19 @@
   --accent: #0070E0;
   --muted-foreground: #667085;
   --border: rgba(0, 0, 0, 0.08); /* Increased for better definition in light mode */
+  --surface: #ffffff;
 }
 
 .dark {
-  /* Dark Theme (Monochrome for Auth) */
-  --background: #000000;
+  /* Dark Theme (Subtle Gray for Depth) */
+  --background: #0d0d0d;
   --foreground: #ffffff;
-  --sidebar: #0a0a0a;
-  --input-bg: #111111;
+  --sidebar: #050505;
+  --input-bg: #151515;
   --accent: #ffffff;
   --muted-foreground: #a3a3a3;
   --border: rgba(255, 255, 255, 0.1);
+  --surface: #1C1C1C;
 }
 
 @theme inline {
@@ -30,8 +32,14 @@
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-border-custom: var(--border);
+  --color-surface: var(--surface);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), serif;
+  
+  /* Storefront Theme Variables */
+  --store-primary: var(--primary-color, #000000);
+  --store-heading: var(--heading-font, var(--font-serif));
+  --store-body: var(--body-font, var(--font-sans));
 }
 
 body {
@@ -66,5 +74,25 @@ h1, h2 {
     display: flex;
     width: max-content;
     animation: marquee 30s linear infinite;
+  }
+
+  .font-store-heading {
+    font-family: var(--store-heading);
+  }
+
+  .font-store-body {
+    font-family: var(--store-body);
+  }
+
+  .text-store-primary {
+    color: var(--store-primary);
+  }
+
+  .bg-store-primary {
+    background-color: var(--store-primary);
+  }
+
+  .border-store-primary {
+    border-color: var(--store-primary);
   }
 }
