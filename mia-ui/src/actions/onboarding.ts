@@ -41,25 +41,32 @@ export async function saveOnboardingData(data: any) {
     // For now, we assume one store per user
     const results = await db.select()
       .from(stores)
-      .where(and(
-        eq(stores.name, data.storeName),
-        eq(stores.userId, userId)
-      ))
+      .where(eq(stores.userId, userId))
       .limit(1);
     
     let store = results[0];
 
-  if (!store) {
     const slug = data.storeName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const [newStore] = await db.insert(stores).values({
-      userId: userId,
-      name: data.storeName,
-      platform: "Custom",
-      storeUrl: `bloume.shop/@${slug}`,
-      isActive: true,
-    }).returning();
-    store = newStore;
-  }
+    const storeUrl = `bloume.shop/@${slug}`;
+
+    if (!store) {
+      const [newStore] = await db.insert(stores).values({
+        userId: userId,
+        name: data.storeName,
+        platform: "Custom",
+        storeUrl: storeUrl,
+        isActive: true,
+      }).returning();
+      store = newStore;
+    } else {
+      // Update existing store name and URL if needed
+      await db.update(stores)
+        .set({
+          name: data.storeName,
+          storeUrl: storeUrl,
+        })
+        .where(eq(stores.id, store.id));
+    }
 
   // 3. Create or Update Store Settings
   const settingsResults = await db.select()
@@ -100,10 +107,13 @@ export async function saveOnboardingData(data: any) {
     }
 
     revalidatePath("/dashboard");
+    revalidatePath("/onboarding");
     return { success: true };
   } catch (error) {
-    console.error("Error saving onboarding data:", error);
-    return { success: false, error: "Internal Server Error" };
+    console.error("Onboarding error:", error);
+    // Return a more descriptive error if it's a known issue
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+    return { success: false, error: errorMessage };
   }
 }
 

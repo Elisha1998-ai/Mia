@@ -409,14 +409,22 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                           </div>
                           <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                             <label className="text-sm font-semibold text-foreground/80">WhatsApp Number</label>
-                            <input 
-                              type="text" 
-                              value={formData.storePhone || ''}
-                              onChange={(e) => setFormData({...formData, storePhone: e.target.value})}
-                              onBlur={() => handleSave({ storePhone: formData.storePhone })}
-                              placeholder="e.g. +2348012345678"
-                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
-                            />
+                            <div className="relative">
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-foreground/40 pointer-events-none">
+                                +234
+                              </div>
+                              <input 
+                                type="text" 
+                                value={formData.storePhone || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                  setFormData({...formData, storePhone: val});
+                                }}
+                                onBlur={() => handleSave({ storePhone: formData.storePhone })}
+                                placeholder="8012345678"
+                                className="w-full bg-input-bg border border-border-custom rounded-xl pl-14 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
+                              />
+                            </div>
                           </div>
                           <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Address</label>

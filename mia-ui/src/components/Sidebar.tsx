@@ -6,6 +6,7 @@ import {
   Plus,
   Sun,
   Moon,
+  BarChart3,
   Settings,
   Package,
   Layout,
@@ -17,8 +18,8 @@ import { useState, useEffect } from 'react';
 import { SettingsModal } from './SettingsModal';
 
 interface SidebarProps {
-  activeView: 'chat' | 'products' | 'orders' | 'customers' | 'previews';
-  onViewChange: (view: 'chat' | 'products' | 'orders' | 'customers' | 'previews') => void;
+  activeView: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics';
+  onViewChange: (view: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics') => void;
   isOpen?: boolean;
   onClose?: () => void;
 }
@@ -34,6 +35,7 @@ export const Sidebar = ({ activeView, onViewChange, isOpen, onClose }: SidebarPr
 
   const topIcons = [
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
     { id: 'products', icon: Package, label: 'Products' },
     { id: 'orders', icon: ShoppingCart, label: 'Orders' },
     { id: 'customers', icon: Users, label: 'Customers' },
@@ -52,7 +54,7 @@ export const Sidebar = ({ activeView, onViewChange, isOpen, onClose }: SidebarPr
             key={item.id}
             title={item.label}
             onClick={() => {
-              if (['chat', 'products', 'orders', 'customers', 'previews'].includes(item.id)) {
+              if (['chat', 'products', 'orders', 'customers', 'previews', 'analytics'].includes(item.id)) {
                 onViewChange(item.id as any);
                 if (window.innerWidth < 768 && onClose) onClose();
               }

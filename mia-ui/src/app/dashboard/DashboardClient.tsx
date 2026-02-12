@@ -7,12 +7,13 @@ import { ProductsPage } from '@/components/ProductsPage';
 import { OrdersPage } from '@/components/OrdersPage';
 import { CustomersPage } from '@/components/CustomersPage';
 import { PreviewsPage } from '@/components/PreviewsPage';
+import { AnalyticsPage } from '@/components/AnalyticsPage';
 import { useChat } from '@/hooks/useChat';
 
 export function DashboardClient() {
     const [mounted, setMounted] = React.useState(false);
     const { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode } = useChat();
-    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews'>('chat');
+    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics'>('chat');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
 
     React.useEffect(() => {
@@ -67,6 +68,7 @@ export function DashboardClient() {
                 {activeView === 'orders' && <OrdersPage />}
                 {activeView === 'customers' && <CustomersPage />}
                 {activeView === 'previews' && <PreviewsPage />}
+                {activeView === 'analytics' && <AnalyticsPage />}
             </div>
         </div>
     );

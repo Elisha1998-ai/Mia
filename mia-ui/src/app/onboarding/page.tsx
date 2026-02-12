@@ -467,15 +467,23 @@ export default function OnboardingPage() {
                       />
                     </div>
                     <div className="space-y-2.5">
-                      <label className="text-sm font-medium">Store Phone</label>
-                      <input
-                        required
-                        name="storePhone"
-                        value={formData.storePhone}
-                        onChange={handleChange}
-                        placeholder="+234..."
-                        className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
-                      />
+                      <label className="text-sm font-medium">Whatsapp Number</label>
+                      <div className="relative">
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-foreground/40 pointer-events-none">
+                          +234
+                        </div>
+                        <input
+                          required
+                          name="storePhone"
+                          value={formData.storePhone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setFormData(prev => ({ ...prev, storePhone: val }));
+                          }}
+                          placeholder="8012345678"
+                          className="w-full pl-14 pr-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-2.5">
