@@ -120,11 +120,25 @@ export default function ShopPage() {
     <div className="pb-16 sm:pb-24">
       {/* Hero Section */}
       {!query && (
-        <div className="relative py-20 sm:py-32 overflow-hidden border-b border-gray-100 mb-16 sm:mb-24">
-          <div className="absolute inset-0 bg-gray-50/50 -z-10"></div>
-          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-blue-50/50 rounded-full blur-3xl -z-10"></div>
+        <div className="relative py-20 sm:py-32 overflow-hidden border-b border-gray-100 mb-16 sm:mb-24 min-h-[60vh] flex items-center">
+          {/* Background Image Layer */}
+          {settings?.heroImage ? (
+            <div className="absolute inset-0 -z-10">
+              <img 
+                src={settings.heroImage} 
+                alt="Hero Background" 
+                className="w-full h-full object-cover opacity-20"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/40 to-white"></div>
+            </div>
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gray-50/50 -z-10"></div>
+              <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-blue-50/50 rounded-full blur-3xl -z-10"></div>
+            </>
+          )}
           
-          <div className="text-center space-y-8 max-w-4xl mx-auto px-4">
+          <div className="text-center space-y-8 max-w-4xl mx-auto px-4 relative z-10">
             <div className="space-y-4">
               <h1 className="font-store-heading text-5xl sm:text-7xl lg:text-8xl font-medium tracking-tight leading-[0.9]">
                  {settings?.heroTitle ? (
@@ -132,13 +146,14 @@ export default function ShopPage() {
                      <React.Fragment key={i}>
                        {i === arr.length - 1 ? <span className="text-store-primary">{word}</span> : word}
                        {i < arr.length - 1 ? ' ' : ''}
+                       {/* Add a line break in the middle for better layout */}
                        {i === Math.floor(arr.length / 2) && <br />}
                      </React.Fragment>
                    ))
                  ) : (
                    <>
-                     The Future of <br />
-                     <span className="text-store-primary">{settings?.niche || 'Commerce'}</span>
+                     Elevate Your <br />
+                     <span className="text-store-primary">{settings?.niche || 'Lifestyle'}</span>
                    </>
                  )}
                </h1>

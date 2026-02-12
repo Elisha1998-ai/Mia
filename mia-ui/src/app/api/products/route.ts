@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { products as productsTable } from '@/lib/schema';
-import { desc, count, sql } from 'drizzle-orm';
+import { desc, count, sql, eq, and } from 'drizzle-orm';
+import { auth } from '@/auth';
 
 // GET /api/products - Get all products with pagination
 export async function GET(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -13,10 +19,13 @@ export async function GET(request: Request) {
     const [products, totalResult] = await Promise.all([
       db.select()
         .from(productsTable)
+        .where(eq(productsTable.userId, session.user.id))
         .orderBy(desc(productsTable.createdAt))
         .limit(limit)
         .offset(skip),
-      db.select({ count: count() }).from(productsTable)
+      db.select({ count: count() })
+        .from(productsTable)
+        .where(eq(productsTable.userId, session.user.id))
     ]);
 
     const total = totalResult[0]?.count || 0;
@@ -49,6 +58,11 @@ export async function GET(request: Request) {
 // POST /api/products - Create a new product
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     
     // Generate SKU if not provided
@@ -57,6 +71,7 @@ export async function POST(request: Request) {
       : `SKU-${Math.random().toString(36).toUpperCase().substring(2, 10)}`;
 
     const [product] = await db.insert(productsTable).values({
+      userId: session.user.id,
       name: body.name,
       sku: sku,
       price: (body.price || 0).toString(),

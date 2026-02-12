@@ -21,9 +21,11 @@ export const authConfig = {
       },
       async authorize(credentials) {
         if (credentials?.email) {
+          // For dev purposes, we use the email as the ID if no user exists yet.
+          // The onboarding process will eventually create a proper user record.
           return { 
-            id: "dev-user", 
-            name: `${credentials.firstName} ${credentials.lastName}`.trim() || "Developer", 
+            id: credentials.email as string,
+            name: `${credentials.firstName} ${credentials.lastName}`.trim() || "User", 
             email: credentials.email as string,
             firstName: credentials.firstName as string,
             lastName: credentials.lastName as string,

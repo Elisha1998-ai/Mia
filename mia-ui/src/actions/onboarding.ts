@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users, storeSettings, stores } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function saveOnboardingData(data: any) {
@@ -41,7 +41,10 @@ export async function saveOnboardingData(data: any) {
     // For now, we assume one store per user
     const results = await db.select()
       .from(stores)
-      .where(eq(stores.name, data.storeName))
+      .where(and(
+        eq(stores.name, data.storeName),
+        eq(stores.userId, userId)
+      ))
       .limit(1);
     
     let store = results[0];
@@ -49,6 +52,7 @@ export async function saveOnboardingData(data: any) {
   if (!store) {
     const slug = data.storeName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const [newStore] = await db.insert(stores).values({
+      userId: userId,
       name: data.storeName,
       platform: "Custom",
       storeUrl: `bloume.shop/@${slug}`,

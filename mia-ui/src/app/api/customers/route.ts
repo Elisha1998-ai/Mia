@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { customers as customersTable, orders as ordersTable } from '@/lib/schema';
-import { desc, count, eq, sql } from 'drizzle-orm';
+import { desc, count, eq, sql, and } from 'drizzle-orm';
+import { auth } from '@/auth';
 
 // GET /api/customers - Get all customers with pagination
 export async function GET(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -23,6 +29,7 @@ export async function GET(request: Request) {
     })
     .from(customersTable)
     .leftJoin(ordersTable, eq(customersTable.id, ordersTable.customerId))
+    .where(eq(customersTable.userId, session.user.id))
     .groupBy(customersTable.id)
     .orderBy(desc(customersTable.createdAt))
     .limit(limit)
@@ -30,7 +37,9 @@ export async function GET(request: Request) {
 
     const [customers, totalResult] = await Promise.all([
       customersQuery,
-      db.select({ count: count() }).from(customersTable)
+      db.select({ count: count() })
+        .from(customersTable)
+        .where(eq(customersTable.userId, session.user.id))
     ]);
 
     const total = totalResult[0]?.count || 0;
@@ -61,6 +70,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, email, phone } = body;
 
@@ -73,6 +87,7 @@ export async function POST(request: Request) {
     }
 
     const [customer] = await db.insert(customersTable).values({
+      userId: session.user.id,
       email,
       fullName: name,
       phone,

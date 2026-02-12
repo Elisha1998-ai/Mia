@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, User, Bot, Sparkles, Plus, ArrowUp, ChevronDown, Copy, Reply, Check, Loader2, FileText, ChevronUp, Download, Eye, ExternalLink, X, Edit2, Save } from 'lucide-react';
+import { Send, User, Bot, Sparkles, Plus, ArrowUp, ChevronDown, Copy, Reply, Check, Loader2, FileText, ChevronUp, Download, Eye, ExternalLink, X, Edit2, Save, Layout } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useSettings } from '@/hooks/useData';
 
 interface Widget {
-  type: 'invoice' | 'document' | 'link';
-  title: string;
-  description: string;
+  type: 'invoice' | 'document' | 'link' | 'store_preview';
+  title?: string;
+  description?: string;
   imageUrl?: string;
   link?: string;
+  url?: string;
+  storeName?: string;
 }
 
 interface Message {
@@ -330,14 +332,18 @@ const ChatWidget = ({ widget, onPreview }: { widget: Widget, onPreview?: (w: Wid
       <div className="w-16 h-16 rounded-xl bg-foreground/5 flex-shrink-0 flex items-center justify-center overflow-hidden border border-foreground/5 group-hover:bg-accent/5 transition-colors">
         {widget.imageUrl ? (
           <img src={widget.imageUrl} alt="" className="w-full h-full object-cover" />
+        ) : widget.type === 'store_preview' ? (
+          <Layout className="w-7 h-7 text-accent/60 group-hover:text-accent transition-colors" />
         ) : (
           <FileText className="w-7 h-7 text-foreground/20 group-hover:text-accent/40 transition-colors" />
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold text-foreground/80 truncate">{widget.title}</h4>
+        <h4 className="text-sm font-bold text-foreground/80 truncate">
+          {widget.type === 'store_preview' ? `Store Preview: ${widget.storeName}` : widget.title}
+        </h4>
         <p className="text-xs text-foreground/40 mt-0.5 line-clamp-2 leading-relaxed">
-          {widget.description}
+          {widget.type === 'store_preview' ? 'Click to preview your newly built storefront and check out the design.' : widget.description}
         </p>
       </div>
       
@@ -371,6 +377,18 @@ const ChatWidget = ({ widget, onPreview }: { widget: Widget, onPreview?: (w: Wid
             title="Open link"
           >
             <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
+
+        {widget.type === 'store_preview' && (
+          <a 
+            href={widget.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent/90 transition-all text-xs font-bold uppercase tracking-wider shadow-lg shadow-accent/20"
+          >
+            Preview Store <ExternalLink className="w-3.5 h-3.5" />
           </a>
         )}
       </div>

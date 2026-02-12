@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders as ordersTable, customers as customersTable, orderItems as orderItemsTable, products as productsTable } from '@/lib/schema';
-import { desc, count, eq, sql } from 'drizzle-orm';
+import { desc, count, eq, sql, and } from 'drizzle-orm';
+import { auth } from '@/auth';
 
 // GET /api/orders - Get all orders with pagination
 export async function GET(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -33,12 +39,15 @@ export async function GET(request: Request) {
     .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
     .leftJoin(orderItemsTable, eq(ordersTable.id, orderItemsTable.orderId))
     .leftJoin(productsTable, eq(orderItemsTable.productId, productsTable.id))
+    .where(eq(ordersTable.userId, session.user.id))
     .groupBy(ordersTable.id, customersTable.id)
     .orderBy(desc(ordersTable.createdAt))
     .limit(limit)
     .offset(skip);
 
-    const [totalResult] = await db.select({ count: count() }).from(ordersTable);
+    const [totalResult] = await db.select({ count: count() })
+      .from(ordersTable)
+      .where(eq(ordersTable.userId, session.user.id));
     const total = totalResult?.count || 0;
 
     return NextResponse.json({
@@ -79,6 +88,11 @@ export async function GET(request: Request) {
 // POST /api/orders - Create a new order
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { 
       order_number,
@@ -99,19 +113,21 @@ export async function POST(request: Request) {
         // Generate a simple email for new customers if not provided
         const placeholderEmail = `customer_${Date.now()}@mia-auto.ai`;
         const [newCustomer] = await tx.insert(customersTable).values({
+          userId: session.user.id,
           fullName: customer_name,
           email: placeholderEmail,
-          lifetimeValue: "0"
         }).returning();
         finalCustomerId = newCustomer.id;
       }
 
+      // 1. Create the order
       const [order] = await tx.insert(ordersTable).values({
+        userId: session.user.id,
+        orderNumber: order_number || `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
         customerId: finalCustomerId,
         totalAmount: total_amount.toString(),
-        status,
-        externalId: external_id,
-        orderNumber: order_number || `ORD-${Date.now()}` // Use provided order number or generate one
+        status: status,
+        externalId: external_id
       }).returning();
 
       if (items.length > 0) {

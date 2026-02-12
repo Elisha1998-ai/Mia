@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { products as productsTable } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { auth } from '@/auth';
 
 // GET /api/products/[id] - Get a specific product
 export async function GET(
@@ -9,9 +10,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const product = await db.query.products.findFirst({
-      where: eq(productsTable.id, id)
+      where: and(
+        eq(productsTable.id, id),
+        eq(productsTable.userId, session.user.id)
+      )
     });
 
     if (!product) {
@@ -47,6 +56,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     
@@ -61,7 +75,10 @@ export async function PUT(
         platform: body.platform,
         updatedAt: new Date()
       })
-      .where(eq(productsTable.id, id))
+      .where(and(
+        eq(productsTable.id, id),
+        eq(productsTable.userId, session.user.id)
+      ))
       .returning();
 
     if (!product) {
@@ -97,9 +114,26 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
-    await db.delete(productsTable)
-      .where(eq(productsTable.id, id));
+    
+    const [product] = await db.delete(productsTable)
+      .where(and(
+        eq(productsTable.id, id),
+        eq(productsTable.userId, session.user.id)
+      ))
+      .returning();
+
+    if (!product) {
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

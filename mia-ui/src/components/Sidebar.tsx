@@ -3,11 +3,6 @@
 import React from 'react';
 import { 
   MessageSquare, 
-  Search, 
-  FolderOpen, 
-  Grid, 
-  Code,
-  PanelLeft,
   Plus,
   Sun,
   Moon,
@@ -43,17 +38,13 @@ export const Sidebar = ({ activeView, onViewChange, isOpen, onClose }: SidebarPr
     { id: 'orders', icon: ShoppingCart, label: 'Orders' },
     { id: 'customers', icon: Users, label: 'Customers' },
     { id: 'previews', icon: Layout, label: 'Design Previews' },
-    { id: 'search', icon: Search, label: 'Search' },
-    { id: 'projects', icon: FolderOpen, label: 'Projects' },
-    { id: 'apps', icon: Grid, label: 'Apps' },
-    { id: 'code', icon: Code, label: 'Code' },
   ];
 
   const sidebarContent = (
     <>
-      <button className="p-2 text-foreground/40 hover:text-foreground transition-colors hidden md:block">
-        <PanelLeft className="w-5 h-5" />
-      </button>
+      <div className="p-2 mb-2">
+        <div className="w-5 h-5 rounded-full bg-accent animate-pulse" />
+      </div>
       
       <div className="flex flex-col gap-2 w-full items-center">
         {topIcons.map((item) => (

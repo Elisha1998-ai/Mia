@@ -3,15 +3,21 @@ from sqlalchemy import func, desc
 from models import Product, Order, Customer, Shipment, Store, StoreSettings, User
 from datetime import datetime, timedelta
 
-def get_business_summary(db: Session):
+def get_business_summary(db: Session, user_id: str = None):
     """
     Returns a comprehensive summary of the business state for the AI to understand.
     """
     try:
         # 0. Store & User Info from Onboarding
-        settings = db.query(StoreSettings).order_by(desc(StoreSettings.updated_at)).first()
+        query_settings = db.query(StoreSettings)
+        if user_id:
+            query_settings = query_settings.filter(StoreSettings.user_id == user_id)
+        settings = query_settings.order_by(desc(StoreSettings.updated_at)).first()
+        
         user = None
-        if settings and settings.user_id:
+        if user_id:
+            user = db.query(User).filter(User.id == user_id).first()
+        elif settings and settings.user_id:
             user = db.query(User).filter(User.id == settings.user_id).first()
 
         store_name = settings.store_name if settings and settings.store_name else "Your Store"
@@ -20,32 +26,53 @@ def get_business_summary(db: Session):
         location = settings.location if settings and settings.location else "Nigeria"
         
         # 1. Sales Overview
-        total_orders = db.query(Order).count()
-        # Handle decimal total_amount from Postgres
-        total_revenue_scalar = db.query(func.sum(Order.total_amount)).scalar()
-        total_revenue = float(total_revenue_scalar) if total_revenue_scalar is not None else 0.0
-        unpaid_orders_count = db.query(Order).filter(Order.status == 'pending').count()
+        query_orders = db.query(Order)
+        if user_id:
+            query_orders = query_orders.filter(Order.user_id == user_id)
+            
+        total_orders = query_orders.count()
+        total_revenue = 0.0
+        unpaid_orders_count = 0
+        try:
+            total_revenue_scalar = query_orders.with_entities(func.sum(Order.total_amount)).scalar()
+            total_revenue = float(total_revenue_scalar) if total_revenue_scalar is not None else 0.0
+            unpaid_orders_count = query_orders.filter(Order.status == 'pending').count()
+        except Exception as sales_error:
+            print(f"DEBUG: Sales overview query failed: {sales_error}")
         
         # 2. Inventory Stats
-        total_products = db.query(Product).count()
+        query_products = db.query(Product)
+        if user_id:
+            query_products = query_products.filter(Product.user_id == user_id)
+            
+        total_products = query_products.count()
         low_stock_threshold = 10
-        low_stock_products = db.query(Product).filter(Product.stock_quantity < low_stock_threshold).all()
+        low_stock_products = query_products.filter(Product.stock_quantity < low_stock_threshold).all()
         # Top selling products (by frequency in orders - simplified)
-        # Note: In a real app, we'd join with OrderItems, but here we can use stock_quantity as a proxy for 'most stocked' or query recent orders
-        top_products = db.query(Product).order_by(desc(Product.stock_quantity)).limit(5).all()
+        top_products = query_products.order_by(desc(Product.stock_quantity)).limit(5).all()
         
         # 3. Customer Overview
-        total_customers = db.query(Customer).count()
+        query_customers = db.query(Customer)
+        if user_id:
+            query_customers = query_customers.filter(Customer.user_id == user_id)
+            
+        total_customers = query_customers.count()
         
         # Customers buying the most (Top 5 by lifetime value)
-        top_customers = db.query(Customer).order_by(desc(Customer.lifetime_value)).limit(5).all()
+        top_customers = query_customers.order_by(desc(Customer.lifetime_value)).limit(5).all()
         
-        last_order = db.query(Order).order_by(desc(Order.created_at)).first()
+        last_order = None
+        try:
+            last_order = query_orders.order_by(desc(Order.created_at)).first()
+        except Exception as order_error:
+            print(f"DEBUG: Recent activity query failed: {order_error}")
+            
         last_customer = None
         if last_order and last_order.customer_id:
             last_customer = db.query(Customer).filter(Customer.id == last_order.customer_id).first()
             
         # 4. Logistics
+        # Note: Shipment might also need user_id if we want full isolation
         pending_shipments = db.query(Shipment).filter(Shipment.status != 'delivered').count()
 
         summary = f"""

@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { products as productsTable, orders as ordersTable, customers as customersTable } from '@/lib/schema';
-import { count, gte, lt, sum } from 'drizzle-orm';
+import { count, gte, lt, sum, eq, and } from 'drizzle-orm';
+import { auth } from '@/auth';
 
 // GET /api/dashboard/stats - Get dashboard statistics
 export async function GET() {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Fetch all statistics in parallel
     const [
       totalProductsResult,
@@ -16,26 +22,44 @@ export async function GET() {
       lowStockProductsResult
     ] = await Promise.all([
       // Total products
-      db.select({ count: count() }).from(productsTable),
+      db.select({ count: count() })
+        .from(productsTable)
+        .where(eq(productsTable.userId, session.user.id)),
       
       // Total orders
-      db.select({ count: count() }).from(ordersTable),
+      db.select({ count: count() })
+        .from(ordersTable)
+        .where(eq(ordersTable.userId, session.user.id)),
       
       // Total customers
-      db.select({ count: count() }).from(customersTable),
+      db.select({ count: count() })
+        .from(customersTable)
+        .where(eq(customersTable.userId, session.user.id)),
       
       // Total revenue (sum of all order totals)
-      db.select({ total: sum(ordersTable.totalAmount) }).from(ordersTable),
+      db.select({ total: sum(ordersTable.totalAmount) })
+        .from(ordersTable)
+        .where(eq(ordersTable.userId, session.user.id)),
       
       // Recent orders (last 30 days)
       db.select({ count: count() })
         .from(ordersTable)
-        .where(gte(ordersTable.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))),
+        .where(
+          and(
+            eq(ordersTable.userId, session.user.id),
+            gte(ordersTable.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+          )
+        ),
       
       // Low stock products (stock < 10)
       db.select({ count: count() })
         .from(productsTable)
-        .where(lt(productsTable.stockQuantity, 10))
+        .where(
+          and(
+            eq(productsTable.userId, session.user.id),
+            lt(productsTable.stockQuantity, 10)
+          )
+        )
     ]);
 
     return NextResponse.json({

@@ -102,6 +102,95 @@ const NIGERIAN_BANKS = [
   "Zenith Bank"
 ].sort();
 
+const CustomSelect = ({ value, onChange, options, icon: Icon, showSearch = false, placeholder = "Select option" }: { 
+  value: string, 
+  onChange: (val: string) => void, 
+  options: string[],
+  icon?: React.ElementType,
+  showSearch?: boolean,
+  placeholder?: string
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const filteredOptions = options.filter(opt => 
+    opt.toLowerCase().includes(search.toLowerCase())
+  );
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between bg-input-bg border border-border-custom rounded-lg px-3.5 py-2.5 text-sm text-foreground hover:border-foreground/20 transition-all"
+      >
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="w-4 h-4 text-foreground/40" />}
+          <span className={!value ? "text-foreground/40" : ""}>{value || placeholder}</span>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-foreground/30 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col max-h-[280px]">
+          {showSearch && (
+            <div className="p-2 border-b border-border-custom sticky top-0 bg-background z-10">
+              <div className="relative bg-foreground/5 rounded-lg px-3 border border-border-custom">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/30" />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full bg-transparent pl-7 pr-2 py-2 text-sm outline-none placeholder:text-foreground/30 text-foreground border-none focus:ring-0"
+                />
+              </div>
+            </div>
+          )}
+          <div className="overflow-y-auto scrollbar-hide">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    onChange(option);
+                    setIsOpen(false);
+                    setSearch("");
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                    value === option 
+                      ? 'bg-accent text-white font-medium' 
+                      : 'text-foreground/60 hover:bg-foreground/5 hover:text-foreground'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-4 text-sm text-center text-foreground/40">
+                No results found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function OnboardingPage() {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -135,6 +224,8 @@ export default function OnboardingPage() {
     socialTiktok: "",
     socialYoutube: "",
     socialSnapchat: "",
+    firstName: "",
+    lastName: "",
   });
 
   const [nicheSearch, setNicheSearch] = useState("");
@@ -367,71 +458,13 @@ export default function OnboardingPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2.5 relative">
                       <label className="text-sm font-medium text-foreground">Niche</label>
-                      <Dialog.Root open={isNicheOpen} onOpenChange={setIsNicheOpen}>
-                        <Dialog.Trigger asChild>
-                          <div className="relative cursor-pointer">
-                            <input
-                              required
-                              readOnly
-                              name="niche"
-                              value={formData.niche}
-                              placeholder="Select Niche"
-                              className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer text-left text-foreground"
-                            />
-                            <ChevronDown className={`absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-transform duration-200 ${isNicheOpen ? 'rotate-180' : ''}`} />
-                          </div>
-                        </Dialog.Trigger>
-
-                        <Dialog.Portal>
-                          <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9998] animate-in fade-in duration-200" />
-                          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-[#1C1C1C] border border-border-custom rounded-xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-200">
-                            <div className="p-4 border-b border-border-custom bg-white dark:bg-[#1C1C1C] flex items-center justify-between">
-                              <Dialog.Title className="text-base font-semibold text-foreground">Select Niche</Dialog.Title>
-                              <Dialog.Close className="text-muted-foreground hover:text-foreground transition-colors">
-                                <X className="w-5 h-5" />
-                              </Dialog.Close>
-                            </div>
-                            <div className="p-4 bg-white dark:bg-[#1C1C1C]">
-                              <div className="relative bg-input-bg rounded-lg px-3">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                <input
-                                  autoFocus
-                                  value={nicheSearch}
-                                  onChange={(e) => setNicheSearch(e.target.value)}
-                                  placeholder="Search niches..."
-                                  className="w-full bg-transparent pl-8 pr-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground/50 text-foreground"
-                                />
-                              </div>
-                            </div>
-                            <div className="max-h-[300px] overflow-y-auto p-2 scrollbar-hide bg-white dark:bg-[#1C1C1C] border-t border-border-custom">
-                              {filteredNiches.length > 0 ? (
-                                filteredNiches.map((n) => (
-                                  <button
-                                    key={n}
-                                    type="button"
-                                    onClick={() => {
-                                      setFormData(prev => ({ ...prev, niche: n }));
-                                      setIsNicheOpen(false);
-                                      setNicheSearch("");
-                                    }}
-                                    className={`w-full text-left px-4 py-3 text-sm rounded-lg transition-colors mb-1 last:mb-0 ${
-                                      formData.niche === n 
-                                        ? 'bg-accent text-white' 
-                                        : 'hover:bg-accent/10 text-foreground'
-                                    }`}
-                                  >
-                                    {n}
-                                  </button>
-                                ))
-                              ) : (
-                                <div className="px-4 py-8 text-sm text-center text-muted-foreground">
-                                  No niches found
-                                </div>
-                              )}
-                            </div>
-                          </Dialog.Content>
-                        </Dialog.Portal>
-                      </Dialog.Root>
+                      <CustomSelect 
+                        value={formData.niche} 
+                        onChange={(val) => setFormData(prev => ({ ...prev, niche: val }))} 
+                        options={NICHES}
+                        showSearch={true}
+                        placeholder="Select Niche"
+                      />
                     </div>
                     <div className="space-y-2.5">
                       <label className="text-sm font-medium">Store Phone</label>
@@ -463,71 +496,13 @@ export default function OnboardingPage() {
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="space-y-2.5 relative">
                     <label className="text-sm font-medium text-foreground">Bank Name</label>
-                    <Dialog.Root open={isBankOpen} onOpenChange={setIsBankOpen}>
-                      <Dialog.Trigger asChild>
-                        <div className="relative cursor-pointer">
-                          <input
-                            required
-                            readOnly
-                            name="bankName"
-                            value={formData.bankName}
-                            placeholder="Select Bank"
-                            className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer text-left text-foreground"
-                          />
-                          <ChevronDown className={`absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-transform duration-200 ${isBankOpen ? 'rotate-180' : ''}`} />
-                        </div>
-                      </Dialog.Trigger>
-
-                      <Dialog.Portal>
-                        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9998] animate-in fade-in duration-200" />
-                        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-[#1C1C1C] border border-border-custom rounded-xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-200">
-                          <div className="p-4 border-b border-border-custom bg-white dark:bg-[#1C1C1C] flex items-center justify-between">
-                            <Dialog.Title className="text-base font-semibold text-foreground">Select Bank</Dialog.Title>
-                            <Dialog.Close className="text-muted-foreground hover:text-foreground transition-colors">
-                              <X className="w-5 h-5" />
-                            </Dialog.Close>
-                          </div>
-                          <div className="p-4 bg-white dark:bg-[#1C1C1C]">
-                            <div className="relative bg-input-bg rounded-lg px-3">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                              <input
-                                autoFocus
-                                value={bankSearch}
-                                onChange={(e) => setBankSearch(e.target.value)}
-                                placeholder="Search banks..."
-                                className="w-full bg-transparent pl-8 pr-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground/50 text-foreground"
-                              />
-                            </div>
-                          </div>
-                          <div className="max-h-[300px] overflow-y-auto p-2 scrollbar-hide bg-white dark:bg-[#1C1C1C] border-t border-border-custom">
-                            {filteredBanks.length > 0 ? (
-                              filteredBanks.map((b) => (
-                                <button
-                                  key={b}
-                                  type="button"
-                                  onClick={() => {
-                                    setFormData(prev => ({ ...prev, bankName: b }));
-                                    setIsBankOpen(false);
-                                    setBankSearch("");
-                                  }}
-                                  className={`w-full text-left px-4 py-3 text-sm rounded-lg transition-colors mb-1 last:mb-0 ${
-                                    formData.bankName === b 
-                                      ? 'bg-accent text-white' 
-                                      : 'hover:bg-accent/10 text-foreground'
-                                  }`}
-                                >
-                                  {b}
-                                </button>
-                              ))
-                            ) : (
-                              <div className="px-4 py-8 text-sm text-center text-muted-foreground">
-                                No banks found
-                              </div>
-                            )}
-                          </div>
-                        </Dialog.Content>
-                      </Dialog.Portal>
-                    </Dialog.Root>
+                    <CustomSelect 
+                      value={formData.bankName} 
+                      onChange={(val) => setFormData(prev => ({ ...prev, bankName: val }))} 
+                      options={NIGERIAN_BANKS}
+                      showSearch={true}
+                      placeholder="Select Bank"
+                    />
                   </div>
                   <div className="space-y-2.5">
                     <label className="text-sm font-medium">Account Name</label>

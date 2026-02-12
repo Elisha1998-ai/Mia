@@ -4,10 +4,11 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 
-load_dotenv()
+load_dotenv(override=True)
 api_key = os.getenv("GROQ_API_KEY")
 
-print(f"API Key found: {api_key[:10]}...")
+print(f"API Key found in environment: '{api_key}'")
+print(f"Key starts with: {api_key[:10]}...")
 
 try:
     llm = ChatGroq(

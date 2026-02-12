@@ -8,7 +8,7 @@ import json
 from dotenv import load_dotenv
 
 # Load .env if it exists
-load_dotenv()
+load_dotenv(override=True)
 
 @tool
 def get_store_stats():
@@ -42,7 +42,7 @@ def generate_brand_assets(business_name: str, niche: str):
     return f"REQUEST_BRAND_GEN:{business_name}:{niche}"
 
 @tool
-def setup_storefront_action(business_name: str, niche: str):
+def setup_storefront(business_name: str, niche: str):
     """
     Setup a high-converting storefront for the business.
     business_name: The name of the business.
@@ -50,11 +50,24 @@ def setup_storefront_action(business_name: str, niche: str):
     """
     return f"REQUEST_STORE_SETUP:{business_name}:{niche}"
 
+@tool
+def customize_branding(primary_color: str = None, heading_font: str = None, body_font: str = None, hero_image_url: str = None):
+    """
+    Customize the store's branding including colors, fonts, and hero images.
+    primary_color: Hex code for the primary brand color (e.g., '#FF5733').
+    heading_font: Font family for headings. Options: 'Instrument Serif', 'Playfair Display', 'Montserrat', 'Inter', 'Roboto', 'Lora'.
+    body_font: Font family for body text. Options: 'Inter', 'Montserrat', 'Roboto', 'Lora'.
+    hero_image_url: URL for the hero section background image. Use high-quality Unsplash URLs for niches (e.g., 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571' for skincare).
+    """
+    return f"REQUEST_BRANDING_CUSTOMIZATION:{primary_color}:{heading_font}:{body_font}:{hero_image_url}"
+
 def mia_unified_agent(message, business_context=None):
     """
     Unified Mia agent using function calling logic.
     """
+    load_dotenv(override=True)
     api_key = os.getenv("GROQ_API_KEY")
+    print(f"DEBUG: Using GROQ_API_KEY: {api_key[:10]}...")
     if not api_key:
         return {"tool": None, "content": "I'm sorry, but I can't access my AI brain right now. Please make sure the API key is configured correctly."}
 
@@ -63,7 +76,7 @@ def mia_unified_agent(message, business_context=None):
             temperature=0.0, # Zero temperature for absolute facts
             model_name="llama-3.3-70b-versatile",
             groq_api_key=api_key
-        ).bind_tools([create_document, import_products, generate_brand_assets, setup_storefront_action])
+        ).bind_tools([create_document, import_products, generate_brand_assets, setup_storefront, customize_branding])
 
         # DATA-FIRST SYSTEM PROMPT: Facts are provided at the very top.
         system_prompt = f"""### YOUR DATA SOURCE (TRUTH):
@@ -169,15 +182,6 @@ def data_architect_task(task_description, business_context=None):
         business_context
     )
 
-def brand_designer_task(task_description, business_context=None):
-    return run_agent_task(
-        "Brand Designer",
-        "Create compelling product descriptions and branding assets",
-        "A creative genius who knows how to make products sell using emotional triggers.",
-        task_description,
-        business_context
-    )
-
 def accountant_task(task_description, business_context=None):
     return run_agent_task(
         "Accountant",
@@ -231,6 +235,7 @@ def intent_classifier_task(message):
         'greeting', 
         'brand_generation', 
         'store_setup', 
+        'branding_customization',
         'product_extraction', 
         'insight_request', 
         'document_generation', 
@@ -238,6 +243,8 @@ def intent_classifier_task(message):
         'general_query'. 
 
         Rules:
+        - 'store_setup': Use this when the user asks to "build a store", "setup my shop", "create my storefront", etc.
+        - 'branding_customization': Use this when the user wants to change colors, fonts, or overall look of the store.
         - 'insight_request': Use this when the user is asking FOR information about their store, data, stats, products, orders, or customers. 
           Examples: "How many products?", "Show me my orders", "Who are my top customers?", "Give me a summary of my store".
         - 'product_extraction': Use this ONLY when the user is PROVIDING product data to be added or imported. 

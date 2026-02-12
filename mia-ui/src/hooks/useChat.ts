@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 export const useChat = () => {
+  const { data: session } = useSession();
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -15,7 +17,10 @@ export const useChat = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: content })
+        body: JSON.stringify({ 
+          message: content,
+          user_id: session?.user?.id 
+        })
       });
 
       if (!response.ok) {
@@ -42,7 +47,9 @@ export const useChat = () => {
            title: data.widget.title,
            description: data.widget.content, // We map 'content' to 'description' for the markdown preview
            imageUrl: data.widget.imageUrl,
-           link: data.widget.link
+           link: data.widget.link,
+           url: data.widget.url,
+           storeName: data.widget.storeName
          }];
        } else if (data.widgets) {
          assistantMsg.widgets = data.widgets;

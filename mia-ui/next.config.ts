@@ -9,13 +9,17 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
   },
   async rewrites() {
     return [
       {
         source: '/chat-api/:path*',
-        destination: 'http://127.0.0.1:8000/:path*',
+        destination: 'http://localhost:8000/:path*',
       },
     ];
   },

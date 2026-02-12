@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders as ordersTable, customers as customersTable, orderItems as orderItemsTable, products as productsTable } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { auth } from '@/auth';
 
 // GET /api/orders/[id] - Get a specific order
 export async function GET(
@@ -9,9 +10,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const order = await db.query.orders.findFirst({
-      where: eq(ordersTable.id, id),
+      where: and(
+        eq(ordersTable.id, id),
+        eq(ordersTable.userId, session.user.id)
+      ),
       with: {
         customer: true,
         items: {
@@ -67,6 +76,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { status, total_amount, customer_id } = body;
@@ -78,7 +92,10 @@ export async function PUT(
         customerId: customer_id,
         updatedAt: new Date()
       })
-      .where(eq(ordersTable.id, id))
+      .where(and(
+        eq(ordersTable.id, id),
+        eq(ordersTable.userId, session.user.id)
+      ))
       .returning();
 
     if (!order) {
@@ -89,7 +106,10 @@ export async function PUT(
     }
 
     const customer = order.customerId ? await db.query.customers.findFirst({
-      where: eq(customersTable.id, order.customerId)
+      where: and(
+        eq(customersTable.id, order.customerId),
+        eq(customersTable.userId, session.user.id)
+      )
     }) : null;
 
     return NextResponse.json({
@@ -121,9 +141,26 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
-    await db.delete(ordersTable)
-      .where(eq(ordersTable.id, id));
+    
+    const [order] = await db.delete(ordersTable)
+      .where(and(
+        eq(ordersTable.id, id),
+        eq(ordersTable.userId, session.user.id)
+      ))
+      .returning();
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

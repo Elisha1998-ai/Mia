@@ -40,12 +40,20 @@ class StoreSettings(Base):
     admin_name = Column(String, name='adminName')
     admin_email = Column(String, name='adminEmail')
     admin_role = Column(String, default='Store Owner', name='adminRole')
+    primary_color = Column(String, default='#000000', name='primaryColor')
+    heading_font = Column(String, default='Instrument Serif', name='headingFont')
+    body_font = Column(String, default='Inter', name='bodyFont')
+    hero_title = Column(Text, name='heroTitle')
+    hero_description = Column(Text, name='heroDescription')
+    hero_image = Column(Text, name='heroImage')
+    footer_description = Column(Text, name='footerDescription')
     onboarding_completed = Column(Boolean, default=False, name='onboardingCompleted')
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), name='updatedAt')
 
 class Product(Base):
     __tablename__ = 'product'
     id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey('user.id'), name='userId')
     external_id = Column(String, unique=True, name='externalId') # ID from platform (Shopify/Amazon)
     name = Column(String, nullable=False)
     description = Column(Text)
@@ -61,6 +69,7 @@ class Product(Base):
 class Customer(Base):
     __tablename__ = 'customer'
     id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey('user.id'), name='userId')
     email = Column(String, unique=True, nullable=False)
     full_name = Column(String, name='fullName')
     phone = Column(String)
@@ -71,6 +80,7 @@ class Customer(Base):
 class Store(Base):
     __tablename__ = 'store'
     id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey('user.id'), name='userId')
     name = Column(String, nullable=False)
     platform = Column(String, nullable=False) # 'shopify', 'amazon', etc.
     store_url = Column(String, unique=True, nullable=False, name='storeUrl')
@@ -84,13 +94,13 @@ class Store(Base):
 class Order(Base):
     __tablename__ = 'order'
     id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey('user.id'), name='userId')
     external_id = Column(String, unique=True, name='externalId')
     customer_id = Column(String, ForeignKey('customer.id'), name='customerId')
     store_id = Column(String, ForeignKey('store.id'), name='storeId')
     total_amount = Column(DECIMAL(10, 2), name='totalAmount')
     profit_margin = Column(Float, name='profitMargin') # New: Calculated profit for this order
     status = Column(String, default='pending')
-    ai_notes = Column(Text, name='aiNotes') # New: AI agent insights
     created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
     
     customer = relationship("Customer")

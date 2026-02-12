@@ -28,10 +28,27 @@ export default async function StoreLayout({
   const bodyFont = settings?.bodyFont || 'Inter';
 
   // Map font names to CSS variables if they match our loaded Google fonts
-  const headingFontValue = headingFont === 'Instrument Serif' ? 'var(--font-serif)' : 
-                          headingFont === 'Inter' ? 'var(--font-inter)' : headingFont;
-  const bodyFontValue = bodyFont === 'Inter' ? 'var(--font-inter)' : 
-                       bodyFont === 'Instrument Serif' ? 'var(--font-serif)' : bodyFont;
+   const fontMap: Record<string, string> = {
+     'Instrument Serif': 'var(--font-serif)',
+     'Inter': 'var(--font-inter)',
+     'Playfair Display': 'var(--font-playfair)',
+     'Montserrat': 'var(--font-montserrat)',
+     'Roboto': 'var(--font-roboto)',
+     'Lora': 'var(--font-lora)',
+     'Bebas Neue': 'var(--font-bebas)',
+     'Oswald': 'var(--font-oswald)',
+     'Libre Baskerville': 'var(--font-baskerville)',
+     'Cinzel': 'var(--font-cinzel)',
+     'Poppins': 'var(--font-poppins)',
+     'Raleway': 'var(--font-raleway)',
+     'Quicksand': 'var(--font-quicksand)',
+     'Space Grotesk': 'var(--font-space)',
+     'Cormorant Garamond': 'var(--font-cormorant)',
+     'Work Sans': 'var(--font-work)'
+   };
+
+  const headingFontValue = fontMap[headingFont] || headingFont;
+  const bodyFontValue = fontMap[bodyFont] || bodyFont;
 
   return (
     <div 
