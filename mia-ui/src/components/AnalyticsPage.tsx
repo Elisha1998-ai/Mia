@@ -80,7 +80,7 @@ export const AnalyticsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
           <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Analytics...</p>
@@ -146,10 +146,7 @@ export const AnalyticsPage = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-accent/10 rounded-lg text-accent">
-                <DollarSign className="w-5 h-5" />
-              </div>
+            <div className="flex items-center justify-end">
               <span className="flex items-center gap-1 text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">
                 <ArrowUpRight className="w-3 h-3" />
                 12.5%
@@ -162,10 +159,7 @@ export const AnalyticsPage = () => {
           </div>
 
           <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
-                <ShoppingCart className="w-5 h-5" />
-              </div>
+            <div className="flex items-center justify-end">
               <span className="flex items-center gap-1 text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">
                 <ArrowUpRight className="w-3 h-3" />
                 8.2%
@@ -178,10 +172,7 @@ export const AnalyticsPage = () => {
           </div>
 
           <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
-                <TrendingUp className="w-5 h-5" />
-              </div>
+            <div className="flex items-center justify-end">
               <span className="flex items-center gap-1 text-xs font-medium text-rose-500 bg-rose-500/10 px-2 py-1 rounded-full">
                 <ArrowDownRight className="w-3 h-3" />
                 3.1%

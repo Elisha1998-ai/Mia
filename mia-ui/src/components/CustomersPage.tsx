@@ -349,8 +349,19 @@ export const CustomersPage = () => {
     setEditingCustomer(null);
   };
 
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Customers...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 flex flex-col bg-background h-full overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0 bg-background animate-in fade-in duration-500">
       {/* Desktop Header */}
       <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border-custom">
         <div className="flex items-center gap-4 flex-1 max-w-2xl">
@@ -434,18 +445,9 @@ export const CustomersPage = () => {
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden flex flex-col bg-background border-b border-border-custom">
-        <div className="flex items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold text-foreground">Customers</h1>
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="p-2 bg-accent text-white rounded-xl shadow-lg shadow-accent/20"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="px-4 pb-4 flex flex-col gap-3">
-          <div className="relative">
+      <div className="md:hidden flex flex-col gap-3 px-4 py-4 border-b border-border-custom">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
             <input 
               type="text" 
@@ -455,8 +457,16 @@ export const CustomersPage = () => {
               className="w-full bg-foreground/5 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all"
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            <Popover.Root>
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="p-2.5 bg-accent text-white rounded-xl shadow-lg shadow-accent/20 flex-shrink-0"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <Popover.Root>
               <Popover.Trigger asChild>
                 <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-foreground/5 text-[12px] font-bold text-foreground/60 whitespace-nowrap">
                   {statusFilter}
@@ -499,7 +509,6 @@ export const CustomersPage = () => {
                 </Popover.Content>
               </Popover.Portal>
             </Popover.Root>
-          </div>
         </div>
       </div>
 
@@ -551,16 +560,7 @@ export const CustomersPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-custom">
-            {loading ? (
-              <tr>
-                <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
-                  <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                    <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm font-medium">Loading customers...</p>
-                  </div>
-                </td>
-              </tr>
-            ) : filteredCustomers.length === 0 ? (
+            {filteredCustomers.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
                   <div className="flex flex-col items-center justify-center min-h-[400px] text-foreground/30">

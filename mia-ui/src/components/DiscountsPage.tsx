@@ -389,8 +389,19 @@ export const DiscountsPage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Discounts...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 flex flex-col bg-background h-full overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0 bg-background animate-in fade-in duration-500">
       <AddDiscountModal 
         isOpen={isAddModalOpen} 
         onClose={() => {
@@ -476,15 +487,10 @@ export const DiscountsPage = () => {
 
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-foreground/40">
-            <Loader2 className="w-8 h-8 animate-spin" />
-            <p className="text-sm font-medium">Loading discounts...</p>
-          </div>
-        ) : filteredDiscounts.length === 0 ? (
+        {filteredDiscounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-foreground/40">
             <div className="w-16 h-16 rounded-3xl bg-foreground/5 flex items-center justify-center">
-              <Ticket className="w-8 h-8" />
+              <Tag className="w-8 h-8" />
             </div>
             <div className="text-center">
               <p className="text-sm font-bold text-foreground">No discounts found</p>

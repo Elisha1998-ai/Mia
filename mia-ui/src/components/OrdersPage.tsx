@@ -132,11 +132,11 @@ const MobileOrderCard = ({
   return (
     <div className="border-b border-border-custom last:border-none">
       <div 
-        className="flex items-center justify-between px-4 py-4 cursor-pointer"
+        className="flex items-center justify-between px-4 py-4 cursor-pointer group"
         onClick={onToggle}
       >
         <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded border border-border-custom flex items-center justify-center text-foreground/40">
+          <div className="w-6 h-6 rounded-lg border border-border-custom flex items-center justify-center text-foreground/40 shadow-sm group-active:scale-90 transition-all">
             {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
           </div>
           <span className="font-bold text-[14px] text-foreground">#{order.orderNumber}</span>
@@ -400,8 +400,19 @@ export const OrdersPage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Orders...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 flex flex-col bg-background h-full overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0 bg-background animate-in fade-in duration-500">
       {/* Desktop Header */}
       <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border-custom">
         <div className="flex items-center gap-4 flex-1 max-w-2xl">
@@ -510,8 +521,8 @@ export const OrdersPage = () => {
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden flex flex-col gap-4 px-4 py-6 border-b border-border-custom">
-        <div className="flex items-center gap-1.5 p-1 bg-foreground/[0.03] rounded-xl mt-8">
+      <div className="md:hidden flex flex-col gap-4 px-4 py-4 border-b border-border-custom">
+        <div className="flex items-center gap-1.5 p-1 bg-foreground/[0.03] rounded-xl">
           {(['All Orders', 'Upcoming', 'Past Orders'] as const).map((tab) => (
             <button
               key={tab}
@@ -608,16 +619,7 @@ export const OrdersPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-custom">
-            {loading ? (
-              <tr>
-                <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
-                  <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                    <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm font-medium">Loading orders...</p>
-                  </div>
-                </td>
-              </tr>
-            ) : filteredOrders.length === 0 ? (
+            {filteredOrders.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
                   <div className="flex flex-col items-center justify-center min-h-[400px] text-foreground/30">

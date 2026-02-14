@@ -144,6 +144,17 @@ export const IntegrationsPage = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Integrations...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-background animate-in fade-in duration-500">
       <header className="px-8 py-6 border-b border-border-custom flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 bg-background/80 backdrop-blur-md z-30">

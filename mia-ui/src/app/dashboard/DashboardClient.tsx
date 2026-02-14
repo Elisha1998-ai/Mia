@@ -75,19 +75,13 @@ export function DashboardClient() {
                         >
                             <Menu className="w-6 h-6" />
                         </button>
-                        <div className="flex items-center gap-3">
-                            <div className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-                            <h1 className="text-sm font-semibold capitalize tracking-tight">
-                                {activeView === 'previews' ? 'Design Previews' : activeView}
-                            </h1>
-                        </div>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-[10px] font-bold text-accent">
                         {initials}
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
                     {activeView === 'chat' && (
                         <ChatInterface
                             messages={messages}

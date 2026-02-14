@@ -282,6 +282,17 @@ export const ProductsPage = () => {
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Products...</p>
+        </div>
+      </div>
+    );
+  }
+
   const filteredProducts = React.useMemo(() => {
     return products
       .filter(p => {
@@ -441,7 +452,7 @@ export const ProductsPage = () => {
         }
       />
       
-      <div className="flex-1 flex flex-col bg-background h-full overflow-hidden">
+      <div className="flex-1 flex flex-col bg-background h-full overflow-hidden animate-in fade-in duration-500">
         {/* Inventory Alerts Banner */}
         {(inventoryStats.lowStock > 0 || inventoryStats.outOfStock > 0) && (
           <div className="px-6 py-2 bg-orange-500/5 border-b border-orange-500/10 flex items-center gap-6 overflow-x-auto no-scrollbar">
@@ -601,28 +612,27 @@ export const ProductsPage = () => {
 
         {/* Mobile Header */}
         <div className="md:hidden flex flex-col bg-background border-b border-border-custom">
-          <div className="flex items-center justify-between px-4 py-4">
-            <h1 className="text-xl font-bold text-foreground">Products</h1>
-            <button 
-              onClick={() => {
-                setEditingProduct(null);
-                setIsAddModalOpen(true);
-              }}
-              className="p-2 bg-accent text-white rounded-xl shadow-lg shadow-accent/20"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="px-4 pb-4 flex flex-col gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
-              <input 
-                type="text" 
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-foreground/5 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
-              />
+          <div className="px-4 py-4 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
+                <input 
+                  type="text" 
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-foreground/5 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                />
+              </div>
+              <button 
+                onClick={() => {
+                  setEditingProduct(null);
+                  setIsAddModalOpen(true);
+                }}
+                className="p-2.5 bg-accent text-white rounded-xl shadow-lg shadow-accent/20 flex-shrink-0"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
               <Popover.Root>
@@ -700,16 +710,7 @@ export const ProductsPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border-custom">
-              {loading ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
-                    <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                      <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                      <p className="text-sm font-medium">Loading products...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredProducts.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-12 text-center text-foreground/40">
                     <div className="flex flex-col items-center justify-center min-h-[400px] text-foreground/30">
