@@ -47,16 +47,20 @@ export async function GET(
       total_amount: Number(order.totalAmount),
       profit_margin: order.profitMargin ? Number(order.profitMargin) : undefined,
       status: order.status,
+      shipping_address: order.shippingAddress || undefined,
+      shipping_method: order.shippingMethod || undefined,
+      payment_method: order.paymentMethod || undefined,
       created_at: order.createdAt.toISOString(),
       customer: order.customer ? {
         id: order.customer.id,
         email: order.customer.email,
-        full_name: order.customer.fullName || undefined
+        full_name: order.customer.fullName || undefined,
+        phone: order.customer.phone || undefined
       } : undefined,
       items: order.items.map(item => ({
         id: item.id,
         product_id: item.productId,
-        product_name: item.product.name,
+        product_name: item.product?.name || 'Deleted Product',
         quantity: item.quantity,
         price: Number(item.price)
       }))
@@ -83,13 +87,16 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, total_amount, customer_id } = body;
+    const { status, total_amount, customer_id, shipping_address, shipping_method, payment_method } = body;
     
     const [order] = await db.update(ordersTable)
       .set({
         status,
         totalAmount: total_amount?.toString(),
         customerId: customer_id,
+        shippingAddress: shipping_address,
+        shippingMethod: shipping_method,
+        paymentMethod: payment_method,
         updatedAt: new Date()
       })
       .where(and(

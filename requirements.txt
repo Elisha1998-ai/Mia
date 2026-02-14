@@ -10,3 +10,4 @@ pandas
 reportlab
 requests
 langchain-openai
+langchain-groq

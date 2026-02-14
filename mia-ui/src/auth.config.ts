@@ -35,21 +35,23 @@ export const authConfig = {
       },
     }),
   ],
+  session: { strategy: "jwt" },
   pages: {
     signIn: "/auth/signin",
     verifyRequest: "/auth/verify-email",
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    async authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth")
-      const isPublicRoute = ["/", "/auth", "/auth/signin", "/auth/verify-email"].includes(nextUrl.pathname)
+      const isPublicRoute = ["/", "/auth", "/auth/signin", "/auth/verify-email", "/logo"].includes(nextUrl.pathname) || nextUrl.pathname.startsWith("/store")
       const isAuthRoute = nextUrl.pathname.startsWith("/auth")
 
       if (isApiAuthRoute) return true
 
       if (isAuthRoute) {
         if (isLoggedIn) {
+          // If logged in and on auth page, redirect to dashboard
           return Response.redirect(new URL("/dashboard", nextUrl))
         }
         return true

@@ -3,7 +3,7 @@
 import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Popover from '@radix-ui/react-popover';
-import { X, ShoppingCart, User, Calendar, DollarSign, CreditCard, ChevronDown, Package, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { X, ShoppingCart, User, Calendar, DollarSign, CreditCard, ChevronDown, Package, ChevronLeft, ChevronRight, Plus, Trash2, Mail, Phone } from 'lucide-react';
 
 interface OrderItem {
   productId: string;
@@ -16,7 +16,7 @@ interface AddOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (order: any) => void;
-  customers: { id: string, name: string }[];
+  customers: { id: string, name: string, email?: string, phone?: string }[];
   products: { id: string, name: string, price: number }[];
 }
 
@@ -271,6 +271,8 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: A
     orderNumber: '',
     customerName: '',
     customerId: '',
+    customerEmail: '',
+    customerPhone: '',
     items: [] as OrderItem[],
     total: '0',
     status: 'Processing',
@@ -296,6 +298,8 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: A
         orderNumber: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
         customerName: '',
         customerId: '',
+        customerEmail: '',
+        customerPhone: '',
         items: [],
         total: '0',
         status: 'Processing',
@@ -345,13 +349,27 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: A
       alert("Please add at least one product to the order.");
       return;
     }
-    onAdd({
-      ...formData,
-      id: Math.random().toString(36).substr(2, 9),
-      total: parseFloat(formData.total) || 0,
-      itemsCount: formData.items.reduce((sum, item) => sum + item.quantity, 0),
-      productName: formData.items[0].productName + (formData.items.length > 1 ? ` (+${formData.items.length - 1} more)` : '')
-    });
+    
+    // Format data for API
+    const apiData = {
+      order_number: formData.orderNumber,
+      customer_id: formData.customerId,
+      customer_name: formData.customerName,
+      customer_email: formData.customerEmail,
+      customer_phone: formData.customerPhone,
+      total_amount: parseFloat(formData.total) || 0,
+      status: formData.status,
+      payment_method: formData.paymentMethod,
+      shipping_method: formData.shippingMethod,
+      shipping_address: formData.address,
+      items: formData.items.map(item => ({
+        product_id: item.productId,
+        quantity: item.quantity,
+        price: item.price
+      }))
+    };
+
+    onAdd(apiData);
     onClose();
   };
 
@@ -402,14 +420,47 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: A
                   </div>
                   <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Customer</label>
-                    <SearchableSelect 
-                      value={formData.customerName}
-                      onChange={(name, id) => setFormData({ ...formData, customerName: name, customerId: id || '' })}
-                      options={customers}
-                      placeholder="Search or type customer name..."
-                      icon={User}
-                      allowFreeText={true}
-                    />
+                    <div className="grid gap-3">
+                      <SearchableSelect 
+                        value={formData.customerName}
+                        onChange={(name, id) => {
+                          const customer = customers.find(c => c.id === id);
+                          setFormData({ 
+                            ...formData, 
+                            customerName: name, 
+                            customerId: id || '',
+                            customerEmail: customer?.email || formData.customerEmail,
+                            customerPhone: customer?.phone || formData.customerPhone
+                          });
+                        }}
+                        options={customers}
+                        placeholder="Search or type customer name..."
+                        icon={User}
+                        allowFreeText={true}
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
+                          <input 
+                            type="email"
+                            value={formData.customerEmail}
+                            onChange={e => setFormData({...formData, customerEmail: e.target.value})}
+                            placeholder="Email address"
+                            className="w-full bg-foreground/5 border border-border-custom rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all"
+                          />
+                        </div>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
+                          <input 
+                            type="tel"
+                            value={formData.customerPhone}
+                            onChange={e => setFormData({...formData, customerPhone: e.target.value})}
+                            placeholder="Phone number"
+                            className="w-full bg-foreground/5 border border-border-custom rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Delivery Address</label>
@@ -554,8 +605,8 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: A
             </div>
           </form>
 
-          {/* Footer */}
-          <div className="hidden md:flex p-5 border-t border-border-custom bg-background justify-end gap-3">
+          {/* Footer Actions */}
+          <div className="hidden md:flex p-5 border-t border-border-custom bg-background items-center justify-end gap-3">
             <Dialog.Close asChild>
               <button className="px-6 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors">
                 Cancel

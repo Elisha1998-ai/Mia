@@ -25,6 +25,9 @@ export async function GET(request: Request) {
       totalAmount: ordersTable.totalAmount,
       profitMargin: ordersTable.profitMargin,
       status: ordersTable.status,
+      shippingAddress: ordersTable.shippingAddress,
+      shippingMethod: ordersTable.shippingMethod,
+      paymentMethod: ordersTable.paymentMethod,
       createdAt: ordersTable.createdAt,
       customer: {
         id: customersTable.id,
@@ -60,6 +63,9 @@ export async function GET(request: Request) {
         total_amount: Number(o.totalAmount),
         profit_margin: o.profitMargin ? Number(o.profitMargin) : undefined,
         status: o.status,
+        shipping_address: o.shippingAddress || undefined,
+        shipping_method: o.shippingMethod || undefined,
+        payment_method: o.paymentMethod || undefined,
         created_at: new Date(o.createdAt).toISOString(),
         customer: o.customer && (o.customer.id || o.customer.fullName || o.customer.email) ? {
           id: o.customer.id || '',
@@ -98,9 +104,14 @@ export async function POST(request: Request) {
       order_number,
       customer_id, 
       customer_name,
+      customer_email,
+      customer_phone,
       total_amount, 
       status = 'pending', 
       external_id,
+      shipping_address,
+      shipping_method,
+      payment_method,
       items = [] 
     } = body;
 
@@ -110,14 +121,29 @@ export async function POST(request: Request) {
 
       // Create a new customer if one doesn't exist but a name was provided
       if (!finalCustomerId && customer_name) {
-        // Generate a simple email for new customers if not provided
-        const placeholderEmail = `customer_${Date.now()}@mia-auto.ai`;
-        const [newCustomer] = await tx.insert(customersTable).values({
-          userId: session.user.id,
-          fullName: customer_name,
-          email: placeholderEmail,
-        }).returning();
-        finalCustomerId = newCustomer.id;
+        // Use provided email or generate a placeholder
+        const finalEmail = customer_email || `customer_${Date.now()}@mia-auto.ai`;
+        
+        // Check if customer with this email already exists
+        const [existingCustomer] = await tx.select()
+          .from(customersTable)
+          .where(and(
+            eq(customersTable.userId, session.user.id),
+            eq(customersTable.email, finalEmail)
+          ))
+          .limit(1);
+
+        if (existingCustomer) {
+          finalCustomerId = existingCustomer.id;
+        } else {
+          const [newCustomer] = await tx.insert(customersTable).values({
+            userId: session.user.id,
+            fullName: customer_name,
+            email: finalEmail,
+            phone: customer_phone || null,
+          }).returning();
+          finalCustomerId = newCustomer.id;
+        }
       }
 
       // 1. Create the order
@@ -127,7 +153,10 @@ export async function POST(request: Request) {
         customerId: finalCustomerId,
         totalAmount: total_amount.toString(),
         status: status,
-        externalId: external_id
+        externalId: external_id,
+        shippingAddress: shipping_address,
+        shippingMethod: shipping_method,
+        paymentMethod: payment_method
       }).returning();
 
       if (items.length > 0) {
@@ -149,6 +178,9 @@ export async function POST(request: Request) {
         customerId: ordersTable.customerId,
         totalAmount: ordersTable.totalAmount,
         status: ordersTable.status,
+        shippingAddress: ordersTable.shippingAddress,
+        shippingMethod: ordersTable.shippingMethod,
+        paymentMethod: ordersTable.paymentMethod,
         createdAt: ordersTable.createdAt,
         customer: {
           id: customersTable.id,
@@ -175,6 +207,9 @@ export async function POST(request: Request) {
       customer_id: result.customerId || undefined,
       total_amount: Number(result.totalAmount),
       status: result.status,
+      shipping_address: result.shippingAddress || undefined,
+      shipping_method: result.shippingMethod || undefined,
+      payment_method: result.paymentMethod || undefined,
       created_at: new Date(result.createdAt).toISOString(),
       customer: result.customer && (result.customer.id || result.customer.fullName || result.customer.email) ? {
         id: result.customer.id || '',

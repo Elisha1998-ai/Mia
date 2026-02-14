@@ -13,6 +13,9 @@ import {
   Share2,
   Search,
   Palette,
+  Globe,
+  Settings2,
+  ChevronLeft
 } from 'lucide-react';
 
 const NICHES = [
@@ -207,10 +210,31 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const [activeTab, setActiveTab] = React.useState('Account');
   const [isSaving, setIsSaving] = React.useState(false);
   const [showSuccess, setShowSuccess] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [isMobile, setIsMobile] = React.useState(false);
   const { settings, loading, fetchSettings, updateSettings } = useSettings();
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768 is the 'md' breakpoint in Tailwind
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Local state for form fields
   const [formData, setFormData] = React.useState<Partial<StoreSettings>>({});
+
+  const slugify = (text: string) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
 
   React.useEffect(() => {
     if (isOpen) {
@@ -228,7 +252,11 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const handleSave = async (sectionData: Partial<StoreSettings>) => {
     try {
       setIsSaving(true);
-      await updateSettings(sectionData);
+      
+      // Filter out fields that shouldn't be sent to the API
+      const { id, userId, updatedAt, ...cleanData } = sectionData as any;
+      
+      await updateSettings(cleanData);
       // Update local state to reflect changes immediately
       setFormData(prev => ({ ...prev, ...sectionData }));
       
@@ -237,6 +265,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
       setTimeout(() => setShowSuccess(false), 2000);
     } catch (error) {
       console.error('Failed to save settings:', error);
+      alert('Failed to save settings. The store domain might already be taken.');
     } finally {
       setIsSaving(false);
     }
@@ -246,6 +275,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     { id: 'Account', icon: User, label: 'Account' },
     { id: 'Store', icon: Store, label: 'Store Settings' },
     { id: 'Design', icon: Palette, label: 'Store Design' },
+    { id: 'SEO', icon: Globe, label: 'SEO & Meta' },
     { id: 'Payments', icon: CreditCard, label: 'Payments & Bank' },
     { id: 'Social', icon: Share2, label: 'Social Links' },
   ];
@@ -253,42 +283,61 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[100]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[850px] bg-background border border-border-custom rounded-2xl z-[101] overflow-hidden flex flex-col h-[60vh]">
+        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[100] md:block hidden" />
+        <Dialog.Content className="fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-[850px] bg-background md:border border-border-custom md:rounded-2xl z-[101] overflow-hidden flex flex-col h-full md:h-[60vh] inset-0 md:inset-auto">
           
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-border-custom bg-background">
-            <div className="flex items-center gap-3">
-              <Dialog.Title className="text-lg font-bold text-foreground">Settings</Dialog.Title>
+          <div className="flex flex-col border-b border-border-custom bg-background sticky top-0 z-10">
+            <div className="flex items-center justify-between p-4 md:p-5">
+              <div className="flex items-center gap-4">
+                <button onClick={onClose} className="md:hidden p-2 -ml-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <Dialog.Title className="text-lg font-bold text-foreground">Settings</Dialog.Title>
+              </div>
+              <Dialog.Close asChild>
+                <button className="hidden md:block p-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </Dialog.Close>
             </div>
-            <Dialog.Close asChild>
-              <button className="p-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
-                <X className="w-5 h-5" />
-              </button>
-            </Dialog.Close>
+            
+            {/* Search Bar - Mobile Only */}
+            <div className="px-4 pb-4 md:hidden">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search settings..."
+                  className="w-full bg-foreground/5 border border-border-custom rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* Sidebar Navigation */}
-            <div className="w-[220px] border-r border-border-custom p-3 flex flex-col bg-sidebar/50">
-              <div className="flex flex-col gap-1">
+          <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+            {/* Sidebar Navigation - Desktop Only */}
+            <div className="hidden md:flex w-[220px] border-r border-border-custom p-3 flex-col bg-sidebar/50 shrink-0">
+              <div className="flex flex-col gap-1 w-full">
                 {navItems.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
                       activeTab === item.id 
-                        ? 'bg-foreground/10 text-foreground font-bold' 
+                        ? 'bg-foreground/10 text-foreground font-bold shadow-sm' 
                         : 'text-foreground/50 hover:bg-foreground/5 hover:text-foreground'
                     }`}
                   >
-                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-foreground' : 'opacity-70'}`} />
-                    {item.label}
+                    <item.icon className={`w-4 h-4 shrink-0 ${activeTab === item.id ? 'text-foreground' : 'opacity-70'}`} />
+                    <span>{item.label}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="mt-auto pt-3">
+              <div className="mt-auto pt-3 border-t border-border-custom/10">
                 <button
                   onClick={() => logout()}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-500 hover:bg-red-500/10 transition-all"
@@ -300,36 +349,39 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto p-8 scrollbar-hide bg-background">
+            <div className="flex-1 overflow-y-auto p-5 md:p-8 scrollbar-hide bg-background">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-8 h-8 animate-spin text-accent" />
                 </div>
               ) : (
-                <div className="max-w-[560px] mx-auto flex flex-col gap-8">
+                <div className="max-w-[560px] mx-auto flex flex-col gap-12 pb-20 md:pb-0">
                   
-                  {activeTab === 'Account' && (
-                    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Account Section */}
+                  {(searchQuery ? ['Account', 'Profile Information', 'Organization', 'Full Name', 'Email Address', 'Role'].some(term => term.toLowerCase().includes(searchQuery.toLowerCase())) : (isMobile || activeTab === 'Account')) && (
+                    <>
+                      <div id="Account" className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Profile Information</h3>
-                        <div className="grid gap-6">
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <User className="w-5 h-5 text-accent md:hidden" />
+                          <h3 className="text-xs md:text-sm font-bold text-foreground/40 uppercase tracking-wider">Profile Information</h3>
+                        </div>
+                        <div className="grid gap-4 md:gap-6">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Full Name</label>
                             <input 
                               type="text" 
                               value={formData.adminName || ''}
                               onChange={(e) => setFormData({...formData, adminName: e.target.value})}
-                              onBlur={() => handleSave({ adminName: formData.adminName })}
                               className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
                             />
                           </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Email Address</label>
                             <input 
                               type="email" 
                               value={formData.adminEmail || ''}
                               onChange={(e) => setFormData({...formData, adminEmail: e.target.value})}
-                              onBlur={() => handleSave({ adminEmail: formData.adminEmail })}
                               className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
                             />
                           </div>
@@ -337,77 +389,77 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                       </section>
 
                       <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Organization</h3>
-                        <div className="grid gap-6">
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                        <h3 className="text-xs md:text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Organization</h3>
+                        <div className="grid gap-4 md:gap-6">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Role</label>
                             <CustomSelect 
                               value={formData.adminRole || 'Store Owner'} 
                               onChange={(val) => {
                                 setFormData({...formData, adminRole: val});
-                                handleSave({ adminRole: val });
                               }} 
                               options={['Store Owner', 'Operations Manager', 'Agent Developer']} 
                             />
                           </div>
                         </div>
                       </section>
-
-                      <section className="pt-4 border-t border-border-custom">
-                        <button
-                          onClick={() => logout()}
-                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Sign Out of Account
-                        </button>
-                      </section>
                     </div>
-                  )}
+                  </>
+                )}
 
-                  {activeTab === 'Store' && (
-                    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Store Section */}
+                  {(searchQuery ? ['Store Settings', 'Store Configuration', 'AI Preferences', 'Store Name', 'Store Domain', 'Niche', 'WhatsApp Number', 'Address', 'Agent Tone'].some(term => term.toLowerCase().includes(searchQuery.toLowerCase())) : (isMobile || activeTab === 'Store')) && (
+                    <>
+                      {isMobile && !searchQuery && <div className="h-px bg-border-custom" />}
+                      <div id="Store" className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Store Configuration</h3>
-                        <div className="grid gap-6">
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <Store className="w-5 h-5 text-accent md:hidden" />
+                          <h3 className="text-xs md:text-sm font-bold text-foreground/40 uppercase tracking-wider">Store Configuration</h3>
+                        </div>
+                        <div className="grid gap-4 md:gap-6">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Store Name</label>
                             <input 
                               type="text" 
                               value={formData.storeName || ''}
-                              onChange={(e) => setFormData({...formData, storeName: e.target.value})}
-                              onBlur={() => handleSave({ storeName: formData.storeName })}
+                              onChange={(e) => {
+                                const newName = e.target.value;
+                                setFormData({
+                                  ...formData, 
+                                  storeName: newName,
+                                  storeDomain: slugify(newName)
+                                });
+                              }}
                               className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
                             />
                           </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Store Domain</label>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-foreground/40 font-medium">bloume.shop/@</span>
+                              <span className="text-[12px] md:text-sm text-foreground/40 font-medium shrink-0">bloume.shop/@</span>
                               <input 
                                 type="text" 
                                 value={formData.storeDomain || ''}
-                                onChange={(e) => setFormData({...formData, storeDomain: e.target.value})}
-                                onBlur={() => handleSave({ storeDomain: formData.storeDomain })}
-                                className="flex-1 bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none text-foreground"
+                                readOnly
+                                className="flex-1 bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none text-foreground/60 cursor-not-allowed min-w-0"
                                 placeholder="store-name"
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Niche</label>
                             <CustomSelect 
                               value={formData.niche || ''} 
                               onChange={(val) => {
                                 setFormData({...formData, niche: val});
-                                handleSave({ niche: val });
                               }} 
                               options={NICHES}
                               showSearch={true}
                               placeholder="Select Niche"
                             />
                           </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">WhatsApp Number</label>
                             <div className="relative">
                               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-foreground/40 pointer-events-none">
@@ -420,233 +472,284 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                   const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                                   setFormData({...formData, storePhone: val});
                                 }}
-                                onBlur={() => handleSave({ storePhone: formData.storePhone })}
                                 placeholder="8012345678"
                                 className="w-full bg-input-bg border border-border-custom rounded-xl pl-14 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Address</label>
                             <input 
                               type="text" 
                               value={formData.storeAddress || ''}
                               onChange={(e) => setFormData({...formData, storeAddress: e.target.value})}
-                              onBlur={() => handleSave({ storeAddress: formData.storeAddress })}
                               className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
                             />
-                          </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                            <label className="text-sm font-semibold text-foreground/80">Currency</label>
-                            <div className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm text-foreground/60 cursor-not-allowed">
-                              Nigerian Naira (₦)
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                            <label className="text-sm font-semibold text-foreground/80">Location</label>
-                            <div className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm text-foreground/60 cursor-not-allowed">
-                              Nigeria
-                            </div>
                           </div>
                         </div>
                       </section>
 
                       <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">AI Preferences</h3>
-                        <div className="grid gap-6">
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                        <h3 className="text-xs md:text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">AI Preferences</h3>
+                        <div className="grid gap-4 md:gap-6">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Agent Tone</label>
                             <CustomSelect 
                               value={formData.aiTone || 'Professional & Helpful'} 
                               onChange={(val) => {
                                 setFormData({...formData, aiTone: val});
-                                handleSave({ aiTone: val });
                               }} 
-                              options={['Professional & Helpful', 'Casual & Friendly', 'Formal & Direct', 'Enthusiastic & Sales-focused']} 
+                              options={['Professional & Helpful', 'Friendly & Casual', 'Bold & Creative', 'Luxury & Elegant']} 
                             />
                           </div>
                         </div>
                       </section>
                     </div>
-                  )}
+                  </>
+                )}
 
-                  {activeTab === 'Design' && (
-                    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Design Section */}
+                  {(searchQuery ? ['Store Design', 'Brand Style Guide', 'Primary Color', 'Heading Font', 'Body Font'].some(term => term.toLowerCase().includes(searchQuery.toLowerCase())) : (isMobile || activeTab === 'Design')) && (
+                    <>
+                      {isMobile && !searchQuery && <div className="h-px bg-border-custom" />}
+                      <div id="Design" className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Brand Style Guide</h3>
-                        <div className="grid gap-6">
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <Palette className="w-5 h-5 text-accent md:hidden" />
+                          <h3 className="text-xs md:text-sm font-bold text-foreground/40 uppercase tracking-wider">Brand Style Guide</h3>
+                        </div>
+                        <div className="grid gap-4 md:gap-6">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Primary Color</label>
                             <div className="flex items-center gap-4">
-                              <input 
-                                type="color" 
-                                value={formData.primaryColor || '#000000'}
-                                onChange={(e) => setFormData({...formData, primaryColor: e.target.value})}
-                                onBlur={() => handleSave({ primaryColor: formData.primaryColor })}
-                                className="w-12 h-12 rounded-lg border-none cursor-pointer overflow-hidden bg-transparent p-0"
-                              />
-                              <input 
-                                type="text" 
-                                value={formData.primaryColor || '#000000'}
-                                onChange={(e) => setFormData({...formData, primaryColor: e.target.value})}
-                                onBlur={() => handleSave({ primaryColor: formData.primaryColor })}
-                                className="flex-1 bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
-                              />
+                              <div className="relative group shrink-0">
+                                <input 
+                                  type="color" 
+                                  value={formData.primaryColor || '#000000'}
+                                  onChange={(e) => setFormData({...formData, primaryColor: e.target.value})}
+                                  className="w-12 h-12 rounded-xl border border-border-custom cursor-pointer overflow-hidden bg-background p-1 hover:border-accent/40 transition-colors"
+                                />
+                                <div className="absolute inset-0 rounded-xl pointer-events-none ring-1 ring-inset ring-black/5" />
+                              </div>
+                              <div className="flex-1 relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-foreground/30 font-mono">#</span>
+                                <input 
+                                  type="text" 
+                                  value={(formData.primaryColor || '#000000').replace('#', '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
+                                    setFormData({...formData, primaryColor: `#${val}`});
+                                  }}
+                                  className="w-full bg-input-bg border border-border-custom rounded-xl pl-8 pr-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
+                                />
+                              </div>
                             </div>
                           </div>
-
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Heading Font</label>
                             <CustomSelect 
                               value={formData.headingFont || 'Instrument Serif'} 
                               onChange={(val) => {
                                 setFormData({...formData, headingFont: val});
-                                handleSave({ headingFont: val });
                               }} 
-                              options={HEADING_FONTS} 
+                              options={HEADING_FONTS}
+                              placeholder="Select Heading Font"
                             />
                           </div>
-
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Body Font</label>
                             <CustomSelect 
                               value={formData.bodyFont || 'Inter'} 
                               onChange={(val) => {
                                 setFormData({...formData, bodyFont: val});
-                                handleSave({ bodyFont: val });
                               }} 
-                              options={BODY_FONTS} 
+                              options={BODY_FONTS}
+                              placeholder="Select Body Font"
                             />
                           </div>
-                        </div>
-                      </section>
-
-                      <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">AI Content (Hero & Footer)</h3>
-                        <div className="grid gap-6">
-                          <div className="grid grid-cols-[140px_1fr] items-start gap-4 pt-2">
-                            <label className="text-sm font-semibold text-foreground/80 pt-2.5">Hero Title</label>
-                            <textarea 
-                              value={formData.heroTitle || ''}
-                              onChange={(e) => setFormData({...formData, heroTitle: e.target.value})}
-                              onBlur={() => handleSave({ heroTitle: formData.heroTitle })}
-                              placeholder="e.g. The Future of Commerce"
-                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground min-h-[80px] resize-none"
-                            />
-                          </div>
-                          <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-                            <label className="text-sm font-semibold text-foreground/80 pt-2.5">Hero Description</label>
-                            <textarea 
-                              value={formData.heroDescription || ''}
-                              onChange={(e) => setFormData({...formData, heroDescription: e.target.value})}
-                              onBlur={() => handleSave({ heroDescription: formData.heroDescription })}
-                              placeholder="e.g. Agentic storefronts that understand your needs."
-                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground min-h-[100px] resize-none"
-                            />
-                          </div>
-                          <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-                            <label className="text-sm font-semibold text-foreground/80 pt-2.5">Footer Text</label>
-                            <textarea 
-                              value={formData.footerDescription || ''}
-                              onChange={(e) => setFormData({...formData, footerDescription: e.target.value})}
-                              onBlur={() => handleSave({ footerDescription: formData.footerDescription })}
-                              placeholder="e.g. Experience the future of commerce with Mia."
-                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground min-h-[80px] resize-none"
-                            />
-                          </div>
-                        </div>
-                      </section>
-
-                      <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Preview</h3>
-                        <div className="p-6 rounded-2xl border border-border-custom bg-foreground/[0.02] space-y-4">
-                          <h1 style={{ fontFamily: formData.headingFont || 'serif', color: formData.primaryColor }} className="text-3xl font-medium">
-                            Heading Preview
-                          </h1>
-                          <p style={{ fontFamily: formData.bodyFont || 'sans-serif' }} className="text-sm text-foreground/70 leading-relaxed">
-                            This is how your store body text will look. Mia helps you build a brand that resonates with your customers through beautiful design and agentic commerce.
-                          </p>
-                          <button style={{ backgroundColor: formData.primaryColor }} className="px-6 py-2.5 rounded-lg text-white text-sm font-medium">
-                            Primary Button
-                          </button>
                         </div>
                       </section>
                     </div>
-                  )}
+                  </>
+                )}
 
-                  {activeTab === 'Payments' && (
-                    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* SEO Section */}
+                  {(searchQuery ? ['SEO & Meta', 'Search Engine Optimization', 'Meta Description', 'Social Preview Title'].some(term => term.toLowerCase().includes(searchQuery.toLowerCase())) : (isMobile || activeTab === 'SEO')) && (
+                    <>
+                      {isMobile && !searchQuery && <div className="h-px bg-border-custom" />}
+                      <div id="SEO" className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Bank Account Details</h3>
-                        <div className="grid gap-6">
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <Globe className="w-5 h-5 text-accent md:hidden" />
+                          <h3 className="text-xs md:text-sm font-bold text-foreground/40 uppercase tracking-wider">Search Engine Optimization</h3>
+                        </div>
+                        <div className="grid gap-4 md:gap-6">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] gap-2 md:gap-4">
+                            <label className="text-sm font-semibold text-foreground/80 md:mt-2">Meta Description</label>
+                            <textarea 
+                              value={formData.heroDescription || ''}
+                              onChange={(e) => setFormData({...formData, heroDescription: e.target.value})}
+                              rows={4}
+                              placeholder="Enter a brief description of your store for search engines..."
+                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground resize-none"
+                            />
+                          </div>
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Social Preview Title</label>
+                            <input 
+                              type="text" 
+                              value={formData.storeName || ''}
+                              onChange={(e) => setFormData({...formData, storeName: e.target.value})}
+                              placeholder="e.g. Bloume Store | Best in Fashion"
+                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
+                            />
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+                  </>
+                )}
+
+                  {/* Payments Section */}
+                  {(searchQuery ? ['Payments & Bank', 'Bank Account Details', 'Bank Name', 'Account Number', 'Account Name'].some(term => term.toLowerCase().includes(searchQuery.toLowerCase())) : (isMobile || activeTab === 'Payments')) && (
+                    <>
+                      {isMobile && !searchQuery && <div className="h-px bg-border-custom" />}
+                      <div id="Payments" className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <section>
+                        <div className="flex items-center gap-3 mb-4">
+                          <CreditCard className="w-5 h-5 text-accent md:hidden" />
+                          <div className="flex-1 flex items-center justify-between">
+                            <h3 className="text-xs md:text-sm font-bold text-foreground/40 uppercase tracking-wider">Bank Account Details</h3>
+                            <div className="flex items-center gap-2 px-2 py-1 bg-green-500/10 rounded-lg">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                              <span className="text-[10px] font-bold text-green-500 uppercase">Settlement Active</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid gap-4 md:gap-6">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Bank Name</label>
                             <CustomSelect 
                               value={formData.bankName || ''} 
                               onChange={(val) => {
                                 setFormData({...formData, bankName: val});
-                                handleSave({ bankName: val });
                               }} 
                               options={NIGERIAN_BANKS}
                               showSearch={true}
                               placeholder="Select Bank"
                             />
                           </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Account Number</label>
+                            <input 
+                              type="text" 
+                              value={formData.accountNumber || ''}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                setFormData({...formData, accountNumber: val});
+                              }}
+                              placeholder="0123456789"
+                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground font-mono"
+                            />
+                          </div>
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                             <label className="text-sm font-semibold text-foreground/80">Account Name</label>
                             <input 
                               type="text" 
                               value={formData.accountName || ''}
                               onChange={(e) => setFormData({...formData, accountName: e.target.value})}
-                              onBlur={() => handleSave({ accountName: formData.accountName })}
-                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
-                            />
-                          </div>
-                          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                            <label className="text-sm font-semibold text-foreground/80">Account Number</label>
-                            <input 
-                              type="text" 
-                              value={formData.accountNumber || ''}
-                              onChange={(e) => setFormData({...formData, accountNumber: e.target.value})}
-                              onBlur={() => handleSave({ accountNumber: formData.accountNumber })}
-                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
+                              placeholder="EMMANUEL OKWARA"
+                              className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground uppercase"
                             />
                           </div>
                         </div>
                       </section>
                     </div>
-                  )}
+                  </>
+                )}
 
-                  {activeTab === 'Social' && (
-                    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Social Section */}
+                  {(searchQuery ? ['Social Links', 'Connect Social Media', 'Instagram', 'TikTok', 'Twitter', 'X'].some(term => term.toLowerCase().includes(searchQuery.toLowerCase())) : (isMobile || activeTab === 'Social')) && (
+                    <>
+                      {isMobile && !searchQuery && <div className="h-px bg-border-custom" />}
+                      <div id="Social" className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <section>
-                        <h3 className="text-sm font-bold text-foreground/40 uppercase tracking-wider mb-4">Social Media Profiles</h3>
-                        <div className="grid gap-6">
-                          {[
-                            { id: 'socialInstagram', label: 'Instagram', icon: 'https://cdn-icons-png.flaticon.com/128/1384/1384063.png', placeholder: 'instagram.com/username' },
-                            { id: 'socialTwitter', label: 'Twitter / X', icon: 'https://cdn-icons-png.flaticon.com/128/3256/3256013.png', placeholder: 'twitter.com/username' },
-                            { id: 'socialFacebook', label: 'Facebook', icon: 'https://cdn-icons-png.flaticon.com/128/5968/5968764.png', placeholder: 'facebook.com/username' },
-                            { id: 'socialTiktok', label: 'TikTok', icon: 'https://cdn-icons-png.flaticon.com/128/3046/3046121.png', placeholder: 'tiktok.com/@username' },
-                            { id: 'socialYoutube', label: 'YouTube', icon: 'https://cdn-icons-png.flaticon.com/128/1384/1384060.png', placeholder: 'youtube.com/@username' },
-                            { id: 'socialSnapchat', label: 'Snapchat', icon: 'https://cdn-icons-png.flaticon.com/128/1409/1409941.png', placeholder: 'snapchat.com/add/username' },
-                          ].map((platform) => (
-                            <div key={platform.id} className="grid grid-cols-[140px_1fr] items-center gap-4">
-                              <div className="flex items-center gap-2">
-                                <img src={platform.icon} alt={platform.label} className="w-4 h-4 object-contain" />
-                                <label className="text-sm font-semibold text-foreground/80">{platform.label}</label>
-                              </div>
+                        <div className="flex items-center gap-3 mb-4">
+                          <Share2 className="w-5 h-5 text-accent md:hidden" />
+                          <h3 className="text-xs md:text-sm font-bold text-foreground/40 uppercase tracking-wider">Connect Social Media</h3>
+                        </div>
+                        <div className="grid gap-4 md:gap-6">
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Instagram</label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-foreground/30">@</span>
                               <input 
                                 type="text" 
-                                value={(formData as any)[platform.id] || ''}
-                                onChange={(e) => setFormData({...formData, [platform.id]: e.target.value})}
-                                onBlur={() => handleSave({ [platform.id]: (formData as any)[platform.id] })}
-                                className="w-full bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
-                                placeholder={platform.placeholder}
+                                value={formData.socialInstagram || ''}
+                                onChange={(e) => setFormData({...formData, socialInstagram: e.target.value})}
+                                placeholder="username"
+                                className="w-full bg-input-bg border border-border-custom rounded-xl pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
                               />
                             </div>
-                          ))}
+                          </div>
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">TikTok</label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-foreground/30">@</span>
+                              <input 
+                                type="text" 
+                                value={formData.socialTiktok || ''}
+                                onChange={(e) => setFormData({...formData, socialTiktok: e.target.value})}
+                                placeholder="username"
+                                className="w-full bg-input-bg border border-border-custom rounded-xl pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
+                            <label className="text-sm font-semibold text-foreground/80">Twitter (X)</label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-foreground/30">@</span>
+                              <input 
+                                type="text" 
+                                value={formData.socialTwitter || ''}
+                                onChange={(e) => setFormData({...formData, socialTwitter: e.target.value})}
+                                placeholder="username"
+                                className="w-full bg-input-bg border border-border-custom rounded-xl pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </section>
+
+                      {/* Sign Out Button - Mobile Only */}
+                      <div className="md:hidden mt-4 pt-6 border-t border-border-custom">
+                        <button
+                          onClick={() => logout()}
+                          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 bg-red-500/5 hover:bg-red-500/10 transition-all border border-red-500/10"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          Sign Out of Account
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                  {/* Empty Search State */}
+                  {searchQuery && ![
+                    'Account', 'Profile Information', 'Organization', 'Full Name', 'Email Address', 'Role',
+                    'Store Settings', 'Store Configuration', 'AI Preferences', 'Store Name', 'Store Domain', 'Niche', 'WhatsApp Number', 'Address', 'Agent Tone',
+                    'Store Design', 'Brand Style Guide', 'Primary Color', 'Heading Font', 'Body Font',
+                    'SEO & Meta', 'Search Engine Optimization', 'Meta Description', 'Social Preview Title',
+                    'Payments & Bank', 'Bank Account Details', 'Bank Name', 'Account Number', 'Account Name',
+                    'Social Links', 'Connect Social Media', 'Instagram', 'TikTok', 'Twitter', 'X'
+                  ].some(term => term.toLowerCase().includes(searchQuery.toLowerCase())) && (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-16 h-16 rounded-full bg-foreground/5 flex items-center justify-center mb-4">
+                        <Search className="w-8 h-8 text-foreground/20" />
+                      </div>
+                      <h4 className="text-sm font-bold text-foreground">No settings found</h4>
+                      <p className="text-xs text-foreground/40 mt-1">Try searching for something else</p>
                     </div>
                   )}
                 </div>

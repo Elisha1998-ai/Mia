@@ -22,6 +22,7 @@ import { useCustomers } from '@/hooks/useData';
 import * as Popover from '@radix-ui/react-popover';
 import { AddCustomerModal } from './AddCustomerModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { CustomerDetailModal, type CustomerDetail } from './CustomerDetailModal';
 
 interface Customer {
   id: string;
@@ -35,7 +36,13 @@ interface Customer {
   avatar?: string;
 }
 
-const ActionPopover = ({ customer, onDelete }: { customer: Customer, onDelete: (id: string) => void }) => {
+const ActionPopover = ({ customer, onDelete, onViewDetails, onEdit, onHistory }: { 
+  customer: Customer, 
+  onDelete: (id: string) => void, 
+  onViewDetails: (id: string) => void,
+  onEdit: (customer: Customer) => void,
+  onHistory: (id: string) => void
+}) => {
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
@@ -49,11 +56,24 @@ const ActionPopover = ({ customer, onDelete }: { customer: Customer, onDelete: (
           sideOffset={5}
           align="end"
         >
-          <button className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors">
+          <button 
+            onClick={() => onViewDetails(customer.id)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors"
+          >
+            <Users className="w-4 h-4" />
+            View Details
+          </button>
+          <button 
+            onClick={() => onEdit(customer)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors"
+          >
             <Edit2 className="w-4 h-4" />
             Edit Customer
           </button>
-          <button className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors">
+          <button 
+            onClick={() => onHistory(customer.id)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors"
+          >
             <History className="w-4 h-4" />
             Order History
           </button>
@@ -90,12 +110,18 @@ const MobileCustomerCard = ({
   customer, 
   isExpanded, 
   onToggle, 
-  onDelete 
+  onDelete,
+  onViewDetails,
+  onEdit,
+  onHistory
 }: { 
   customer: Customer; 
   isExpanded: boolean; 
   onToggle: () => void; 
   onDelete: (id: string) => void;
+  onViewDetails: (id: string) => void;
+  onEdit: (customer: Customer) => void;
+  onHistory: (id: string) => void;
 }) => {
   return (
     <div className={`border-b border-border-custom transition-colors ${isExpanded ? 'bg-foreground/[0.02]' : ''}`}>
@@ -153,11 +179,24 @@ const MobileCustomerCard = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-xl text-sm font-bold transition-colors">
+            <button 
+              onClick={() => onViewDetails(customer.id)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-xl text-sm font-bold transition-colors"
+            >
+              <Users className="w-4 h-4" />
+              Details
+            </button>
+            <button 
+              onClick={() => onEdit(customer)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-xl text-sm font-bold transition-colors"
+            >
               <Edit2 className="w-4 h-4" />
               Edit
             </button>
-            <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-xl text-sm font-bold transition-colors">
+            <button 
+              onClick={() => onHistory(customer.id)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-xl text-sm font-bold transition-colors"
+            >
               <History className="w-4 h-4" />
               History
             </button>
@@ -175,9 +214,22 @@ const MobileCustomerCard = ({
 };
 
 export const CustomersPage = () => {
-  const { customers: apiCustomers, loading, fetchCustomers, createCustomer, deleteCustomer } = useCustomers();
+  const { customers: apiCustomers, loading, fetchCustomers, createCustomer, deleteCustomer, getCustomer } = useCustomers();
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [detailModal, setDetailModal] = React.useState<{ isOpen: boolean; customer: CustomerDetail | null }>({
+    isOpen: false,
+    customer: null
+  });
+
+  const handleViewDetails = async (id: string) => {
+    try {
+      const customerData = await getCustomer(id);
+      setDetailModal({ isOpen: true, customer: customerData });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   React.useEffect(() => {
     fetchCustomers();
@@ -202,6 +254,7 @@ export const CustomersPage = () => {
   const [statusFilter, setStatusFilter] = React.useState<string>('All Status');
   const [sortBy, setSortBy] = React.useState<string>('Name');
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [editingCustomer, setEditingCustomer] = React.useState<Customer | null>(null);
   const [expandedCustomerId, setExpandedCustomerId] = React.useState<string | null>(null);
   const [deleteModal, setDeleteModal] = React.useState<{ isOpen: boolean; id: string | null; isBulk: boolean }>({
     isOpen: false,
@@ -268,16 +321,32 @@ export const CustomersPage = () => {
     setDeleteModal({ isOpen: false, id: null, isBulk: false });
   };
 
-  const handleAddCustomer = async (newCustomer: any) => {
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddOrUpdateCustomer = async (customerData: any) => {
     try {
-      await createCustomer({
-        name: newCustomer.name,
-        email: newCustomer.email,
-        phone: newCustomer.phone
-      });
+      if (editingCustomer) {
+        await updateCustomer(editingCustomer.id, {
+          full_name: customerData.name,
+          email: customerData.email,
+          phone: customerData.phone,
+        });
+        fetchCustomers();
+      } else {
+        await createCustomer({
+          full_name: customerData.name,
+          email: customerData.email,
+          phone: customerData.phone
+        });
+        fetchCustomers();
+      }
     } catch (e) {
       console.error(e);
     }
+    setEditingCustomer(null);
   };
 
   return (
@@ -436,8 +505,12 @@ export const CustomersPage = () => {
 
       <AddCustomerModal 
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddCustomer}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingCustomer(null);
+        }}
+        onAdd={handleAddOrUpdateCustomer}
+        initialData={editingCustomer}
       />
 
       <DeleteConfirmationModal 
@@ -558,7 +631,13 @@ export const CustomersPage = () => {
                   <StatusBadge status={customer.status} />
                 </td>
                 <td className="pr-6 py-4 text-right">
-                  <ActionPopover customer={customer} onDelete={handleDelete} />
+                  <ActionPopover 
+                    customer={customer} 
+                    onDelete={handleDelete} 
+                    onViewDetails={handleViewDetails}
+                    onEdit={handleEditCustomer}
+                    onHistory={handleViewDetails}
+                  />
                 </td>
               </tr>
             )))}
@@ -584,6 +663,9 @@ export const CustomersPage = () => {
               isExpanded={expandedCustomerId === customer.id}
               onToggle={() => setExpandedCustomerId(expandedCustomerId === customer.id ? null : customer.id)}
               onDelete={handleDelete}
+              onViewDetails={handleViewDetails}
+              onEdit={handleEditCustomer}
+              onHistory={handleViewDetails}
             />
           ))}
           {filteredCustomers.length === 0 && (
@@ -626,6 +708,12 @@ export const CustomersPage = () => {
           </button>
         </div>
       </div>
+
+      <CustomerDetailModal 
+        isOpen={detailModal.isOpen}
+        onClose={() => setDetailModal({ isOpen: false, customer: null })}
+        customer={detailModal.customer}
+      />
     </div>
   );
 };

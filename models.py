@@ -66,6 +66,8 @@ class Product(Base):
     ai_notes = Column(Text, name='aiNotes') # New: AI agent insights
     created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
 
+    variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
+
 class Customer(Base):
     __tablename__ = 'customer'
     id = Column(String, primary_key=True, default=generate_uuid)
@@ -95,16 +97,30 @@ class Order(Base):
     __tablename__ = 'order'
     id = Column(String, primary_key=True, default=generate_uuid)
     user_id = Column(String, ForeignKey('user.id'), name='userId')
+    order_number = Column(String, unique=True, nullable=False, name='orderNumber')
     external_id = Column(String, unique=True, name='externalId')
     customer_id = Column(String, ForeignKey('customer.id'), name='customerId')
     store_id = Column(String, ForeignKey('store.id'), name='storeId')
     total_amount = Column(DECIMAL(10, 2), name='totalAmount')
-    profit_margin = Column(Float, name='profitMargin') # New: Calculated profit for this order
-    status = Column(String, default='pending')
+    profit_margin = Column(DECIMAL(10, 2), name='profitMargin')
+    status = Column(String, nullable=False, default='pending')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), name='updatedAt')
     
     customer = relationship("Customer")
     store = relationship("Store")
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+
+class OrderItem(Base):
+    __tablename__ = 'orderItem'
+    id = Column(String, primary_key=True, default=generate_uuid)
+    order_id = Column(String, ForeignKey('order.id'), nullable=False, name='orderId')
+    product_id = Column(String, ForeignKey('product.id'), nullable=False, name='productId')
+    quantity = Column(Integer, nullable=False)
+    price = Column(DECIMAL(10, 2), nullable=False)
+
+    order = relationship("Order", back_populates="items")
+    product = relationship("Product")
 
 class MarketingAsset(Base):
     __tablename__ = 'marketing_assets'
@@ -180,11 +196,42 @@ class Campaign(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class InventoryLog(Base):
-    __tablename__ = 'inventory_logs'
+    __tablename__ = 'inventoryLog'
     id = Column(String, primary_key=True, default=generate_uuid)
-    product_id = Column(String, ForeignKey('product.id'))
-    change_amount = Column(Float) # Positive for restock, negative for sale
-    reason = Column(String) # 'sale', 'restock', 'return', 'adjustment'
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    product_id = Column(String, ForeignKey('product.id'), name='productId')
+    change = Column(Integer, nullable=False) # Positive for restock, negative for sale
+    reason = Column(String, nullable=False) # 'sale', 'restock', 'return', 'adjustment'
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
     
     product = relationship("Product")
+
+class ProductVariant(Base):
+    __tablename__ = 'productVariant'
+    id = Column(String, primary_key=True, default=generate_uuid)
+    product_id = Column(String, ForeignKey('product.id'), name='productId')
+    name = Column(String, nullable=False) # e.g. "Red / Large"
+    sku = Column(String, unique=True, nullable=False)
+    price = Column(Float) # Override base product price if set
+    stock_quantity = Column(Integer, default=0, name='stockQuantity')
+    image_url = Column(Text, name='imageUrl')
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), name='updatedAt')
+
+    product = relationship("Product", back_populates="variants")
+
+class Discount(Base):
+    __tablename__ = 'discount'
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey('user.id'), name='userId')
+    code = Column(String, nullable=False)
+    type = Column(String, nullable=False) # 'percentage', 'fixed'
+    value = Column(Float, nullable=False)
+    status = Column(String, nullable=False) # 'Active', 'Scheduled', 'Expired'
+    usage_count = Column(Integer, default=0, name='usageCount')
+    start_date = Column(DateTime(timezone=True), nullable=False, name='startDate')
+    end_date = Column(DateTime(timezone=True), name='endDate')
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), name='createdAt')
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), name='updatedAt')
+
+# Update Product class to include relationship
+# We need to find the Product class and add the relationship

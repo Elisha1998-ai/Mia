@@ -3,22 +3,45 @@
 import React from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatInterface } from '@/components/ChatInterface';
+import { Menu } from 'lucide-react';
 import { ProductsPage } from '@/components/ProductsPage';
 import { OrdersPage } from '@/components/OrdersPage';
 import { CustomersPage } from '@/components/CustomersPage';
 import { PreviewsPage } from '@/components/PreviewsPage';
 import { AnalyticsPage } from '@/components/AnalyticsPage';
+import { DiscountsPage } from '@/components/DiscountsPage';
+import { ThemeEditorPage } from '@/components/ThemeEditorPage';
+import { EmailTemplatesPage } from '@/components/EmailTemplatesPage';
+import { IntegrationsPage } from '@/components/IntegrationsPage';
 import { useChat } from '@/hooks/useChat';
+import { useSearchParams } from 'next/navigation';
+import { useSettings } from '@/hooks/useData';
 
 export function DashboardClient() {
     const [mounted, setMounted] = React.useState(false);
+    const searchParams = useSearchParams();
+    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'integrations' | null;
+    
     const { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode } = useChat();
-    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics'>('chat');
+    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'integrations'>('chat');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
+    const { settings, fetchSettings } = useSettings();
 
     React.useEffect(() => {
         setMounted(true);
-    }, []);
+        fetchSettings();
+        if (viewParam && ['chat', 'products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates', 'integrations'].includes(viewParam)) {
+            setActiveView(viewParam);
+        }
+    }, [viewParam]);
+
+    const adminName = settings?.adminName || 'User';
+    const initials = adminName
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
 
     if (!mounted) {
         return (
@@ -33,42 +56,57 @@ export function DashboardClient() {
 
     return (
         <div className="flex h-screen bg-background text-foreground overflow-hidden transition-colors relative">
-            {/* Navigation Sidebar */}
+            {/* Navigation Sidebar (Desktop) / Drawer (Mobile) */}
             <Sidebar
                 activeView={activeView}
                 onViewChange={setActiveView}
-                isOpen={isMobileSidebarOpen}
-                onClose={() => setIsMobileSidebarOpen(false)}
+                isMobileOpen={isMobileSidebarOpen}
+                onMobileClose={() => setIsMobileSidebarOpen(false)}
             />
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col relative overflow-hidden bg-background transition-colors">
-                {/* Mobile Sidebar Toggle - Only visible on mobile */}
-                <button
-                    onClick={() => setIsMobileSidebarOpen(true)}
-                    className="md:hidden absolute top-4 left-4 z-40 p-2.5 rounded-xl bg-background border border-border-custom shadow-sm text-foreground/60 hover:text-foreground transition-all"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
+                {/* Mobile Top Header - App style */}
+                <header className="md:hidden flex items-center justify-between px-6 py-4 border-b border-border-custom bg-background/80 backdrop-blur-md sticky top-0 z-40">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => setIsMobileSidebarOpen(true)}
+                            className="p-1 -ml-1 text-foreground/60 hover:text-foreground transition-colors"
+                        >
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        <div className="flex items-center gap-3">
+                            <div className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
+                            <h1 className="text-sm font-semibold capitalize tracking-tight">
+                                {activeView === 'previews' ? 'Design Previews' : activeView}
+                            </h1>
+                        </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-[10px] font-bold text-accent">
+                        {initials}
+                    </div>
+                </header>
 
-                {activeView === 'chat' && (
-                    <ChatInterface
-                        messages={messages}
-                        onSend={sendMessage}
-                        isLoading={isLoading}
-                        onMessageComplete={markMessageComplete}
-                        onTriggerDemo={triggerDemoMode}
-                    />
-                )}
-                {activeView === 'products' && <ProductsPage />}
-                {activeView === 'orders' && <OrdersPage />}
-                {activeView === 'customers' && <CustomersPage />}
-                {activeView === 'previews' && <PreviewsPage />}
-                {activeView === 'analytics' && <AnalyticsPage />}
+                <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                    {activeView === 'chat' && (
+                        <ChatInterface
+                            messages={messages}
+                            onSend={sendMessage}
+                            isLoading={isLoading}
+                            onMessageComplete={markMessageComplete}
+                            onTriggerDemo={triggerDemoMode}
+                        />
+                    )}
+                    {activeView === 'products' && <ProductsPage />}
+                    {activeView === 'orders' && <OrdersPage />}
+                    {activeView === 'customers' && <CustomersPage />}
+                    {activeView === 'previews' && <PreviewsPage />}
+                    {activeView === 'analytics' && <AnalyticsPage />}
+                    {activeView === 'discounts' && <DiscountsPage />}
+                    {activeView === 'theme-editor' && <ThemeEditorPage />}
+                    {activeView === 'email-templates' && <EmailTemplatesPage />}
+                    {activeView === 'integrations' && <IntegrationsPage />}
+                </main>
             </div>
         </div>
     );

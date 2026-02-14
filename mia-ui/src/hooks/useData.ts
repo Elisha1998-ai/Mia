@@ -1,6 +1,6 @@
 // Custom hooks for data fetching
 import { useState, useEffect } from 'react';
-import { apiService, type Product, type Order, type Customer, type DashboardStats, type StoreSettings } from '@/lib/api';
+import { apiService, type Product, type Order, type Customer, type DashboardStats, type StoreSettings, type Discount } from '@/lib/api';
 
 // Hook for products data
 export const useProducts = () => {
@@ -126,12 +126,22 @@ export const useOrders = () => {
     }
   };
 
+  const getOrder = async (id: string) => {
+    try {
+      return await apiService.getOrder(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch order details');
+      throw err;
+    }
+  };
+
   return {
     orders,
     loading,
     error,
     total,
     fetchOrders,
+    getOrder,
     createOrder,
     updateOrder,
     deleteOrder
@@ -172,6 +182,17 @@ export const useCustomers = () => {
     }
   };
 
+  const updateCustomer = async (id: string, customerData: Partial<Customer>) => {
+    try {
+      const updatedCustomer = await apiService.updateCustomer(id, customerData);
+      setCustomers(prev => prev.map(c => c.id === id ? updatedCustomer : c));
+      return updatedCustomer;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update customer');
+      throw err;
+    }
+  };
+
   const deleteCustomer = async (id: string) => {
     try {
       await apiService.deleteCustomer(id);
@@ -183,12 +204,22 @@ export const useCustomers = () => {
     }
   };
 
+  const getCustomer = async (id: string) => {
+    try {
+      return await apiService.getCustomer(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch customer details');
+      throw err;
+    }
+  };
+
   return {
     customers,
     loading,
     error,
     total,
     fetchCustomers,
+    getCustomer,
     createCustomer,
     deleteCustomer
   };
@@ -219,6 +250,74 @@ export const useDashboardStats = () => {
     loading,
     error,
     fetchStats
+  };
+};
+
+// Hook for discounts data
+export const useDiscounts = () => {
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+
+  const fetchDiscounts = async (skip = 0, limit = 100) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getDiscounts(skip, limit);
+      setDiscounts(response.discounts);
+      setTotal(response.total);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch discounts');
+      console.error('Error fetching discounts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createDiscount = async (discountData: Partial<Discount>) => {
+    try {
+      const newDiscount = await apiService.createDiscount(discountData);
+      setDiscounts(prev => [newDiscount, ...prev]);
+      setTotal(prev => prev + 1);
+      return newDiscount;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create discount');
+      throw err;
+    }
+  };
+
+  const updateDiscount = async (id: string, discountData: Partial<Discount>) => {
+    try {
+      const updatedDiscount = await apiService.updateDiscount(id, discountData);
+      setDiscounts(prev => prev.map(d => d.id === id ? updatedDiscount : d));
+      return updatedDiscount;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update discount');
+      throw err;
+    }
+  };
+
+  const deleteDiscount = async (id: string) => {
+    try {
+      await apiService.deleteDiscount(id);
+      setDiscounts(prev => prev.filter(d => d.id !== id));
+      setTotal(prev => prev - 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete discount');
+      throw err;
+    }
+  };
+
+  return {
+    discounts,
+    loading,
+    error,
+    total,
+    fetchDiscounts,
+    createDiscount,
+    updateDiscount,
+    deleteDiscount
   };
 };
 

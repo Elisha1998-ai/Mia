@@ -2,7 +2,16 @@
 
 import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Package, Tag, DollarSign, Layers, Weight, Hash, ChevronDown, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, Package, Tag, DollarSign, Layers, Weight, Hash, ChevronDown, Upload, Image as ImageIcon, Loader2, Plus, Trash2, Sparkles, ChevronLeft } from 'lucide-react';
+
+interface ProductVariant {
+  id?: string;
+  name: string;
+  sku: string;
+  price: string;
+  stock: string;
+  imageUrl?: string;
+}
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -184,8 +193,12 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
     category: '',
     weight: '',
     description: '',
-    images: [] as string[]
+    images: [] as string[],
+    variants: [] as ProductVariant[],
+    hasVariants: false
   });
+
+  const [isGeneratingDescription, setIsGeneratingDescription] = React.useState(false);
 
   React.useEffect(() => {
     if (product) {
@@ -197,7 +210,9 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
         category: product.category || '',
         weight: product.weight || '',
         description: product.description || '',
-        images: product.image ? [product.image] : []
+        images: product.image ? [product.image] : [],
+        variants: product.variants || [],
+        hasVariants: (product.variants?.length > 0) || false
       });
     } else {
       setFormData({
@@ -208,10 +223,72 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
         category: '',
         weight: '',
         description: '',
-        images: []
+        images: [],
+        variants: [],
+        hasVariants: false
       });
     }
   }, [product, isOpen]);
+
+  const generateAIDescription = async () => {
+    if (!formData.name) {
+      alert('Please enter a product name first.');
+      return;
+    }
+    
+    setIsGeneratingDescription(true);
+    try {
+      const response = await fetch('http://localhost:8000/mia/generate-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          category: formData.category,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate description');
+      }
+
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, description: data.description }));
+    } catch (error) {
+      console.error('Error generating description:', error);
+      // Fallback to local generation if backend is offline
+      const mockDescription = `Experience the perfect blend of style and functionality with our ${formData.name}. Designed for those who appreciate quality, this ${formData.category || 'product'} features premium materials and expert craftsmanship. Perfect for daily use, it offers durability and performance that exceeds expectations. Elevate your lifestyle with this essential addition to your collection.`;
+      setFormData(prev => ({ ...prev, description: mockDescription }));
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
+
+  const addVariant = () => {
+    setFormData(prev => ({
+      ...prev,
+      variants: [
+        ...prev.variants,
+        { name: '', sku: '', price: prev.price, stock: '0' }
+      ]
+    }));
+  };
+
+  const removeVariant = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateVariant = (index: number, field: keyof ProductVariant, value: string) => {
+    setFormData(prev => {
+      const newVariants = [...prev.variants];
+      newVariants[index] = { ...newVariants[index], [field]: value };
+      return { ...prev, variants: newVariants };
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,9 +296,14 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
       ...formData,
       id: product?.id || Math.random().toString(36).substr(2, 9),
       price: parseFloat(formData.price) || 0,
-      stock: parseInt(formData.stock) || 0,
-      status: (parseInt(formData.stock) || 0) > 0 ? 'Active' : 'Out of Stock',
-      image: formData.images[0] || '' // Use the first image as the main image
+      stock: formData.hasVariants 
+        ? formData.variants.reduce((acc, v) => acc + (parseInt(v.stock) || 0), 0)
+        : (parseInt(formData.stock) || 0),
+      status: ((formData.hasVariants 
+        ? formData.variants.reduce((acc, v) => acc + (parseInt(v.stock) || 0), 0)
+        : (parseInt(formData.stock) || 0)) > 0) ? 'Active' : 'Out of Stock',
+      image: formData.images[0] || '',
+      variants: formData.hasVariants ? formData.variants : []
     });
     onClose();
   };
@@ -229,24 +311,35 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[100]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[700px] bg-background border border-border-custom rounded-2xl z-[101] overflow-hidden flex flex-col h-[70vh]">
+        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[100] md:block hidden" />
+        <Dialog.Content className="fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-[700px] bg-background md:border border-border-custom md:rounded-2xl z-[101] overflow-hidden flex flex-col h-full md:h-[70vh] inset-0 md:inset-auto">
           
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-border-custom bg-background">
-            <Dialog.Title className="text-lg font-bold text-foreground">
-              {product ? 'Edit Product' : 'Add New Product'}
-            </Dialog.Title>
+          <div className="flex items-center justify-between p-5 border-b border-border-custom bg-background sticky top-0 z-10">
+            <div className="flex items-center gap-4">
+              <button onClick={onClose} className="md:hidden p-2 -ml-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <Dialog.Title className="text-lg font-bold text-foreground">
+                {product ? 'Edit Product' : 'Add New Product'}
+              </Dialog.Title>
+            </div>
             <Dialog.Close asChild>
-              <button className="p-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
+              <button className="hidden md:block p-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </Dialog.Close>
+            <button 
+              onClick={handleSubmit}
+              className="md:hidden px-4 py-2 bg-foreground text-background rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+            >
+              Save
+            </button>
           </div>
 
           {/* Form Content */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 scrollbar-hide bg-background">
-            <div className="max-w-[560px] mx-auto flex flex-col gap-8">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 md:p-8 scrollbar-hide bg-background">
+            <div className="w-full max-w-[560px] mx-auto flex flex-col gap-8 pb-10">
               
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Basic Information</h3>
@@ -295,32 +388,125 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Pricing & Inventory</h3>
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                    <label className="text-sm font-semibold text-foreground/80">Price (NGN)</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/30">₦</span>
-                      <input 
-                        required
-                        type="number"
-                        step="0.01"
-                        value={formData.price}
-                        onChange={e => setFormData({...formData, price: e.target.value})}
-                        placeholder="29.99"
-                        className="w-full bg-foreground/5 border border-border-custom rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
-                      />
+                  <div className="flex items-center gap-3 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, hasVariants: !prev.hasVariants }))}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.hasVariants ? 'bg-accent' : 'bg-foreground/10'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.hasVariants ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                    <span className="text-sm font-semibold text-foreground/80">This product has variants (e.g. size, color)</span>
+                  </div>
+
+                  {!formData.hasVariants ? (
+                    <>
+                      <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                        <label className="text-sm font-semibold text-foreground/80">Price (NGN)</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/30">₦</span>
+                          <input 
+                            required={!formData.hasVariants}
+                            type="number"
+                            step="0.01"
+                            value={formData.price}
+                            onChange={e => setFormData({...formData, price: e.target.value})}
+                            placeholder="29.99"
+                            className="w-full bg-foreground/5 border border-border-custom rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                        <label className="text-sm font-semibold text-foreground/80">Stock Quantity</label>
+                        <input 
+                          required={!formData.hasVariants}
+                          type="number"
+                          value={formData.stock}
+                          onChange={e => setFormData({...formData, stock: e.target.value})}
+                          placeholder="100"
+                          className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-semibold text-foreground/80">Product Variants</label>
+                        <button
+                          type="button"
+                          onClick={addVariant}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 text-accent rounded-lg text-xs font-bold hover:bg-accent/20 transition-all"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Add Variant
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {formData.variants.map((variant, index) => (
+                          <div key={index} className="grid grid-cols-[1fr_1fr_100px_80px_40px] gap-3 items-end bg-foreground/[0.02] p-3 rounded-xl border border-border-custom/50">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider ml-1">Variant Name</label>
+                              <input
+                                required
+                                value={variant.name}
+                                onChange={e => updateVariant(index, 'name', e.target.value)}
+                                placeholder="Red / XL"
+                                className="w-full bg-background border border-border-custom rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider ml-1">SKU</label>
+                              <input
+                                required
+                                value={variant.sku}
+                                onChange={e => updateVariant(index, 'sku', e.target.value)}
+                                placeholder="SKU-001"
+                                className="w-full bg-background border border-border-custom rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider ml-1">Price</label>
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-foreground/30">₦</span>
+                                <input
+                                  required
+                                  type="number"
+                                  value={variant.price}
+                                  onChange={e => updateVariant(index, 'price', e.target.value)}
+                                  className="w-full bg-background border border-border-custom rounded-lg pl-5 pr-2 py-2 text-xs focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider ml-1">Stock</label>
+                              <input
+                                required
+                                type="number"
+                                value={variant.stock}
+                                onChange={e => updateVariant(index, 'stock', e.target.value)}
+                                className="w-full bg-background border border-border-custom rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeVariant(index)}
+                              className="mb-1 p-2 text-foreground/30 hover:text-red-500 hover:bg-red-500/5 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        
+                        {formData.variants.length === 0 && (
+                          <div className="text-center py-8 border-2 border-dashed border-border-custom/30 rounded-xl bg-foreground/[0.01]">
+                            <Layers className="w-8 h-8 text-foreground/10 mx-auto mb-2" />
+                            <p className="text-xs text-foreground/40 font-medium">No variants added yet. Click "Add Variant" to begin.</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                    <label className="text-sm font-semibold text-foreground/80">Stock Quantity</label>
-                    <input 
-                      required
-                      type="number"
-                      value={formData.stock}
-                      onChange={e => setFormData({...formData, stock: e.target.value})}
-                      placeholder="100"
-                      className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
-                    />
-                  </div>
+                  )}
                 </div>
               </section>
 
@@ -337,12 +523,27 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
                     />
                   </div>
                   <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-                    <label className="text-sm font-semibold text-foreground/80 pt-2.5">Description</label>
+                    <div className="flex flex-col gap-1 pt-2.5">
+                      <label className="text-sm font-semibold text-foreground/80">Description</label>
+                      <button
+                        type="button"
+                        onClick={generateAIDescription}
+                        disabled={isGeneratingDescription || !formData.name}
+                        className="flex items-center gap-1.5 text-[10px] font-bold text-accent hover:text-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isGeneratingDescription ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3 h-3" />
+                        )}
+                        AI GENERATE
+                      </button>
+                    </div>
                     <textarea 
                       value={formData.description}
                       onChange={e => setFormData({...formData, description: e.target.value})}
                       placeholder="Tell us about this product..."
-                      rows={3}
+                      rows={4}
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all resize-none font-medium"
                     />
                   </div>
@@ -351,8 +552,8 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
             </div>
           </form>
 
-          {/* Footer */}
-          <div className="p-5 border-t border-border-custom flex justify-end gap-3 bg-background">
+          {/* Footer Actions */}
+          <div className="hidden md:flex p-5 border-t border-border-custom bg-background items-center justify-end gap-3">
             <button 
               type="button"
               onClick={onClose}

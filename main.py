@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, List
 from dotenv import load_dotenv
 load_dotenv(override=True)
 import pandas as pd
@@ -66,6 +68,26 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "Mia AI Agent is Online"}
+
+class DescriptionRequest(BaseModel):
+    name: str
+    category: Optional[str] = None
+    features: Optional[str] = None
+
+@app.post("/mia/generate-description")
+async def generate_description(request: DescriptionRequest):
+    prompt = f"Write a compelling, SEO-friendly product description for a product named '{request.name}'"
+    if request.category:
+        prompt += f" in the category '{request.category}'"
+    if request.features:
+        prompt += f" with these key features: {request.features}"
+    prompt += ". Make it professional, engaging, and highlight the value to the customer. Return ONLY the description text."
+    
+    try:
+        description = copywriter_task(prompt)
+        return {"description": description.strip()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/mia/settings")
 async def update_settings(settings: dict):
@@ -601,21 +623,28 @@ async def shopify_webhook(request: Request):
     # Placeholder for logic
     return {"status": "Mia is processing the order"}
 
+class ConnectRequest(BaseModel):
+    shop_url: str
+    access_token: str
+    user_id: Optional[str] = None
+
 @app.post("/connect/shopify")
-async def connect_shopify(shop_url: str, access_token: str, db: Session = Depends(get_db)):
+async def connect_shopify(request: ConnectRequest, db: Session = Depends(get_db)):
     # Save the store connection details using SQLAlchemy
-    store = db.query(Store).filter(Store.store_url == shop_url).first()
+    store = db.query(Store).filter(Store.store_url == request.shop_url).first()
     if not store:
         store = Store(
-            name=shop_url.split('.')[0],
+            name=request.shop_url.split('.')[0],
             platform="shopify",
-            store_url=shop_url,
-            access_token=access_token,
+            store_url=request.shop_url,
+            access_token=request.access_token,
+            user_id=request.user_id,
             is_active=True
         )
         db.add(store)
     else:
-        store.access_token = access_token
+        store.access_token = request.access_token
+        store.user_id = request.user_id or store.user_id
         store.is_active = True
     
     db.commit()
@@ -833,32 +862,39 @@ async def sync_store(store_id: str, db: Session = Depends(get_db)):
     for p_data in normalized_products:
         product = db.query(Product).filter(Product.external_id == p_data['external_id']).first()
         if not product:
-            product = Product(**p_data)
+            product = Product(**p_data, user_id=store.user_id)
             db.add(product)
         else:
             for key, value in p_data.items():
                 setattr(product, key, value)
+            product.user_id = store.user_id # Ensure user_id is set
     
     # 6. Save Orders & Customers
     for o_data in normalized_orders:
+        # o_data contains keys: external_id, customer_email, total_amount, profit_margin, status, created_at, platform, ai_notes
         # a. Handle Customer first
         email = o_data.get('customer_email')
-        customer = db.query(Customer).filter(Customer.email == email).first()
-        if not customer and email:
-            customer = Customer(email=email)
-            db.add(customer)
-            db.flush() # Get ID for customer
+        customer = None
+        if email:
+            customer = db.query(Customer).filter(Customer.email == email).first()
+            if not customer:
+                customer = Customer(email=email, user_id=store.user_id)
+                db.add(customer)
+                db.flush() # Get ID for customer
+            else:
+                customer.user_id = store.user_id # Update user_id
         
         # b. Handle Order
         order = db.query(Order).filter(Order.external_id == o_data['external_id']).first()
         if not order:
             order_data = o_data.copy()
             order_data.pop('customer_email', None) # Remove email from order data
-            order = Order(**order_data, store_id=store.id, customer_id=customer.id if customer else None)
+            order = Order(**order_data, store_id=store.id, user_id=store.user_id, customer_id=customer.id if customer else None)
             db.add(order)
         else:
             # Update order status if it changed
             order.status = o_data.get('status', order.status)
+            order.user_id = store.user_id # Ensure user_id is set
     
     db.commit()
     return {

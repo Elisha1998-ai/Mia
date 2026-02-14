@@ -46,6 +46,23 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
+    // Validate storeDomain if provided
+    if (body.storeDomain) {
+      const existingWithDomain = await db.query.storeSettings.findFirst({
+        where: (settings, { eq, and, ne }) => and(
+          eq(settings.storeDomain, body.storeDomain),
+          ne(settings.userId, session.user.id)
+        )
+      });
+
+      if (existingWithDomain) {
+        return NextResponse.json(
+          { error: 'Store domain is already taken' },
+          { status: 400 }
+        );
+      }
+    }
+
     const existingSettings = await db.query.storeSettings.findFirst({
       where: eq(storeSettingsTable.userId, session.user.id)
     });

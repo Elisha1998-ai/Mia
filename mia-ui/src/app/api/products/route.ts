@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products as productsTable } from '@/lib/schema';
-import { desc, count, sql, eq, and } from 'drizzle-orm';
+import { products as productsTable, productVariants as variantsTable } from '@/lib/schema';
+import { desc, count, eq } from 'drizzle-orm';
 import { auth } from '@/auth';
 
 // GET /api/products - Get all products with pagination
@@ -16,17 +16,24 @@ export async function GET(request: Request) {
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
     
+    console.log('Fetching products for user:', session.user.id);
+
     const [products, totalResult] = await Promise.all([
-      db.select()
-        .from(productsTable)
-        .where(eq(productsTable.userId, session.user.id))
-        .orderBy(desc(productsTable.createdAt))
-        .limit(limit)
-        .offset(skip),
+      db.query.products.findMany({
+        where: eq(productsTable.userId, session.user.id),
+        orderBy: [desc(productsTable.createdAt)],
+        limit: limit,
+        offset: skip,
+        with: {
+          variants: true
+        }
+      }),
       db.select({ count: count() })
         .from(productsTable)
         .where(eq(productsTable.userId, session.user.id))
     ]);
+
+    console.log(`Found ${products.length} products out of ${totalResult[0]?.count} total for this user`);
 
     const total = totalResult[0]?.count || 0;
 
@@ -40,7 +47,15 @@ export async function GET(request: Request) {
         description: p.description || undefined,
         image_url: p.imageUrl || undefined,
         platform: p.platform || undefined,
-        created_at: new Date(p.createdAt).toISOString()
+        created_at: new Date(p.createdAt).toISOString(),
+        variants: p.variants?.map(v => ({
+          id: v.id,
+          name: v.name,
+          sku: v.sku,
+          price: v.price ? Number(v.price) : undefined,
+          stock_quantity: v.stockQuantity,
+          image_url: v.imageUrl || undefined
+        }))
       })),
       total,
       skip,
@@ -64,33 +79,60 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    const { variants, ...productData } = body;
     
     // Generate SKU if not provided
-    const sku = body.sku && body.sku.trim() !== '' 
-      ? body.sku 
+    const sku = productData.sku && productData.sku.trim() !== '' 
+      ? productData.sku 
       : `SKU-${Math.random().toString(36).toUpperCase().substring(2, 10)}`;
 
-    const [product] = await db.insert(productsTable).values({
-      userId: session.user.id,
-      name: body.name,
-      sku: sku,
-      price: (body.price || 0).toString(),
-      stockQuantity: body.stock_quantity || 0,
-      description: body.description,
-      imageUrl: body.image_url,
-      platform: body.platform
-    }).returning();
+    const result = await db.transaction(async (tx) => {
+      const [product] = await tx.insert(productsTable).values({
+        userId: session.user.id,
+        name: productData.name,
+        sku: sku,
+        price: (productData.price || 0).toString(),
+        stockQuantity: productData.stock_quantity || 0,
+        description: productData.description,
+        imageUrl: productData.image_url,
+        platform: productData.platform
+      }).returning();
+
+      let createdVariants = [];
+      if (variants && variants.length > 0) {
+        createdVariants = await tx.insert(variantsTable).values(
+          variants.map((v: any) => ({
+            productId: product.id,
+            name: v.name,
+            sku: v.sku || `${sku}-${v.name.replace(/\s+/g, '-').toUpperCase()}`,
+            price: v.price ? v.price.toString() : null,
+            stockQuantity: v.stock_quantity || 0,
+            imageUrl: v.image_url
+          }))
+        ).returning();
+      }
+
+      return { ...product, variants: createdVariants };
+    });
 
     return NextResponse.json({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      price: Number(product.price),
-      stock_quantity: product.stockQuantity,
-      description: product.description || undefined,
-      image_url: product.imageUrl || undefined,
-      platform: product.platform || undefined,
-      created_at: new Date(product.createdAt).toISOString()
+      id: result.id,
+      name: result.name,
+      sku: result.sku,
+      price: Number(result.price),
+      stock_quantity: result.stockQuantity,
+      description: result.description || undefined,
+      image_url: result.imageUrl || undefined,
+      platform: result.platform || undefined,
+      created_at: new Date(result.createdAt).toISOString(),
+      variants: result.variants?.map(v => ({
+        id: v.id,
+        name: v.name,
+        sku: v.sku,
+        price: v.price ? Number(v.price) : undefined,
+        stock_quantity: v.stockQuantity,
+        image_url: v.imageUrl || undefined
+      }))
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating product:', error);

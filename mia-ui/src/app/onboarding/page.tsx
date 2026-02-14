@@ -26,7 +26,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import * as Dialog from "@radix-ui/react-dialog";
-import { saveOnboardingData } from "@/actions/onboarding";
+import { saveOnboardingData, checkOnboardingStatus } from "@/actions/onboarding";
+import Link from "next/link";
 
 const NICHES = [
   "Electronics",
@@ -276,7 +277,16 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Check if already completed
+    async function checkStatus() {
+      const { completed } = await checkOnboardingStatus();
+      if (completed) {
+        router.push("/dashboard");
+      }
+    }
+    checkStatus();
+  }, [router]);
 
   const toggleTheme = () => {
     setTheme(isDarkMode ? "light" : "dark");
@@ -394,8 +404,17 @@ export default function OnboardingPage() {
 
       {/* Left Side - Onboarding Form */}
       <div className="w-full lg:w-1/2 flex flex-col p-6 lg:p-12 relative justify-center">
-        {/* Theme Toggle Button */}
-        <div className="absolute top-4 right-4 z-50">
+        {/* Top Navigation */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-50">
+          <Link 
+            href="/"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to landing page
+          </Link>
+
+          {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
             className="p-3 transition-all group hover:opacity-70 active:scale-95"

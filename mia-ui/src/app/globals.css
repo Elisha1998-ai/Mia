@@ -65,6 +65,15 @@ h1, h2 {
     scrollbar-width: none;
   }
 
+  /* Global scrollbar hiding for specific elements if needed */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   @keyframes marquee {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }

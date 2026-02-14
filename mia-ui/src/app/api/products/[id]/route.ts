@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products as productsTable } from '@/lib/schema';
+import { products as productsTable, productVariants as variantsTable } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '@/auth';
 
@@ -20,7 +20,10 @@ export async function GET(
       where: and(
         eq(productsTable.id, id),
         eq(productsTable.userId, session.user.id)
-      )
+      ),
+      with: {
+        variants: true
+      }
     });
 
     if (!product) {
@@ -39,7 +42,15 @@ export async function GET(
       description: product.description || undefined,
       image_url: product.imageUrl || undefined,
       platform: product.platform || undefined,
-      created_at: new Date(product.createdAt).toISOString()
+      created_at: new Date(product.createdAt).toISOString(),
+      variants: product.variants?.map(v => ({
+        id: v.id,
+        name: v.name,
+        sku: v.sku,
+        price: v.price ? Number(v.price) : undefined,
+        stock_quantity: v.stockQuantity,
+        image_url: v.imageUrl || undefined
+      }))
     });
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -63,25 +74,50 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const { variants, ...productData } = body;
     
-    const [product] = await db.update(productsTable)
-      .set({
-        name: body.name,
-        sku: body.sku && body.sku.trim() !== '' ? body.sku : undefined, // Don't overwrite with empty SKU if updating
-        price: (body.price || 0).toString(),
-        stockQuantity: body.stock_quantity,
-        description: body.description,
-        imageUrl: body.image_url,
-        platform: body.platform,
-        updatedAt: new Date()
-      })
-      .where(and(
-        eq(productsTable.id, id),
-        eq(productsTable.userId, session.user.id)
-      ))
-      .returning();
+    const result = await db.transaction(async (tx) => {
+      const [product] = await tx.update(productsTable)
+        .set({
+          name: productData.name,
+          sku: productData.sku && productData.sku.trim() !== '' ? productData.sku : undefined,
+          price: (productData.price || 0).toString(),
+          stockQuantity: productData.stock_quantity,
+          description: productData.description,
+          imageUrl: productData.image_url,
+          platform: productData.platform,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(productsTable.id, id),
+          eq(productsTable.userId, session.user.id)
+        ))
+        .returning();
 
-    if (!product) {
+      if (!product) return null;
+
+      // Simple variant update strategy: delete and recreate
+      // For a more robust app, we would update existing ones, but this is faster for now
+      await tx.delete(variantsTable).where(eq(variantsTable.productId, id));
+      
+      let createdVariants = [];
+      if (variants && variants.length > 0) {
+        createdVariants = await tx.insert(variantsTable).values(
+          variants.map((v: any) => ({
+            productId: id,
+            name: v.name,
+            sku: v.sku || `${product.sku}-${v.name.replace(/\s+/g, '-').toUpperCase()}`,
+            price: v.price ? v.price.toString() : null,
+            stockQuantity: v.stock_quantity || 0,
+            imageUrl: v.image_url
+          }))
+        ).returning();
+      }
+
+      return { ...product, variants: createdVariants };
+    });
+
+    if (!result) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
@@ -89,15 +125,23 @@ export async function PUT(
     }
 
     return NextResponse.json({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      price: Number(product.price),
-      stock_quantity: product.stockQuantity,
-      description: product.description || undefined,
-      image_url: product.imageUrl || undefined,
-      platform: product.platform || undefined,
-      created_at: new Date(product.createdAt).toISOString()
+      id: result.id,
+      name: result.name,
+      sku: result.sku,
+      price: Number(result.price),
+      stock_quantity: result.stockQuantity,
+      description: result.description || undefined,
+      image_url: result.imageUrl || undefined,
+      platform: result.platform || undefined,
+      created_at: new Date(result.createdAt).toISOString(),
+      variants: result.variants?.map(v => ({
+        id: v.id,
+        name: v.name,
+        sku: v.sku,
+        price: v.price ? Number(v.price) : undefined,
+        stock_quantity: v.stockQuantity,
+        image_url: v.imageUrl || undefined
+      }))
     });
   } catch (error) {
     console.error('Error updating product:', error);

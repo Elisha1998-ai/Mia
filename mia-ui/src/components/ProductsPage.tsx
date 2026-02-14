@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useSession } from 'next-auth/react';
 import { 
   Search, 
   Filter, 
@@ -15,7 +16,9 @@ import {
   Trash2,
   Edit2,
   Share2,
-  Package
+  Package,
+  Upload,
+  Layers
 } from 'lucide-react';
 
 import { AddProductModal } from './AddProductModal';
@@ -34,10 +37,11 @@ interface Product {
   weight?: string;
   createdAt: string;
   image?: string;
+  variants?: any[];
 }
 
-const ActionPopover = ({ product, onDelete, onEdit }: { product: Product, onDelete: (id: string) => void, onEdit: (product: Product) => void }) => {
-  return (
+const ActionPopover = ({ product, onDelete, onEdit, onShare }: { product: Product, onDelete: (id: string) => void, onEdit: (product: Product) => void, onShare: (product: Product) => void }) => {
+    return (
     <Popover.Root>
       <Popover.Trigger asChild>
         <button className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all">
@@ -57,7 +61,10 @@ const ActionPopover = ({ product, onDelete, onEdit }: { product: Product, onDele
             <Edit2 className="w-4 h-4" />
             Edit Product
           </button>
-          <button className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors font-medium">
+          <button 
+            onClick={() => onShare(product)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors font-medium"
+          >
             <Share2 className="w-4 h-4" />
             Share
           </button>
@@ -178,6 +185,7 @@ const MobileProductCard = ({
 };
 
 export const ProductsPage = () => {
+  const { data: session } = useSession();
   const { products: apiProducts, loading, fetchProducts, deleteProduct, createProduct, updateProduct } = useProducts();
   const [products, setProducts] = React.useState<Product[]>([]);
   
@@ -196,7 +204,8 @@ export const ProductsPage = () => {
         category: p.platform || 'General',
         status: p.stock_quantity === 0 ? 'Out of Stock' : p.stock_quantity < 10 ? 'Low Stock' : 'Active',
         createdAt: p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Recently',
-        image: p.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&h=100&fit=crop'
+        image: p.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&h=100&fit=crop',
+        variants: p.variants || []
       }));
       setProducts(mappedProducts);
     }
@@ -214,6 +223,64 @@ export const ProductsPage = () => {
     id: null,
     isBulk: false
   });
+
+  const handleExport = () => {
+    if (filteredProducts.length === 0) return;
+    
+    const headers = ['Name', 'SKU', 'Price', 'Stock', 'Category', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredProducts.map(p => [
+        `"${p.name}"`,
+        `"${p.sku}"`,
+        p.price,
+        p.stock,
+        `"${p.category}"`,
+        `"${p.status}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'products');
+    
+    if (session?.user?.id) {
+      formData.append('user_id', session.user.id);
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/mia/ingest-csv', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Import failed');
+      
+      const result = await response.json();
+      alert(`Successfully imported ${result.imported_count} products!`);
+      fetchProducts(); // Refresh list
+    } catch (error) {
+      console.error('Import error:', error);
+      alert('Failed to import products. Make sure the backend is running.');
+    }
+  };
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const filteredProducts = React.useMemo(() => {
     return products
@@ -277,39 +344,78 @@ export const ProductsPage = () => {
     setDeleteModal({ isOpen: false, id: null, isBulk: false });
   };
 
+  const handleBulkStatusUpdate = async (newStatus: Product['status']) => {
+    try {
+      await Promise.all(selectedIds.map(id => updateProduct(id, { status: newStatus })));
+      setProducts(products.map(p => selectedIds.includes(p.id) ? { ...p, status: newStatus } : p));
+      setSelectedIds([]);
+    } catch (error) {
+      console.error('Failed to update products status:', error);
+    }
+  };
+
+  const inventoryStats = React.useMemo(() => {
+    const lowStock = products.filter(p => p.status === 'Low Stock').length;
+    const outOfStock = products.filter(p => p.status === 'Out of Stock').length;
+    return { lowStock, outOfStock };
+  }, [products]);
+
   const handleAddProduct = async (productData: any) => {
     try {
       if (editingProduct) {
-        await updateProduct(editingProduct.id, {
+        const updated = await updateProduct(editingProduct.id, {
           name: productData.name,
           sku: productData.sku,
           price: productData.price,
           stock_quantity: productData.stock,
           description: productData.description,
           platform: productData.category,
-          image_url: productData.image
+          image_url: productData.image,
+          variants: productData.variants?.map((v: any) => ({
+            name: v.name,
+            sku: v.sku,
+            price: parseFloat(v.price) || null,
+            stock_quantity: parseInt(v.stock) || 0,
+            image_url: v.image_url
+          }))
         });
+        setProducts(products.map(p => p.id === editingProduct.id ? updated : p));
       } else {
-        await createProduct({
+        const created = await createProduct({
           name: productData.name,
           sku: productData.sku,
           price: productData.price,
           stock_quantity: productData.stock,
           description: productData.description,
-          platform: productData.category || 'manual',
-          image_url: productData.image
+          platform: productData.category,
+          image_url: productData.image,
+          variants: productData.variants?.map((v: any) => ({
+            name: v.name,
+            sku: v.sku,
+            price: parseFloat(v.price) || null,
+            stock_quantity: parseInt(v.stock) || 0,
+            image_url: v.image_url
+          }))
         });
+        setProducts([created, ...products]);
       }
-      setEditingProduct(null);
       setIsAddModalOpen(false);
+      setEditingProduct(null);
     } catch (error) {
       console.error('Failed to save product:', error);
+      alert('Failed to save product. Please check your connection.');
     }
   };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
     setIsAddModalOpen(true);
+  };
+
+  const handleShare = (product: Product) => {
+    const shareUrl = `${window.location.origin}/storefront/products/${product.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    alert('Product link copied to clipboard!');
   };
 
   return (
@@ -328,14 +434,42 @@ export const ProductsPage = () => {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, id: null, isBulk: false })}
         onConfirm={confirmDelete}
-        isBulk={deleteModal.isBulk}
-        count={deleteModal.isBulk ? selectedIds.length : 1}
+        title={deleteModal.isBulk ? 'Delete Multiple Products' : 'Delete Product'}
+        description={deleteModal.isBulk 
+          ? `Are you sure you want to delete ${selectedIds.length} products? This action cannot be undone.`
+          : 'Are you sure you want to delete this product? This action cannot be undone.'
+        }
       />
       
       <div className="flex-1 flex flex-col bg-background h-full overflow-hidden">
+        {/* Inventory Alerts Banner */}
+        {(inventoryStats.lowStock > 0 || inventoryStats.outOfStock > 0) && (
+          <div className="px-6 py-2 bg-orange-500/5 border-b border-orange-500/10 flex items-center gap-6 overflow-x-auto no-scrollbar">
+            <span className="text-[11px] font-bold text-orange-500 uppercase tracking-wider flex-shrink-0">Inventory Alerts:</span>
+            {inventoryStats.outOfStock > 0 && (
+              <div 
+                className="flex items-center gap-2 px-2 py-1 rounded-lg bg-red-500/10 text-red-500 cursor-pointer hover:bg-red-500/20 transition-all flex-shrink-0"
+                onClick={() => setStatusFilter('Out of Stock')}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[12px] font-bold">{inventoryStats.outOfStock} Out of Stock</span>
+              </div>
+            )}
+            {inventoryStats.lowStock > 0 && (
+              <div 
+                className="flex items-center gap-2 px-2 py-1 rounded-lg bg-orange-500/10 text-orange-500 cursor-pointer hover:bg-orange-500/20 transition-all flex-shrink-0"
+                onClick={() => setStatusFilter('Low Stock')}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                <span className="text-[12px] font-bold">{inventoryStats.lowStock} Low Stock</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Desktop Header */}
         <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border-custom">
-          <div className="flex items-center gap-4 flex-1 max-w-2xl">
+          <div className="flex items-center gap-4 flex-1 max-w-3xl">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
               <input 
@@ -394,17 +528,64 @@ export const ProductsPage = () => {
             </div>
 
             {selectedIds.length > 0 && (
-              <button 
-                onClick={handleBulkDelete}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors font-medium"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete ({selectedIds.length})
-              </button>
+              <div className="flex items-center gap-2 pl-2 border-l border-border-custom animate-in slide-in-from-left-2 duration-200">
+                <span className="text-[12px] font-bold text-foreground/30 uppercase tracking-wider mr-2">{selectedIds.length} Selected:</span>
+                
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-bold hover:bg-foreground/5 text-foreground/60 transition-colors">
+                      Update Status
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[140px]" align="start" sideOffset={8}>
+                      {['Active', 'Draft', 'Archived'].map((status) => (
+                        <button 
+                          key={status}
+                          onClick={() => handleBulkStatusUpdate(status as any)}
+                          className="w-full text-left px-3 py-2 text-[13px] hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors font-medium"
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+
+                <button 
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              </div>
             )}
           </div>
           
           <div className="flex items-center gap-3">
+            <button 
+              onClick={handleExport}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors font-medium"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors font-medium"
+            >
+              <Upload className="w-4 h-4" />
+              Import
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImport} 
+                accept=".csv" 
+                className="hidden" 
+              />
+            </button>
             <button 
               onClick={() => {
                 setEditingProduct(null);
@@ -569,7 +750,15 @@ export const ProductsPage = () => {
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[14px] font-medium text-foreground">{product.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14px] font-medium text-foreground">{product.name}</span>
+                          {product.variants && product.variants.length > 0 && (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider">
+                              <Layers className="w-2.5 h-2.5" />
+                              {product.variants.length} Variants
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[12px] text-foreground/40">{product.category}</span>
                       </div>
                     </div>
@@ -597,7 +786,7 @@ export const ProductsPage = () => {
                     <StatusBadge status={product.status} />
                   </td>
                   <td className="pr-6 py-4 text-right">
-                    <ActionPopover product={product} onDelete={handleDelete} onEdit={handleEdit} />
+                    <ActionPopover product={product} onDelete={handleDelete} onEdit={handleEdit} onShare={handleShare} />
                   </td>
                 </tr>
               )))}

@@ -16,32 +16,46 @@ export async function saveOnboardingData(data: any) {
     const userId = session.user.id;
 
     // 1. Update User Details
-    const userResults = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    // Try to find user by ID first, then by email
+    let userResults = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (userResults.length === 0 && session.user.email) {
+      userResults = await db.select().from(users).where(eq(users.email, session.user.email)).limit(1);
+    }
+    
     const existingUser = userResults[0];
+    
+    // If we found a user by email but the ID in the session is different,
+    // we should still use the database ID as the primary key.
+    const targetUserId = existingUser ? existingUser.id : userId;
+
+    const userData: any = {
+      name: `${data.firstName} ${data.lastName}`.trim(),
+    };
+
+    // Check if schema has firstName/lastName columns before setting them
+    if ("firstName" in users) userData.firstName = data.firstName;
+    if ("lastName" in users) userData.lastName = data.lastName;
 
     if (existingUser) {
       await db.update(users)
-        .set({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          name: `${data.firstName} ${data.lastName}`.trim(),
-        })
-        .where(eq(users.id, userId));
+        .set(userData)
+        .where(eq(users.id, targetUserId));
     } else {
       await db.insert(users).values({
-        id: userId,
+        id: targetUserId,
         email: session.user.email || "dev@example.com",
-        firstName: data.firstName,
-        lastName: data.lastName,
-        name: `${data.firstName} ${data.lastName}`.trim(),
+        ...userData
       });
     }
+
+    // Use targetUserId for all subsequent operations
+    const activeUserId = targetUserId;
 
     // 2. Create or Update Store
     // For now, we assume one store per user
     const results = await db.select()
       .from(stores)
-      .where(eq(stores.userId, userId))
+      .where(eq(stores.userId, activeUserId))
       .limit(1);
     
     let store = results[0];
@@ -51,7 +65,7 @@ export async function saveOnboardingData(data: any) {
 
     if (!store) {
       const [newStore] = await db.insert(stores).values({
-        userId: userId,
+        userId: activeUserId,
         name: data.storeName,
         platform: "Custom",
         storeUrl: storeUrl,
@@ -71,14 +85,14 @@ export async function saveOnboardingData(data: any) {
   // 3. Create or Update Store Settings
   const settingsResults = await db.select()
     .from(storeSettings)
-    .where(eq(storeSettings.userId, userId))
+    .where(eq(storeSettings.userId, activeUserId))
     .limit(1);
   
   const existingSettings = settingsResults[0];
   const storeSlug = data.storeName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
   const settingsData = {
-    userId: userId,
+    userId: activeUserId,
     storeName: data.storeName,
     storeDomain: storeSlug,
     niche: data.niche,
@@ -106,8 +120,11 @@ export async function saveOnboardingData(data: any) {
       await db.insert(storeSettings).values(settingsData);
     }
 
-    revalidatePath("/dashboard");
+    // Force revalidate all related paths
+    revalidatePath("/dashboard", "layout");
     revalidatePath("/onboarding");
+    revalidatePath("/", "layout");
+
     return { success: true };
   } catch (error) {
     console.error("Onboarding error:", error);
@@ -122,14 +139,29 @@ export async function checkOnboardingStatus() {
     const session = await auth();
     if (!session?.user?.id) return { completed: false };
 
-    // Use a standard select query instead of the query API to be safer
-    const results = await db.select()
+    const userId = session.user.id;
+    const userEmail = session.user.email;
+
+    // First try with the session ID
+    let results = await db.select()
       .from(storeSettings)
-      .where(eq(storeSettings.userId, session.user.id))
+      .where(eq(storeSettings.userId, userId))
       .limit(1);
 
-    const settings = results[0];
+    // If not found and we have an email, try finding the user by email first
+    // to get their real database ID
+    if (results.length === 0 && userEmail) {
+      const userResults = await db.select().from(users).where(eq(users.email, userEmail)).limit(1);
+      if (userResults.length > 0) {
+        const realUserId = userResults[0].id;
+        results = await db.select()
+          .from(storeSettings)
+          .where(eq(storeSettings.userId, realUserId))
+          .limit(1);
+      }
+    }
 
+    const settings = results[0];
     return { completed: settings?.onboardingCompleted || false };
   } catch (error) {
     console.error("Error checking onboarding status:", error);

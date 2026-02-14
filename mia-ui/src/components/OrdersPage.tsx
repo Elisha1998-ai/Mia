@@ -29,8 +29,11 @@ import {
 
 import * as Popover from '@radix-ui/react-popover';
 import { AddOrderModal } from './AddOrderModal';
+import { OrderDetailModal } from './OrderDetailModal';
+import { InvoiceModal } from './InvoiceModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { useOrders, useCustomers, useProducts } from '@/hooks/useData';
+import { Order as ApiOrder } from '@/lib/api';
 
 interface Order {
   id: string;
@@ -47,7 +50,12 @@ interface Order {
   address?: string;
 }
 
-const ActionPopover = ({ order, onDelete }: { order: Order, onDelete: (id: string) => void }) => {
+const ActionPopover = ({ order, onDelete, onViewDetails, onViewInvoice }: { 
+  order: Order, 
+  onDelete: (id: string) => void, 
+  onViewDetails: (id: string) => void,
+  onViewInvoice: (id: string) => void 
+}) => {
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
@@ -61,11 +69,17 @@ const ActionPopover = ({ order, onDelete }: { order: Order, onDelete: (id: strin
           sideOffset={5}
           align="end"
         >
-          <button className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors">
+          <button 
+            onClick={() => onViewDetails(order.id)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors"
+          >
             <Eye className="w-4 h-4" />
             View Details
           </button>
-          <button className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors">
+          <button 
+            onClick={() => onViewInvoice(order.id)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors"
+          >
             <FileText className="w-4 h-4" />
             Invoice
           </button>
@@ -104,12 +118,16 @@ const MobileOrderCard = ({
   order, 
   isExpanded, 
   onToggle, 
-  onDelete 
+  onDelete, 
+  onViewDetails,
+  onViewInvoice 
 }: { 
   order: Order, 
   isExpanded: boolean, 
   onToggle: () => void,
-  onDelete: (id: string) => void
+  onDelete: (id: string) => void,
+  onViewDetails: (id: string) => void,
+  onViewInvoice: (id: string) => void
 }) => {
   return (
     <div className="border-b border-border-custom last:border-none">
@@ -160,7 +178,17 @@ const MobileOrderCard = ({
           </div>
 
           <div className="flex items-center gap-2 pt-2">
-            <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border-custom text-[13px] font-medium text-foreground/60 hover:bg-foreground/5 transition-colors">
+            <button 
+              onClick={() => onViewDetails(order.id)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border-custom text-[13px] font-medium text-foreground/60 hover:bg-foreground/5 transition-colors"
+            >
+              <Eye className="w-4 h-4" />
+              View Details
+            </button>
+            <button 
+              onClick={() => onViewInvoice(order.id)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border-custom text-[13px] font-medium text-foreground/60 hover:bg-foreground/5 transition-colors"
+            >
               <FileText className="w-4 h-4" />
               Invoice
             </button>
@@ -181,7 +209,7 @@ const MobileOrderCard = ({
 };
 
 export const OrdersPage = () => {
-  const { orders: apiOrders, loading, fetchOrders, createOrder, deleteOrder } = useOrders();
+  const { orders: apiOrders, loading, fetchOrders, getOrder, createOrder, updateOrder, deleteOrder } = useOrders();
   const { customers, fetchCustomers, loading: customersLoading } = useCustomers();
   const { products, fetchProducts, loading: productsLoading } = useProducts();
 
@@ -207,7 +235,7 @@ export const OrdersPage = () => {
         paymentMethod: o.payment_method || 'Bank Transfer',
         shippingMethod: o.shipping_method || 'Standard Shipping',
         productName: o.product_name || 'No Product',
-        address: o.address || 'No Address'
+        address: o.shipping_address || o.address || 'No Address'
       }));
       setOrders(mappedOrders);
     }
@@ -221,11 +249,53 @@ export const OrdersPage = () => {
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [expandedOrderId, setExpandedOrderId] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState<'All Orders' | 'Upcoming' | 'Past Orders'>('All Orders');
+  
+  const [detailModal, setDetailModal] = React.useState<{ isOpen: boolean; order: ApiOrder | null }>({
+    isOpen: false,
+    order: null
+  });
+
+  const [invoiceModal, setInvoiceModal] = React.useState<{ isOpen: boolean; order: ApiOrder | null }>({
+    isOpen: false,
+    order: null
+  });
+
   const [deleteModal, setDeleteModal] = React.useState<{ isOpen: boolean; id: string | null; isBulk: boolean }>({
     isOpen: false,
     id: null,
     isBulk: false
   });
+
+  const handleViewDetails = async (id: string) => {
+    try {
+      const orderData = await getOrder(id);
+      setDetailModal({ isOpen: true, order: orderData });
+    } catch (error) {
+      console.error('Failed to fetch order details:', error);
+    }
+  };
+
+  const handleViewInvoice = async (id: string) => {
+    try {
+      const orderData = await getOrder(id);
+      setInvoiceModal({ isOpen: true, order: orderData });
+    } catch (error) {
+      console.error('Failed to fetch invoice details:', error);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      await updateOrder(id, { status: status.toLowerCase() });
+      // Refresh details if the modal is open for this order
+      if (detailModal.isOpen && detailModal.order?.id === id) {
+        const updatedOrder = await getOrder(id);
+        setDetailModal({ isOpen: true, order: updatedOrder });
+      }
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+    }
+  };
 
   const filteredOrders = React.useMemo(() => {
     return orders
@@ -272,6 +342,16 @@ export const OrdersPage = () => {
     setDeleteModal({ isOpen: true, id: null, isBulk: true });
   };
 
+  const handleBulkStatusUpdate = async (newStatus: Order['status']) => {
+    try {
+      await Promise.all(selectedIds.map(id => updateOrder(id, { status: newStatus.toLowerCase() })));
+      setOrders(orders.map(o => selectedIds.includes(o.id) ? { ...o, status: newStatus } : o));
+      setSelectedIds([]);
+    } catch (error) {
+      console.error('Failed to update orders status:', error);
+    }
+  };
+
   const confirmDelete = async () => {
     if (deleteModal.isBulk) {
       try {
@@ -301,6 +381,9 @@ export const OrdersPage = () => {
         customer_name: orderData.customerName,
         total_amount: orderData.total,
         status: orderData.status.toLowerCase(),
+        shipping_address: orderData.address,
+        shipping_method: orderData.shippingMethod,
+        payment_method: orderData.paymentMethod,
         items: orderData.items.map((item: any) => ({
           product_id: item.productId,
           quantity: item.quantity,
@@ -380,13 +463,38 @@ export const OrdersPage = () => {
           </div>
 
           {selectedIds.length > 0 && (
-            <button 
-              onClick={handleBulkDelete}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete ({selectedIds.length})
-            </button>
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+              <Popover.Root>
+                <Popover.Trigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors">
+                    <Check className="w-4 h-4" />
+                    Update Status ({selectedIds.length})
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[160px]" align="start" sideOffset={8}>
+                    {['Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'].map((status) => (
+                      <button 
+                        key={status}
+                        onClick={() => handleBulkStatusUpdate(status as Order['status'])}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors"
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
+
+              <button 
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
           )}
         </div>
         
@@ -453,9 +561,23 @@ export const OrdersPage = () => {
         onConfirm={confirmDelete}
         title={deleteModal.isBulk ? 'Delete Multiple Orders' : 'Delete Order'}
         description={deleteModal.isBulk 
-          ? `Are you sure you want to delete ${selectedIds.length} selected orders? This action cannot be undone.`
+          ? `Are you sure you want to delete ${selectedIds.length} orders? This action cannot be undone.`
           : 'Are you sure you want to delete this order? This action cannot be undone.'
         }
+      />
+
+      <OrderDetailModal 
+        isOpen={detailModal.isOpen}
+        onClose={() => setDetailModal({ isOpen: false, order: null })}
+        order={detailModal.order}
+        onUpdateStatus={handleUpdateStatus}
+        onViewInvoice={(order) => setInvoiceModal({ isOpen: true, order })}
+      />
+
+      <InvoiceModal 
+        isOpen={invoiceModal.isOpen}
+        onClose={() => setInvoiceModal({ isOpen: false, order: null })}
+        order={invoiceModal.order}
       />
 
       {/* Table Area (Desktop) */}
@@ -546,7 +668,12 @@ export const OrdersPage = () => {
                   <StatusBadge status={order.status} />
                 </td>
                 <td className="pr-6 py-4 text-right">
-                  <ActionPopover order={order} onDelete={handleDelete} />
+                  <ActionPopover 
+                    order={order} 
+                    onDelete={handleDelete} 
+                    onViewDetails={handleViewDetails} 
+                    onViewInvoice={handleViewInvoice}
+                  />
                 </td>
               </tr>
             )))}
@@ -572,6 +699,8 @@ export const OrdersPage = () => {
               isExpanded={expandedOrderId === order.id}
               onToggle={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
               onDelete={handleDelete}
+              onViewDetails={handleViewDetails}
+              onViewInvoice={handleViewInvoice}
             />
           ))}
           {filteredOrders.length === 0 && (
