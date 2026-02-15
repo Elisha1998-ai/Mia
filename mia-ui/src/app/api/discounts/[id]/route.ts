@@ -7,7 +7,7 @@ import { auth } from '@/auth';
 // DELETE /api/discounts/[id] - Delete a discount
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -15,7 +15,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     await db.delete(discountsTable)
       .where(and(
@@ -36,7 +36,7 @@ export async function DELETE(
 // PATCH /api/discounts/[id] - Update a discount
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -44,7 +44,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { code, type, value, status, startDate, endDate } = body;
 
