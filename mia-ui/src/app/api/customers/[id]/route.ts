@@ -14,6 +14,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     
     // Fetch customer with order history
@@ -31,7 +36,7 @@ export async function GET(
     .leftJoin(ordersTable, eq(customersTable.id, ordersTable.customerId))
     .where(and(
       eq(customersTable.id, id),
-      eq(customersTable.userId, session.user.id)
+      eq(customersTable.userId, userId)
     ))
     .groupBy(customersTable.id);
 
@@ -87,12 +92,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     
     const [customer] = await db.delete(customersTable)
       .where(and(
         eq(customersTable.id, id),
-        eq(customersTable.userId, session.user.id)
+        eq(customersTable.userId, userId)
       ))
       .returning();
 

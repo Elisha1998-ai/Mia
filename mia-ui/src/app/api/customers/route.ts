@@ -12,6 +12,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -29,7 +34,7 @@ export async function GET(request: Request) {
     })
     .from(customersTable)
     .leftJoin(ordersTable, eq(customersTable.id, ordersTable.customerId))
-    .where(eq(customersTable.userId, session.user.id))
+    .where(eq(customersTable.userId, userId))
     .groupBy(customersTable.id)
     .orderBy(desc(customersTable.createdAt))
     .limit(limit)
@@ -39,7 +44,7 @@ export async function GET(request: Request) {
       customersQuery,
       db.select({ count: count() })
         .from(customersTable)
-        .where(eq(customersTable.userId, session.user.id))
+        .where(eq(customersTable.userId, userId))
     ]);
 
     const total = totalResult[0]?.count || 0;
@@ -75,6 +80,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, email, phone } = body;
 
@@ -87,7 +97,7 @@ export async function POST(request: Request) {
     }
 
     const [customer] = await db.insert(customersTable).values({
-      userId: session.user.id,
+      userId: userId,
       email,
       fullName: name,
       phone,

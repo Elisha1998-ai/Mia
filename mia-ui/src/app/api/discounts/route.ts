@@ -12,6 +12,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -19,13 +24,13 @@ export async function GET(request: Request) {
     const [discounts, totalResult] = await Promise.all([
       db.select()
         .from(discountsTable)
-        .where(eq(discountsTable.userId, session.user.id))
+        .where(eq(discountsTable.userId, userId))
         .orderBy(desc(discountsTable.createdAt))
         .limit(limit)
         .offset(skip),
       db.select({ count: count() })
         .from(discountsTable)
-        .where(eq(discountsTable.userId, session.user.id))
+        .where(eq(discountsTable.userId, userId))
     ]);
 
     const total = totalResult[0]?.count || 0;
@@ -73,11 +78,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { code, type, value, startDate, endDate } = body;
 
     const [discount] = await db.insert(discountsTable).values({
-      userId: session.user.id,
+      userId: userId,
       code,
       type,
       value: value.toString(),

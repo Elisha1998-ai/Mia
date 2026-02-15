@@ -12,6 +12,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -42,7 +47,7 @@ export async function GET(request: Request) {
     .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
     .leftJoin(orderItemsTable, eq(ordersTable.id, orderItemsTable.orderId))
     .leftJoin(productsTable, eq(orderItemsTable.productId, productsTable.id))
-    .where(eq(ordersTable.userId, session.user.id))
+    .where(eq(ordersTable.userId, userId))
     .groupBy(ordersTable.id, customersTable.id)
     .orderBy(desc(ordersTable.createdAt))
     .limit(limit)
@@ -50,7 +55,7 @@ export async function GET(request: Request) {
 
     const [totalResult] = await db.select({ count: count() })
       .from(ordersTable)
-      .where(eq(ordersTable.userId, session.user.id));
+      .where(eq(ordersTable.userId, userId));
     const total = totalResult?.count || 0;
 
     return NextResponse.json({
@@ -99,6 +104,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { 
       order_number,
@@ -128,7 +138,7 @@ export async function POST(request: Request) {
         const [existingCustomer] = await tx.select()
           .from(customersTable)
           .where(and(
-            eq(customersTable.userId, session.user.id),
+            eq(customersTable.userId, userId),
             eq(customersTable.email, finalEmail)
           ))
           .limit(1);
@@ -137,7 +147,7 @@ export async function POST(request: Request) {
           finalCustomerId = existingCustomer.id;
         } else {
           const [newCustomer] = await tx.insert(customersTable).values({
-            userId: session.user.id,
+            userId: userId,
             fullName: customer_name,
             email: finalEmail,
             phone: customer_phone || null,
@@ -148,7 +158,7 @@ export async function POST(request: Request) {
 
       // 1. Create the order
       const [order] = await tx.insert(ordersTable).values({
-        userId: session.user.id,
+        userId: userId,
         orderNumber: order_number || `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
         customerId: finalCustomerId,
         totalAmount: total_amount.toString(),

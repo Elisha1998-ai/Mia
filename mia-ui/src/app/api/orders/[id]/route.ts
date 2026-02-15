@@ -15,11 +15,16 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const order = await db.query.orders.findFirst({
       where: and(
         eq(ordersTable.id, id),
-        eq(ordersTable.userId, session.user.id)
+        eq(ordersTable.userId, userId)
       ),
       with: {
         customer: true,
@@ -85,6 +90,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { status, total_amount, customer_id, shipping_address, shipping_method, payment_method } = body;
@@ -101,7 +111,7 @@ export async function PUT(
       })
       .where(and(
         eq(ordersTable.id, id),
-        eq(ordersTable.userId, session.user.id)
+        eq(ordersTable.userId, userId)
       ))
       .returning();
 
@@ -115,7 +125,7 @@ export async function PUT(
     const customer = order.customerId ? await db.query.customers.findFirst({
       where: and(
         eq(customersTable.id, order.customerId),
-        eq(customersTable.userId, session.user.id)
+        eq(customersTable.userId, userId)
       )
     }) : null;
 
@@ -153,12 +163,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     
     const [order] = await db.delete(ordersTable)
       .where(and(
         eq(ordersTable.id, id),
-        eq(ordersTable.userId, session.user.id)
+        eq(ordersTable.userId, userId)
       ))
       .returning();
 

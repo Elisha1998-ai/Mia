@@ -12,6 +12,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Fetch all statistics in parallel
     const [
       totalProductsResult,
@@ -24,29 +29,29 @@ export async function GET() {
       // Total products
       db.select({ count: count() })
         .from(productsTable)
-        .where(eq(productsTable.userId, session.user.id)),
+        .where(eq(productsTable.userId, userId)),
       
       // Total orders
       db.select({ count: count() })
         .from(ordersTable)
-        .where(eq(ordersTable.userId, session.user.id)),
+        .where(eq(ordersTable.userId, userId)),
       
       // Total customers
       db.select({ count: count() })
         .from(customersTable)
-        .where(eq(customersTable.userId, session.user.id)),
+        .where(eq(customersTable.userId, userId)),
       
       // Total revenue (sum of all order totals)
       db.select({ total: sum(ordersTable.totalAmount) })
         .from(ordersTable)
-        .where(eq(ordersTable.userId, session.user.id)),
+        .where(eq(ordersTable.userId, userId)),
       
       // Recent orders (last 30 days)
       db.select({ count: count() })
         .from(ordersTable)
         .where(
           and(
-            eq(ordersTable.userId, session.user.id),
+            eq(ordersTable.userId, userId),
             gte(ordersTable.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
           )
         ),
@@ -56,7 +61,7 @@ export async function GET() {
         .from(productsTable)
         .where(
           and(
-            eq(productsTable.userId, session.user.id),
+            eq(productsTable.userId, userId),
             lt(productsTable.stockQuantity, 10)
           )
         )

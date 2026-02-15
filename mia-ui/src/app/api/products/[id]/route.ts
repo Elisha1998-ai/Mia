@@ -15,11 +15,16 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const product = await db.query.products.findFirst({
       where: and(
         eq(productsTable.id, id),
-        eq(productsTable.userId, session.user.id)
+        eq(productsTable.userId, userId)
       ),
       with: {
         variants: true
@@ -72,6 +77,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { variants, ...productData } = body;
@@ -90,7 +100,7 @@ export async function PUT(
         })
         .where(and(
           eq(productsTable.id, id),
-          eq(productsTable.userId, session.user.id)
+          eq(productsTable.userId, userId)
         ))
         .returning();
 
@@ -163,12 +173,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     
     const [product] = await db.delete(productsTable)
       .where(and(
         eq(productsTable.id, id),
-        eq(productsTable.userId, session.user.id)
+        eq(productsTable.userId, userId)
       ))
       .returning();
 

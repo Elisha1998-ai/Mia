@@ -12,15 +12,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
     
-    console.log('Fetching products for user:', session.user.id);
+    console.log('Fetching products for user:', userId);
 
     const [products, totalResult] = await Promise.all([
       db.query.products.findMany({
-        where: eq(productsTable.userId, session.user.id),
+        where: eq(productsTable.userId, userId),
         orderBy: [desc(productsTable.createdAt)],
         limit: limit,
         offset: skip,
@@ -30,7 +35,7 @@ export async function GET(request: Request) {
       }),
       db.select({ count: count() })
         .from(productsTable)
-        .where(eq(productsTable.userId, session.user.id))
+        .where(eq(productsTable.userId, userId))
     ]);
 
     console.log(`Found ${products.length} products out of ${totalResult[0]?.count} total for this user`);
@@ -78,6 +83,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { variants, ...productData } = body;
     
@@ -88,7 +98,7 @@ export async function POST(request: Request) {
 
     const result = await db.transaction(async (tx) => {
       const [product] = await tx.insert(productsTable).values({
-        userId: session.user.id,
+        userId: userId,
         name: productData.name,
         sku: sku,
         price: (productData.price || 0).toString(),

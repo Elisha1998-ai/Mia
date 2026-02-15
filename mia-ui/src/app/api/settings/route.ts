@@ -11,14 +11,19 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const settings = await db.query.storeSettings.findFirst({
-      where: eq(storeSettingsTable.userId, session.user.id)
+      where: eq(storeSettingsTable.userId, userId)
     });
     
     // If no settings exist, create default for this user
     if (!settings) {
       const [defaultSettings] = await db.insert(storeSettingsTable).values({
-        userId: session.user.id,
+        userId: userId,
         adminName: session.user.name || '',
         adminEmail: session.user.email || '',
         currency: 'Nigerian Naira (₦)',
@@ -44,6 +49,11 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     
     // Validate storeDomain if provided
@@ -51,7 +61,7 @@ export async function PUT(request: Request) {
       const existingWithDomain = await db.query.storeSettings.findFirst({
         where: (settings, { eq, and, ne }) => and(
           eq(settings.storeDomain, body.storeDomain),
-          ne(settings.userId, session.user.id)
+          ne(settings.userId, userId)
         )
       });
 
@@ -64,14 +74,14 @@ export async function PUT(request: Request) {
     }
 
     const existingSettings = await db.query.storeSettings.findFirst({
-      where: eq(storeSettingsTable.userId, session.user.id)
+      where: eq(storeSettingsTable.userId, userId)
     });
 
     let settings;
     if (!existingSettings) {
       [settings] = await db.insert(storeSettingsTable).values({
         ...body,
-        userId: session.user.id,
+        userId: userId,
       }).returning();
     } else {
       [settings] = await db.update(storeSettingsTable)
@@ -79,7 +89,7 @@ export async function PUT(request: Request) {
           ...body,
           updatedAt: new Date()
         })
-        .where(eq(storeSettingsTable.userId, session.user.id))
+        .where(eq(storeSettingsTable.userId, userId))
         .returning();
     }
 
