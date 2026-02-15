@@ -34,7 +34,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
->>>>>>> db99f7d3bcaea2720b5d977f8e577c9e2e9cab0d
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -49,7 +49,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/  <-- Removed this to allow src/lib in Next.js
 lib64/
 parts/
 sdist/
