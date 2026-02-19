@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { orders as ordersTable, customers as customersTable, orderItems as orderItemsTable, products as productsTable } from '@/lib/schema';
+import { orders as ordersTable, customers as customersTable, orderItems as orderItemsTable, products as productsTable, users as usersTable } from '@/lib/schema';
 import { desc, count, eq, sql, and } from 'drizzle-orm';
 import { auth } from '@/auth';
 
@@ -15,6 +15,18 @@ export async function GET(request: Request) {
     const userId = session.user.id;
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let finalUserId = userId;
+    if (userId.includes('@')) {
+      const userRecord = await db.select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.email, userId))
+        .limit(1);
+      
+      if (userRecord.length > 0) {
+        finalUserId = userRecord[0].id;
+      }
     }
 
     const { searchParams } = new URL(request.url);
@@ -138,7 +150,7 @@ export async function POST(request: Request) {
         const [existingCustomer] = await tx.select()
           .from(customersTable)
           .where(and(
-            eq(customersTable.userId, userId),
+            eq(customersTable.userId, finalUserId),
             eq(customersTable.email, finalEmail)
           ))
           .limit(1);
@@ -147,7 +159,7 @@ export async function POST(request: Request) {
           finalCustomerId = existingCustomer.id;
         } else {
           const [newCustomer] = await tx.insert(customersTable).values({
-            userId: userId,
+            userId: finalUserId,
             fullName: customer_name,
             email: finalEmail,
             phone: customer_phone || null,
@@ -158,7 +170,7 @@ export async function POST(request: Request) {
 
       // 1. Create the order
       const [order] = await tx.insert(ordersTable).values({
-        userId: userId,
+        userId: finalUserId,
         orderNumber: order_number || `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
         customerId: finalCustomerId,
         totalAmount: total_amount.toString(),

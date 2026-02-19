@@ -12,7 +12,6 @@ import { AnalyticsPage } from '@/components/AnalyticsPage';
 import { DiscountsPage } from '@/components/DiscountsPage';
 import { ThemeEditorPage } from '@/components/ThemeEditorPage';
 import { EmailTemplatesPage } from '@/components/EmailTemplatesPage';
-import { IntegrationsPage } from '@/components/IntegrationsPage';
 import { useChat } from '@/hooks/useChat';
 import { useSearchParams } from 'next/navigation';
 import { useSettings } from '@/hooks/useData';
@@ -20,17 +19,17 @@ import { useSettings } from '@/hooks/useData';
 export function DashboardClient() {
     const [mounted, setMounted] = React.useState(false);
     const searchParams = useSearchParams();
-    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'integrations' | null;
+    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | null;
     
     const { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode } = useChat();
-    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'integrations'>('chat');
+    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates'>('chat');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
     const { settings, fetchSettings } = useSettings();
 
     React.useEffect(() => {
         setMounted(true);
         fetchSettings();
-        if (viewParam && ['chat', 'products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates', 'integrations'].includes(viewParam)) {
+        if (viewParam && ['chat', 'products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates'].includes(viewParam)) {
             setActiveView(viewParam);
         }
     }, [viewParam]);
@@ -99,7 +98,6 @@ export function DashboardClient() {
                     {activeView === 'discounts' && <DiscountsPage />}
                     {activeView === 'theme-editor' && <ThemeEditorPage />}
                     {activeView === 'email-templates' && <EmailTemplatesPage />}
-                    {activeView === 'integrations' && <IntegrationsPage />}
                 </main>
             </div>
         </div>

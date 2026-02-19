@@ -353,8 +353,8 @@ export default function OnboardingPage() {
       });
       
       if (hasError) {
+        console.log("Validation errors:", newErrors);
         setErrors(newErrors);
-        // Find first error field and scroll to it if needed
         return;
       }
     }
@@ -366,15 +366,19 @@ export default function OnboardingPage() {
 
     setIsLoading(true);
     try {
+      console.log("Submitting onboarding data...", formData);
       const result = await saveOnboardingData(formData);
+      console.log("Save result:", result);
+      
       if (result.success) {
-        router.push("/dashboard");
+        // Use window.location for hard navigation to ensure state is fresh
+        window.location.href = "/dashboard";
       } else {
         alert(result.error || "Failed to save onboarding data");
       }
     } catch (error) {
       console.error("Onboarding error:", error);
-      alert("An unexpected error occurred");
+      alert("An unexpected error occurred: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
     }
@@ -432,15 +436,10 @@ export default function OnboardingPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-semibold mb-2 tracking-tight">
-              Introduce Mia to your business
+              {step === 1 ? "Configure your store" :
+               step === 2 ? "Add your bank details for payments" :
+               "Connect your social accounts"}
             </h1>
-            <p className="text-muted-foreground text-sm">
-              Step {step} of {totalSteps}: {
-                step === 1 ? "Configure your store" :
-                step === 2 ? "Set up payments" :
-                "Connect socials"
-              }
-            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -448,7 +447,7 @@ export default function OnboardingPage() {
               {step === 1 && (
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="space-y-2.5">
-                      <label className="text-sm font-medium">Store Name</label>
+                      <label className="text-sm font-medium mb-2 block">Store Name</label>
                       <input
                         required
                         name="storeName"
@@ -459,7 +458,7 @@ export default function OnboardingPage() {
                       />
                     </div>
                     <div className="space-y-2.5">
-                      <label className="text-sm font-medium">Store URL</label>
+                      <label className="text-sm font-medium mb-2 block">Store URL</label>
                       <div className="relative group">
                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 text-sm select-none">
                           bloume.shop/@
@@ -470,13 +469,10 @@ export default function OnboardingPage() {
                           className="w-full pl-[125px] pr-3.5 py-2.5 bg-input-bg/50 border border-border-custom rounded-lg outline-none transition-all text-sm text-muted-foreground cursor-default"
                         />
                       </div>
-                      <p className="text-[10px] text-muted-foreground/60 italic ml-1">
-                        Auto-generated from your store name
-                      </p>
                     </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2.5 relative">
-                      <label className="text-sm font-medium text-foreground">Niche</label>
+                      <label className="text-sm font-medium text-foreground mb-2 block">Niche</label>
                       <CustomSelect 
                         value={formData.niche} 
                         onChange={(val) => setFormData(prev => ({ ...prev, niche: val }))} 
@@ -486,7 +482,7 @@ export default function OnboardingPage() {
                       />
                     </div>
                     <div className="space-y-2.5">
-                      <label className="text-sm font-medium">Whatsapp Number</label>
+                      <label className="text-sm font-medium mb-2 block">Whatsapp Number</label>
                       <div className="relative">
                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-foreground/40 pointer-events-none">
                           +234
@@ -506,7 +502,7 @@ export default function OnboardingPage() {
                     </div>
                   </div>
                   <div className="space-y-2.5">
-                    <label className="text-sm font-medium">Store Address</label>
+                    <label className="text-sm font-medium mb-2 block">Store Address</label>
                     <input
                       required
                       name="storeAddress"
@@ -522,7 +518,7 @@ export default function OnboardingPage() {
               {step === 2 && (
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="space-y-2.5 relative">
-                    <label className="text-sm font-medium text-foreground">Bank Name</label>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Bank Name</label>
                     <CustomSelect 
                       value={formData.bankName} 
                       onChange={(val) => setFormData(prev => ({ ...prev, bankName: val }))} 
@@ -532,7 +528,7 @@ export default function OnboardingPage() {
                     />
                   </div>
                   <div className="space-y-2.5">
-                    <label className="text-sm font-medium">Account Name</label>
+                    <label className="text-sm font-medium mb-2 block">Account Name</label>
                     <input
                       required
                       name="accountName"
@@ -543,7 +539,7 @@ export default function OnboardingPage() {
                     />
                   </div>
                   <div className="space-y-2.5">
-                    <label className="text-sm font-medium">Account Number</label>
+                    <label className="text-sm font-medium mb-2 block">Account Number</label>
                     <input
                       required
                       name="accountNumber"

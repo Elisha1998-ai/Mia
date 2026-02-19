@@ -10,6 +10,15 @@ export const ProductDetailTemplate1 = () => {
   const [isWishlisted, setIsWishlisted] = React.useState(false);
   const [isAdding, setIsAdding] = React.useState(false);
 
+  const [activeImage, setActiveImage] = React.useState(0);
+  
+  const images = [
+    "https://static.nike.com/a/images/t_PDP_1280_v1/f_auto,q_auto:eco/99486859-0ff3-46b4-949b-2d16af2ad421/custom-nike-dunk-high-by-you-shoes.png",
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSdZcONQldZi3pT7K_8KWowoFesjMzTGtQEag&s",
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvuIdNUUsvuxjKczqVREUIslldwl3siqV-Rw&s",
+    "https://di2ponv0v5otw.cloudfront.net/posts/2025/06/14/684e59e7a566496f66404776/m_wp_684e5aa0c4e7b4c00dce8d8d.webp"
+  ];
+
   const handleAddToCart = () => {
     setIsAdding(true);
     setTimeout(() => setIsAdding(false), 2000);
@@ -22,17 +31,22 @@ export const ProductDetailTemplate1 = () => {
         {/* Image Gallery */}
         <div className="flex flex-col gap-3 sm:gap-4 order-1">
           <div className="aspect-[4/5] sm:aspect-[3/4] bg-gray-100 relative overflow-hidden group rounded-sm">
-            {/* Empty Image Frame */}
-            <div className="absolute inset-0 flex items-center justify-center text-gray-300 italic text-sm">
-              Main Product Image
-            </div>
+            <img 
+              src={images[activeImage]} 
+              alt="Custom Nike Dunk High By You" 
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
           </div>
           
           {/* Thumbnails - Horizontal scroll on mobile, grid on desktop */}
           <div className="flex sm:grid sm:grid-cols-4 gap-3 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0 scrollbar-hide">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="min-w-[80px] sm:min-w-0 aspect-[3/4] bg-gray-50 cursor-pointer hover:bg-gray-100 transition-all rounded-sm flex items-center justify-center text-[10px] text-gray-300 shrink-0">
-                View {i}
+            {images.map((img, i) => (
+              <div 
+                key={i} 
+                onClick={() => setActiveImage(i)}
+                className={`min-w-[80px] sm:min-w-0 aspect-[3/4] bg-gray-50 cursor-pointer overflow-hidden rounded-sm flex items-center justify-center shrink-0 border transition-all ${activeImage === i ? 'border-[#fa5400] opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}`}
+              >
+                <img src={img} alt={`View ${i + 1}`} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>
@@ -40,51 +54,50 @@ export const ProductDetailTemplate1 = () => {
 
         {/* Product Details */}
         <div className="flex flex-col order-2">
-          <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-3 sm:mb-4 flex items-center gap-2 cursor-pointer hover:text-gray-600 transition-colors">
-            <span className="text-xs">←</span> Back to Collection
+          <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-3 sm:mb-4 flex items-center gap-2 cursor-pointer hover:text-[#fa5400] transition-colors">
+            <span className="text-xs">←</span> Back to Sneakers
           </div>
           
           <h1 className="text-xl sm:text-3xl lg:text-4xl font-medium tracking-tight mb-2 sm:mb-4 leading-tight">
-            The Atelier Tailored Coat
+            Nike Dunk High Retro
           </h1>
           
           <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-4 sm:mb-6">
             <div className="flex items-center gap-0.5">
-              {[1, 2, 3, 4].map((i) => <Star key={i} className="w-3 h-3 fill-gray-900 text-gray-900" />)}
-              <Star className="w-3 h-3 text-gray-300" />
+              {[1, 2, 3, 4, 5].map((i) => <Star key={i} className="w-3 h-3 fill-[#fa5400] text-[#fa5400]" />)}
             </div>
             <div className="flex items-center gap-4 text-[10px] sm:text-[11px]">
-              <span className="text-gray-400 uppercase tracking-widest border-r border-gray-200 pr-4">2 Reviews</span>
-              <span className="text-gray-900 uppercase tracking-widest cursor-pointer hover:underline underline-offset-4 decoration-1 font-medium">Add a Review</span>
+              <span className="text-gray-400 uppercase tracking-widest border-r border-gray-200 pr-4">128 Reviews</span>
+              <span className="text-[#fa5400] uppercase tracking-widest cursor-pointer hover:underline underline-offset-4 decoration-1 font-bold">Write a Review</span>
             </div>
           </div>
 
-          <div className="text-lg sm:text-2xl font-light mb-6 sm:mb-8 text-gray-900">$499.00</div>
+          <div className="text-lg sm:text-2xl font-bold mb-6 sm:mb-8 text-black">₦245,000</div>
 
           <div className="space-y-3 mb-6 sm:mb-8 text-[11px] sm:text-[12px] border-y border-gray-100 py-5 sm:py-6">
             <div className="flex items-center gap-2">
               <span className="text-gray-400 uppercase tracking-widest w-24 sm:w-28 shrink-0">Availability:</span>
-              <span className="text-emerald-600 font-medium">In stock</span>
+              <span className="text-emerald-600 font-bold uppercase tracking-wider">In stock</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-400 uppercase tracking-widest w-24 sm:w-28 shrink-0">Code:</span>
-              <span className="text-gray-600">#411-L7</span>
+              <span className="text-gray-400 uppercase tracking-widest w-24 sm:w-28 shrink-0">Style:</span>
+              <span className="text-black font-medium">#NIKE-DUNK-HI</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-400 uppercase tracking-widest w-24 sm:w-28 shrink-0">Tags:</span>
-              <span className="text-gray-600 italic">Fashion, Wool, Classic</span>
+              <span className="text-gray-600 italic">Custom, Sneakers, High-Top</span>
             </div>
           </div>
 
           <div className="text-gray-600 text-[13px] sm:text-[14px] leading-relaxed mb-6 sm:mb-8">
             <p className="mb-3 sm:mb-4">
-              Sleek, polished, and boasting an impeccable, modern fit, this blue, 2-button Lana suit features a notch lapel, flap pockets, and accompanying flat-front trousers all in pure wool.
+              Unlock your potential with the Custom Nike Dunk High By You. Design your own legacy with premium leather, vibrant colors, and personalized details that make every step a statement.
             </p>
             <ul className="list-disc pl-5 space-y-1.5 sm:space-y-2 text-gray-500 text-[12px] sm:text-[13px]">
-              <li>Dark blue suit for a tone-on-tone look</li>
-              <li>Regular fit tailored silhouette</li>
-              <li>100% Premium Wool fabric</li>
-              <li>Free shipping with express delivery</li>
+              <li>Customizable premium leather overlays</li>
+              <li>Responsive foam midsole for comfort</li>
+              <li>Classic high-top design for support</li>
+              <li>Durable rubber outsole with traction</li>
             </ul>
           </div>
 
@@ -94,13 +107,13 @@ export const ProductDetailTemplate1 = () => {
               <label className="text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Color</label>
               <div className="relative">
                 <select 
-                  className="w-full bg-white border border-gray-200 py-3 sm:py-3 px-4 text-[12px] appearance-none cursor-pointer focus:outline-none focus:border-gray-900 transition-all rounded-sm hover:border-gray-300 h-[46px] sm:h-[42px]"
+                  className="w-full bg-white border border-gray-200 py-3 sm:py-3 px-4 text-[12px] appearance-none cursor-pointer focus:outline-none focus:border-[#fa5400] transition-all rounded-sm hover:border-gray-300 h-[46px] sm:h-[42px]"
                   value={selectedColor}
                   onChange={(e) => setSelectedColor(e.target.value)}
                 >
-                  <option>Natural</option>
-                  <option>Black</option>
-                  <option>Navy</option>
+                  <option>Multicolor</option>
+                  <option>Black/Red</option>
+                  <option>White/Blue</option>
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] text-gray-400">▼</div>
               </div>
@@ -109,14 +122,15 @@ export const ProductDetailTemplate1 = () => {
               <label className="text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Size</label>
               <div className="relative">
                 <select 
-                  className="w-full bg-white border border-gray-200 py-3 sm:py-3 px-4 text-[12px] appearance-none cursor-pointer focus:outline-none focus:border-gray-900 transition-all rounded-sm hover:border-gray-300 h-[46px] sm:h-[42px]"
+                  className="w-full bg-white border border-gray-200 py-3 sm:py-3 px-4 text-[12px] appearance-none cursor-pointer focus:outline-none focus:border-[#fa5400] transition-all rounded-sm hover:border-gray-300 h-[46px] sm:h-[42px]"
                   value={selectedSize}
                   onChange={(e) => setSelectedSize(e.target.value)}
                 >
-                  <option>S</option>
-                  <option>M</option>
-                  <option>L</option>
-                  <option>XL</option>
+                  <option>US 7</option>
+                  <option>US 8</option>
+                  <option>US 9</option>
+                  <option>US 10</option>
+                  <option>US 11</option>
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] text-gray-400">▼</div>
               </div>
@@ -151,8 +165,8 @@ export const ProductDetailTemplate1 = () => {
             <button 
               onClick={handleAddToCart}
               disabled={isAdding}
-              className={`w-full sm:flex-1 py-4.5 sm:py-4 text-[11px] uppercase tracking-[0.2em] transition-all duration-500 rounded-sm font-semibold flex items-center justify-center gap-2 h-[54px] sm:h-auto ${
-                isAdding ? 'bg-emerald-600 text-white' : 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-gray-200'
+              className={`w-full sm:flex-1 py-4.5 sm:py-4 text-[11px] uppercase tracking-[0.2em] transition-all duration-300 rounded-sm font-bold flex items-center justify-center gap-2 h-[54px] sm:h-auto ${
+                isAdding ? 'bg-emerald-600 text-white' : 'bg-[#fa5400] text-white hover:bg-black hover:shadow-lg'
               }`}
             >
               {isAdding ? (
@@ -164,10 +178,10 @@ export const ProductDetailTemplate1 = () => {
             </button>
             <button 
               onClick={() => setIsWishlisted(!isWishlisted)}
-              className="w-full sm:w-auto px-8 py-4.5 sm:py-4 border border-gray-200 flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.2em] hover:bg-gray-50 active:bg-gray-100 transition-all rounded-sm font-semibold group h-[54px] sm:h-auto"
+              className="w-full sm:w-auto px-8 py-4.5 sm:py-4 border border-gray-200 flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.2em] hover:border-[#fa5400] hover:text-[#fa5400] transition-all rounded-sm font-bold group h-[54px] sm:h-auto"
             >
-              <Heart className={`w-4 h-4 transition-all duration-300 ${isWishlisted ? 'fill-red-500 text-red-500 scale-110' : 'text-gray-400 group-hover:text-gray-900'}`} />
-              {isWishlisted ? 'Wishlisted' : 'Wishlist'}
+              <Heart className={`w-4 h-4 transition-all duration-300 ${isWishlisted ? 'fill-[#fa5400] text-[#fa5400] scale-110' : 'text-gray-400 group-hover:text-[#fa5400]'}`} />
+              {isWishlisted ? 'Saved' : 'Save'}
             </button>
           </div>
 

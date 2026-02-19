@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { LandingPage } from '@/components/LandingPage';
+import { MonaWaitlist } from '@/components/MonaWaitlist';
 
 export default async function Home() {
   const session = await auth();
@@ -10,11 +10,6 @@ export default async function Home() {
   }
 
   return (
-    <LandingPage 
-      onGetStarted={async () => {
-        'use server';
-        redirect('/auth/signin');
-      }} 
-    />
+    <MonaWaitlist />
   );
 }

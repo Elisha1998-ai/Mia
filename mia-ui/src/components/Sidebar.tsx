@@ -27,8 +27,8 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useSettings } from '@/hooks/useData';
 
 interface SidebarProps {
-  activeView: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'integrations';
-  onViewChange: (view: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'integrations') => void;
+  activeView: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates';
+  onViewChange: (view: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates') => void;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
 }
@@ -61,7 +61,6 @@ export const Sidebar = ({ activeView, onViewChange, isMobileOpen, onMobileClose 
     { id: 'discounts', icon: Ticket, label: 'Discounts' },
     { id: 'theme-editor', icon: Palette, label: 'Theme Editor' },
     { id: 'email-templates', icon: Mail, label: 'Emails' },
-    { id: 'integrations', icon: Share2, label: 'Integrations' },
     { id: 'previews', icon: Layout, label: 'Design Previews' },
   ];
 

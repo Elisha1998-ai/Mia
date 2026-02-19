@@ -12,7 +12,8 @@ export const useChat = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/chat-api/chat', {
+      // Call the internal Next.js API route directly
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +46,7 @@ export const useChat = () => {
          assistantMsg.widgets = [{
            type: data.widget.type,
            title: data.widget.title,
-           description: data.widget.content, // We map 'content' to 'description' for the markdown preview
+           description: data.widget.description || data.widget.content, // Map description or content
            imageUrl: data.widget.imageUrl,
            link: data.widget.link,
            url: data.widget.url,

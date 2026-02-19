@@ -18,7 +18,9 @@ import {
   Share2,
   Package,
   Upload,
-  Layers
+  Layers,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 
 import { AddProductModal } from './AddProductModal';
@@ -264,7 +266,8 @@ export const ProductsPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/mia/ingest-csv', {
+      // Use proxy route to handle authentication and CORS
+      const response = await fetch(`/api/mia/ingest-csv?type=products${session?.user?.id ? `&user_id=${session.user.id}` : ''}`, {
         method: 'POST',
         body: formData,
       });
@@ -282,16 +285,7 @@ export const ProductsPage = () => {
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Products...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   const filteredProducts = React.useMemo(() => {
     return products
@@ -428,6 +422,17 @@ export const ProductsPage = () => {
     navigator.clipboard.writeText(shareUrl);
     alert('Product link copied to clipboard!');
   };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -841,21 +846,40 @@ export const ProductsPage = () => {
         </div>
 
         {/* Pagination Footer (Mobile) */}
-        <div className="md:hidden px-4 py-6 border-t border-border-custom flex items-center justify-center bg-background">
-          <div className="flex items-center gap-1">
-            <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-1 px-4">
-              <span className="w-2 h-2 rounded-full bg-accent" />
-              <span className="w-2 h-2 rounded-full bg-foreground/10" />
-              <span className="w-2 h-2 rounded-full bg-foreground/10" />
-            </div>
-            <button className="p-2 rounded-lg text-foreground/40">
-              <ChevronRight className="w-5 h-5" />
-            </button>
+      <div className="md:hidden px-4 py-6 border-t border-border-custom flex items-center justify-center bg-background">
+        <div className="flex items-center gap-1">
+          <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
+            <ChevronsLeft className="w-5 h-5" />
+          </button>
+          <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          
+          <div className="flex items-center gap-1 mx-2">
+            {[1, 2, 3].map((page) => (
+              <button 
+                key={page}
+                className={`w-8 h-8 rounded-lg text-[13px] font-medium transition-all ${
+                  page === 1 
+                    ? 'bg-foreground/[0.05] text-foreground border border-border-custom' 
+                    : 'text-foreground/40 hover:text-foreground/60'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <span className="px-1 text-foreground/30">...</span>
+            <button className="w-8 h-8 rounded-lg text-[13px] font-medium text-foreground/40">16</button>
           </div>
+
+          <button className="p-2 rounded-lg text-foreground/40 hover:text-foreground">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button className="p-2 rounded-lg text-foreground/40 hover:text-foreground">
+            <ChevronsRight className="w-5 h-5" />
+          </button>
         </div>
+      </div>
       </div>
     </>
   );

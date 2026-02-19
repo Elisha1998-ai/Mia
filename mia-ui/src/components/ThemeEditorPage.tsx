@@ -12,8 +12,10 @@ import {
   Monitor,
   Eye,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
+import { useSettings } from '@/hooks/useData';
 
 interface ThemeSettings {
   primaryColor: string;
@@ -24,6 +26,7 @@ interface ThemeSettings {
 }
 
 export const ThemeEditorPage = () => {
+  const { settings: remoteSettings, loading, updateSettings } = useSettings();
   const [settings, setSettings] = React.useState<ThemeSettings>({
     primaryColor: '#6366f1',
     fontFamily: 'Inter',
@@ -31,23 +34,90 @@ export const ThemeEditorPage = () => {
     heroSubtitle: 'Discover the best products curated just for you.',
     buttonRadius: '0.75rem'
   });
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    // Only fetch once on mount via hook, but here we sync local state
+    if (remoteSettings) {
+      setSettings({
+        primaryColor: remoteSettings.primaryColor || '#6366f1',
+        fontFamily: remoteSettings.bodyFont || 'Inter',
+        heroTitle: remoteSettings.heroTitle || 'Welcome to our store',
+        heroSubtitle: remoteSettings.heroDescription || 'Discover the best products curated just for you.',
+        buttonRadius: remoteSettings.buttonRadius || '0.75rem'
+      });
+    }
+  }, [remoteSettings]);
 
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   const updateSetting = (key: keyof ThemeSettings, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await updateSettings({
+        primaryColor: settings.primaryColor,
+        bodyFont: settings.fontFamily,
+        headingFont: settings.fontFamily, // Sync both for now
+        heroTitle: settings.heroTitle,
+        heroDescription: settings.heroSubtitle,
+        buttonRadius: settings.buttonRadius
+      });
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      alert('Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loading && !remoteSettings) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-full bg-background overflow-hidden animate-in fade-in duration-500">
+    <div className="flex flex-col md:flex-row h-full bg-background overflow-hidden animate-in fade-in duration-500 relative">
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-border-custom bg-background z-30">
+        <h1 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+          <Palette className="w-5 h-5 text-accent" />
+          Theme Editor
+        </h1>
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-2 -mr-2 text-foreground/60 hover:text-foreground"
+        >
+          <Layout className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* Editor Sidebar */}
-      <aside className="w-80 border-r border-border-custom flex flex-col bg-background z-20">
-        <header className="px-6 py-6 border-b border-border-custom">
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Palette className="w-5 h-5 text-accent" />
-            Theme Editor
-          </h1>
-          <p className="text-[12px] text-foreground/40 font-medium mt-1">Customize your storefront appearance</p>
+      <aside className={`
+        fixed inset-0 z-40 bg-background md:static md:w-80 border-r border-border-custom flex flex-col transition-transform duration-300
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <header className="px-6 py-6 border-b border-border-custom flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Palette className="w-5 h-5 text-accent" />
+              Theme Editor
+            </h1>
+            <p className="text-[12px] text-foreground/40 font-medium mt-1">Customize your storefront appearance</p>
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden p-2 -mr-2 text-foreground/40 hover:text-foreground"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </header>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
@@ -158,9 +228,13 @@ export const ThemeEditorPage = () => {
         </div>
 
         <div className="p-6 border-t border-border-custom bg-foreground/[0.01] flex items-center gap-3">
-          <button className="flex-1 flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-lg shadow-accent/20">
-            <Save className="w-4 h-4" />
-            Publish
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-lg shadow-accent/20 disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {isSaving ? 'Saving...' : 'Publish'}
           </button>
           <button className="p-2.5 rounded-xl border border-border-custom text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-all">
             <RotateCcw className="w-4 h-4" />
@@ -169,9 +243,15 @@ export const ThemeEditorPage = () => {
       </aside>
 
       {/* Preview Area */}
-      <main className="flex-1 bg-foreground/[0.02] flex flex-col relative">
-        <header className="px-8 py-4 border-b border-border-custom flex items-center justify-between bg-background/80 backdrop-blur-md z-10">
+      <main className="flex-1 bg-foreground/[0.02] flex flex-col relative overflow-hidden">
+        <header className="px-4 md:px-8 py-4 border-b border-border-custom flex items-center justify-between bg-background/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 text-foreground/60 hover:text-foreground"
+            >
+              <Palette className="w-5 h-5" />
+            </button>
             <div className="flex bg-foreground/[0.05] rounded-lg p-1">
               <button 
                 onClick={() => setViewMode('desktop')}
@@ -194,9 +274,9 @@ export const ThemeEditorPage = () => {
           </button>
         </header>
 
-        <div className="flex-1 overflow-auto p-8 flex items-start justify-center">
+        <div className="flex-1 overflow-auto p-4 md:p-8 flex items-start justify-center">
           <div 
-            className={`bg-white shadow-2xl transition-all duration-500 overflow-hidden ${viewMode === 'desktop' ? 'w-full max-w-5xl' : 'w-[375px] h-[667px]'}`}
+            className={`bg-white shadow-2xl transition-all duration-500 overflow-hidden ${viewMode === 'desktop' ? 'w-full max-w-5xl' : 'w-full max-w-[375px] md:w-[375px] h-[667px]'}`}
             style={{ fontFamily: settings.fontFamily }}
           >
             {/* Mock Storefront */}

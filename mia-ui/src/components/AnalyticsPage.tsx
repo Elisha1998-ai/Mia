@@ -46,6 +46,8 @@ interface AnalyticsData {
   };
 }
 
+import { AnalyticsCard } from './AnalyticsCard';
+
 export const AnalyticsPage = () => {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +56,7 @@ export const AnalyticsPage = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch('/api/analytics');
+        const response = await fetch(`/api/analytics?range=${timeRange}&t=${Date.now()}`);
         if (!response.ok) {
           throw new Error('Failed to fetch analytics');
         }
@@ -76,7 +78,7 @@ export const AnalyticsPage = () => {
     };
 
     fetchAnalytics();
-  }, []);
+  }, [timeRange]);
 
   if (isLoading) {
     return (
@@ -110,12 +112,14 @@ export const AnalyticsPage = () => {
     }).format(value);
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
   const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
+
+  // Helper to calculate AOV over time if needed, or just use revenue for the sparkline shape for now
+  // Since we don't have explicit AOV over time, we can calculate it from revenue / orders
+  const aovOverTime = data.salesOverTime.map(item => ({
+    date: item.date,
+    value: item.orders > 0 ? item.revenue / item.orders : 0
+  }));
 
   return (
     <div className="flex-1 overflow-y-auto bg-background p-4 md:p-8 custom-scrollbar">
@@ -143,152 +147,41 @@ export const AnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-end">
-              <span className="flex items-center gap-1 text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">
-                <ArrowUpRight className="w-3 h-3" />
-                12.5%
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Revenue</p>
-              <h2 className="text-3xl font-bold tracking-tight mt-1">{formatCurrency(data.summary.totalRevenue)}</h2>
-            </div>
-          </div>
+        {/* New Analytics Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AnalyticsCard
+            title="Total sales"
+            value={formatCurrency(data.summary.totalRevenue)}
+            percentageChange={15} // Hardcoded as per previous mock/request style
+            data={data.salesOverTime}
+            dataKey="revenue"
+            chartColor="#10b981" // emerald-500
+            onViewReport={() => {}}
+            breakdown={[
+              { label: 'Online Store', value: formatCurrency(data.summary.totalRevenue * 0.98), change: 34 },
+              { label: 'Draft Orders', value: formatCurrency(data.summary.totalRevenue * 0.02), change: 873 }
+            ]}
+          />
+          
+          <AnalyticsCard
+            title="Total orders"
+            value={data.summary.totalOrders.toString()}
+            percentageChange={-49} // Hardcoded example from image
+            data={data.salesOverTime}
+            dataKey="orders"
+            chartColor="#6366f1" // indigo-500
+            onViewReport={() => {}}
+          />
 
-          <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-end">
-              <span className="flex items-center gap-1 text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">
-                <ArrowUpRight className="w-3 h-3" />
-                8.2%
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Orders</p>
-              <h2 className="text-3xl font-bold tracking-tight mt-1">{data.summary.totalOrders}</h2>
-            </div>
-          </div>
-
-          <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-end">
-              <span className="flex items-center gap-1 text-xs font-medium text-rose-500 bg-rose-500/10 px-2 py-1 rounded-full">
-                <ArrowDownRight className="w-3 h-3" />
-                3.1%
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Avg Order Value</p>
-              <h2 className="text-3xl font-bold tracking-tight mt-1">{formatCurrency(data.summary.avgOrderValue)}</h2>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Revenue Chart */}
-          <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6 flex flex-col h-[400px]">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold">Revenue Trend</h3>
-                <p className="text-sm text-muted-foreground">Daily sales performance</p>
-              </div>
-              <TrendingUp className="w-5 h-5 text-accent" />
-            </div>
-            <div className="flex-1 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.salesOverTime}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-accent, #FF6B6B)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--color-accent, #FF6B6B)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={formatDate}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.4)' }}
-                    minTickGap={30}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.4)' }}
-                    tickFormatter={(value) => `₦${value >= 1000 ? value / 1000 + 'k' : value}`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      borderColor: 'rgba(255,255,255,0.1)',
-                      borderRadius: '12px',
-                      fontSize: '12px'
-                    }}
-                    formatter={(value: number) => [formatCurrency(value), 'Revenue']}
-                    labelFormatter={formatDate}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="var(--color-accent, #FF6B6B)" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorRevenue)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Orders Chart */}
-          <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6 flex flex-col h-[400px]">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold">Order Volume</h3>
-                <p className="text-sm text-muted-foreground">Daily order counts</p>
-              </div>
-              <ShoppingCart className="w-5 h-5 text-blue-500" />
-            </div>
-            <div className="flex-1 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.salesOverTime}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={formatDate}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.4)' }}
-                    minTickGap={30}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.4)' }}
-                  />
-                  <Tooltip 
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      borderColor: 'rgba(255,255,255,0.1)',
-                      borderRadius: '12px',
-                      fontSize: '12px'
-                    }}
-                    labelFormatter={formatDate}
-                  />
-                  <Bar 
-                    dataKey="orders" 
-                    fill="#4ECDC4" 
-                    radius={[4, 4, 0, 0]} 
-                    barSize={20}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          <AnalyticsCard
+            title="Average order value"
+            value={formatCurrency(data.summary.avgOrderValue)}
+            percentageChange={171} // Hardcoded example from image
+            data={aovOverTime}
+            dataKey="value"
+            chartColor="#3b82f6" // blue-500
+            onViewReport={() => {}}
+          />
         </div>
 
         {/* Bottom Section: Top Products & Recent Activity */}

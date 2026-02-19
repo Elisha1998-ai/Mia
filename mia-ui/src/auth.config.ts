@@ -44,7 +44,7 @@ export const authConfig = {
     async authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth")
-      const isPublicRoute = ["/", "/auth", "/auth/signin", "/auth/verify-email", "/logo"].includes(nextUrl.pathname) || nextUrl.pathname.startsWith("/store")
+      const isPublicRoute = ["/", "/auth", "/auth/signin", "/auth/verify-email", "/logo", "/wist", "/cushion"].includes(nextUrl.pathname) || nextUrl.pathname.startsWith("/store")
       const isAuthRoute = nextUrl.pathname.startsWith("/auth")
 
       if (isApiAuthRoute) return true

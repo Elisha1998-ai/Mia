@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Send, User, Bot, Sparkles, Plus, ArrowUp, ChevronDown, Copy, Reply, Check, Loader2, FileText, ChevronUp, Download, Eye, ExternalLink, X, Edit2, Save, Layout } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useSettings } from '@/hooks/useData';
+import { useNotificationLogic } from '@/hooks/useNotificationLogic';
+import { NotificationCard } from './NotificationCard';
 
 interface Widget {
   type: 'invoice' | 'document' | 'link' | 'store_preview';
@@ -51,6 +54,16 @@ const WidgetModal = ({ widget, onClose }: { widget: Widget, onClose: () => void 
         
         <div className="flex-1 overflow-y-auto p-8 bg-foreground/[0.02] min-h-[400px] flex items-center justify-center">
           {widget.type === 'invoice' ? (
+            widget.url ? (
+               <div className="w-full h-full min-h-[600px] flex flex-col gap-4">
+                  <div className="flex justify-end gap-2">
+                     <a href={widget.url} download target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors text-sm">
+                        <Download className="w-4 h-4" /> Download PDF
+                     </a>
+                  </div>
+                  <iframe src={widget.url} className="w-full h-full flex-1 rounded-lg border border-border-custom min-h-[500px]" title="Invoice PDF" />
+               </div>
+            ) : (
             <div className="bg-background text-foreground p-8 w-full max-w-md shadow-lg rounded-sm font-mono text-[10px] space-y-4 border border-border-custom">
               <div className="flex justify-between border-b border-border-custom pb-4">
                 <div>
@@ -76,18 +89,19 @@ const WidgetModal = ({ widget, onClose }: { widget: Widget, onClose: () => void 
                 <tbody>
                   <tr>
                     <td className="py-2">Storefront Design Implementation</td>
-                    <td className="text-right">$499.00</td>
+                    <td className="text-right">₦499.00</td>
                   </tr>
                   <tr>
                     <td className="py-2">Product Catalog Setup</td>
-                    <td className="text-right">$150.00</td>
+                    <td className="text-right">₦150.00</td>
                   </tr>
                 </tbody>
               </table>
               <div className="text-right pt-2">
-                <p className="text-xs font-bold">Total: $649.00</p>
+                <p className="text-xs font-bold">Total: ₦649.00</p>
               </div>
             </div>
+            )
           ) : widget.type === 'document' ? (
             <div className="bg-background text-foreground p-10 w-full max-w-2xl shadow-xl rounded-sm border border-border-custom min-h-[500px]">
               <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -426,7 +440,7 @@ const StorefrontWireframe = ({ template, products }: { template: any, products: 
               {product && (
                 <div className="pt-1">
                   <p className="text-[10px] font-bold text-foreground/80">{product.name}</p>
-                  <p className="text-[9px] text-accent">${product.price}</p>
+                  <p className="text-[9px] text-accent">₦{product.price}</p>
                 </div>
               )}
             </div>
@@ -458,6 +472,61 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
   const [greeting, setGreeting] = useState('Hello');
   const [activePreviewWidget, setActivePreviewWidget] = useState<Widget | null>(null);
   const { settings, fetchSettings } = useSettings();
+  const { notifications } = useNotificationLogic();
+  const [showNotification, setShowNotification] = useState(false);
+  const [isNotificationCollapsed, setIsNotificationCollapsed] = useState(false);
+  const [notificationIndex, setNotificationIndex] = useState(0);
+  const router = useRouter();
+
+  // Reset index when notifications change to ensure we don't go out of bounds
+  // Only show notifications if there are actual notifications
+  useEffect(() => {
+    if (notifications.length > 0) {
+      setNotificationIndex(0);
+      setShowNotification(true);
+    } else {
+      setShowNotification(false);
+    }
+  }, [notifications.length]);
+
+  const currentNotification = notifications.length > 0 ? notifications[notificationIndex] : null;
+
+  const handleNotificationClose = () => {
+    if (notifications.length <= 1) {
+      setShowNotification(false);
+      return;
+    }
+    
+    setShowNotification(false);
+    setTimeout(() => {
+      setNotificationIndex((prev) => (prev + 1) % notifications.length);
+      setShowNotification(true);
+      setIsNotificationCollapsed(false);
+    }, 1500);
+  };
+
+  const handleNotificationAction = (actionId: string) => {
+    console.log('Action triggered:', actionId);
+    
+    if (actionId === 'connect-store') {
+      router.push('/onboarding');
+    } else if (actionId.includes('stock') || actionId.includes('product') || (actionId.startsWith('view-') && !actionId.includes('order') && !actionId.includes('profile'))) {
+      // Navigate to product page or store
+      const parts = actionId.split('-');
+      const id = parts.length > 1 ? parts[parts.length - 1] : null;
+      if (id) {
+        router.push(`/store/products/${id}`);
+      } else {
+        router.push('/store');
+      }
+    } else if (actionId.includes('order') || actionId === 'send_reminder') {
+      // Redirect to orders page
+      router.push('/orders');
+    } else if (actionId.includes('offer') || actionId.includes('email') || actionId.includes('profile')) {
+      // Redirect to dashboard/customers
+      router.push('/dashboard');
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -474,11 +543,32 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
   };
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    const username = settings?.adminName?.split(' ')[0] || "there";
-    if (hour < 12) setGreeting(`Good morning, ${username}`);
-    else if (hour < 18) setGreeting(`Good afternoon, ${username}`);
-    else setGreeting(`Good evening, ${username}`);
+    const updateGreeting = () => {
+      const hour = new Date().getHours();
+      const username = settings?.adminName?.split(' ')[0] || "there";
+      const greetings = [
+        `Hello ${username}`,
+        "What's up today?"
+      ];
+      
+      // Add time-based greeting
+      if (hour < 12) greetings.unshift(`Good morning ${username}`);
+      else if (hour < 18) greetings.unshift(`Good afternoon ${username}`);
+      else greetings.unshift(`Good evening ${username}`);
+
+      // Pick random greeting (weighted towards time-based)
+      const random = Math.random();
+      if (random < 0.6) {
+        setGreeting(greetings[0]); // 60% chance for time-based
+      } else {
+        setGreeting(greetings[Math.floor(Math.random() * (greetings.length - 1)) + 1]);
+      }
+    };
+
+    updateGreeting();
+    // Update every minute
+    const interval = setInterval(updateGreeting, 60000);
+    return () => clearInterval(interval);
   }, [settings]);
 
   useEffect(() => {
@@ -495,20 +585,39 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full max-w-3xl mx-auto px-4 relative">
-      {/* Message List */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto pt-20 pb-60 space-y-8 scrollbar-hide">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent ${messages.length > 0 ? 'pb-64' : ''}`}>
+        <div className={`max-w-3xl mx-auto w-full space-y-6 ${messages.length === 0 ? 'h-full flex flex-col justify-center' : ''}`}>
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-10">
-            <div className="flex items-center gap-3">
-              <h2 className="text-4xl font-sans font-medium text-foreground/90 tracking-tight">
+          <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-6">
+            <div className="space-y-2 max-w-lg">
+              <h2 className="text-xl md:text-4xl font-sans font-medium text-foreground/90 tracking-tight">
                 {greeting}
               </h2>
             </div>
             
             <div className="w-full space-y-4">
-              <div className="relative group">
-                <form onSubmit={handleSubmit} className="bg-input-bg rounded-3xl p-3 border border-border-custom focus-within:border-foreground/10 transition-all">
+              <div className="w-full relative group flex flex-col items-center">
+                {showNotification && currentNotification && (
+                  <div className="w-full z-10 -mb-[1px]">
+                    <NotificationCard
+                      type={currentNotification.type}
+                      title={currentNotification.title}
+                      description=""
+                      timestamp={currentNotification.timestamp}
+                      isVisible={showNotification}
+                      isCollapsed={isNotificationCollapsed}
+                      onToggleCollapse={() => setIsNotificationCollapsed(!isNotificationCollapsed)}
+                      onClose={handleNotificationClose}
+                      actions={currentNotification.actions.map(action => ({
+                        label: action.label,
+                        onClick: () => handleNotificationAction(action.actionId),
+                        variant: action.variant
+                      }))}
+                    />
+                  </div>
+                )}
+                <form onSubmit={handleSubmit} className={`w-full bg-input-bg border-x border-b border-border-custom focus-within:border-foreground/10 transition-all ${showNotification && !isNotificationCollapsed ? 'rounded-b-3xl rounded-t-none border-t-0' : 'rounded-3xl border-t' } p-3`}>
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -548,7 +657,7 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
 
         {messages.map((m, idx) => (
           <div key={idx} className={`flex gap-6 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`flex max-w-[90%] gap-4 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div className={`flex max-w-[85%] md:max-w-[75%] gap-4 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
               <div 
                  className={`py-2.5 px-4 rounded-2xl text-sm leading-relaxed relative group/msg ${
                    m.role === 'user' 
@@ -653,13 +762,35 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Persistent Input for active chat */}
       {messages.length > 0 && (
         <div className="absolute bottom-0 left-0 right-0 pt-20 pb-8 px-4 bg-gradient-to-t from-background via-background via-80% to-transparent pointer-events-none z-10">
-          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative pointer-events-auto">
-            <div className="bg-input-bg rounded-2xl p-2 border border-border-custom focus-within:border-foreground/10 transition-all">
+          <div className="max-w-3xl mx-auto relative pointer-events-auto flex flex-col items-center">
+            
+            {showNotification && currentNotification && (
+              <div className="w-full z-10 -mb-[1px]">
+                <NotificationCard
+                  type={currentNotification.type}
+                  title={currentNotification.title}
+                  description=""
+                  timestamp={currentNotification.timestamp}
+                  isVisible={showNotification}
+                  isCollapsed={isNotificationCollapsed}
+                  onToggleCollapse={() => setIsNotificationCollapsed(!isNotificationCollapsed)}
+                  onClose={handleNotificationClose}
+                  actions={currentNotification.actions.map(action => ({
+                    label: action.label,
+                    onClick: () => handleNotificationAction(action.actionId),
+                    variant: action.variant
+                  }))}
+                />
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className={`w-full bg-input-bg border-x border-b border-border-custom focus-within:border-foreground/10 transition-all ${showNotification && !isNotificationCollapsed ? 'rounded-b-2xl rounded-t-none border-t-0' : 'rounded-2xl border-t' } p-2`}>
               <textarea
                      value={input}
                      onChange={(e) => setInput(e.target.value)}
@@ -685,8 +816,8 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
                   <ArrowUp className="w-5 h-5" />
                 </button>
               </div>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
 

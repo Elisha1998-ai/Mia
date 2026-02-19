@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products as productsTable, productVariants as variantsTable } from '@/lib/schema';
+import { products as productsTable, productVariants as variantsTable, users as usersTable } from '@/lib/schema';
 import { desc, count, eq } from 'drizzle-orm';
 import { auth } from '@/auth';
 
@@ -12,9 +12,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    let userId = session.user.id;
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // In development, the session ID might be an email (from Credentials provider),
+    // but the database might have a different ID for that user.
+    // Let's try to find the actual user record.
+    if (userId.includes('@')) {
+      const userRecord = await db.select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.email, userId))
+        .limit(1);
+      
+      if (userRecord.length > 0) {
+        userId = userRecord[0].id;
+      }
     }
 
     const { searchParams } = new URL(request.url);

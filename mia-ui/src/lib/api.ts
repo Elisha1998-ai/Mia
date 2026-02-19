@@ -1,5 +1,5 @@
 // API Service for connecting to the backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '/chat-api' : 'http://localhost:8000');
 
 interface ProductVariant {
   id?: string;
@@ -292,7 +292,7 @@ class APIService {
   }
 
   async connectShopify(shopUrl: string, accessToken: string, userId?: string) {
-    return this.request('/chat-api/connect/shopify', {
+    return this.request('/connect/shopify', {
       method: 'POST',
       body: JSON.stringify({ 
         shop_url: shopUrl, 

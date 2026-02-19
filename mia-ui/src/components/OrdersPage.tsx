@@ -512,10 +512,10 @@ export const OrdersPage = () => {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium hover:brightness-110 transition-all shadow-lg shadow-accent/10"
+            className="w-10 h-10 md:w-auto md:px-6 md:py-2.5 bg-accent hover:bg-accent/90 text-white rounded-full md:rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-accent/20"
           >
-            <Plus className="w-4 h-4" />
-            Create Order
+            <Plus className="w-5 h-5" />
+            <span className="hidden md:inline text-sm font-bold">Create Order</span>
           </button>
         </div>
       </div>
@@ -549,11 +549,11 @@ export const OrdersPage = () => {
               className="w-full bg-foreground/[0.03] border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 ring-foreground/10 text-foreground"
             />
           </div>
-          <button className="p-2.5 rounded-xl bg-foreground/[0.03] text-foreground/40 hover:text-foreground">
-            <Download className="w-5 h-5" />
-          </button>
-          <button className="p-2.5 rounded-xl bg-foreground/[0.03] text-foreground/40 hover:text-foreground">
-            <Filter className="w-5 h-5" />
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="p-2.5 bg-accent text-white rounded-xl shadow-lg shadow-accent/20 flex-shrink-0"
+          >
+            <Plus className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -765,14 +765,7 @@ export const OrdersPage = () => {
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-6 right-6">
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="w-14 h-14 rounded-full bg-accent text-white flex items-center justify-center shadow-xl shadow-accent/20 hover:scale-105 transition-all active:scale-95"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      </div>
+
     </div>
   );
 };

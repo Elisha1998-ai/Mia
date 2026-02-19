@@ -380,12 +380,12 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: A
         <Dialog.Content className="fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-[700px] bg-background md:border border-border-custom md:rounded-2xl z-[101] overflow-hidden flex flex-col h-full md:h-[70vh] inset-0 md:inset-auto">
           
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-border-custom bg-background sticky top-0 z-10">
+          <div className="flex items-center justify-between p-2 border-b border-border-custom bg-background sticky top-0 z-10">
             <div className="flex items-center gap-4">
               <button onClick={onClose} className="md:hidden p-2 -ml-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
                 <ChevronLeft className="w-6 h-6" />
               </button>
-              <Dialog.Title className="text-lg font-bold text-foreground">Create New Order</Dialog.Title>
+              <Dialog.Title className="sr-only">Create New Order</Dialog.Title>
             </div>
             <Dialog.Close asChild>
               <button className="hidden md:block p-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
@@ -394,7 +394,7 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: A
             </Dialog.Close>
             <button 
               onClick={handleSubmit}
-              className="md:hidden px-4 py-2 bg-foreground text-background rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+              className="md:hidden px-4 py-2 bg-accent text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
             >
               Save
             </button>
@@ -614,7 +614,7 @@ export const AddOrderModal = ({ isOpen, onClose, onAdd, customers, products }: A
             </Dialog.Close>
             <button 
               onClick={handleSubmit}
-              className="px-6 py-2 bg-foreground text-background rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+              className="px-6 py-2 bg-accent text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
             >
               Create Order
             </button>

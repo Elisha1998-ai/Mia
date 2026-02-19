@@ -37,8 +37,8 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "600"
 const workSans = Work_Sans({ subsets: ["latin"], display: "swap", variable: "--font-work" });
 
 export const metadata = {
-  title: "Mail Manus - Your email, done.",
-  description: "Mail Manus turns your messy email threads into structured to-dos.",
+  title: "Mia - AI built ready for business",
+  description: "Mia turns your messy email threads into structured to-dos.",
 };
 
 export default function RootLayout({

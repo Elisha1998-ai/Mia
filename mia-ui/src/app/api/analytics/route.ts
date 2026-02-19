@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -29,8 +29,26 @@ export async function GET() {
       }
     }
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const { searchParams } = new URL(request.url);
+    const range = searchParams.get('range') || '30d';
+    
+    const startDate = new Date();
+    switch (range) {
+      case '7d':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(startDate.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(startDate.getDate() - 90);
+        break;
+      case '1y':
+        startDate.setDate(startDate.getDate() - 365);
+        break;
+      default:
+        startDate.setDate(startDate.getDate() - 30);
+    }
 
     // 1. Revenue and Orders over time (last 30 days)
     const salesOverTime = await db.select({
@@ -41,7 +59,7 @@ export async function GET() {
     .from(ordersTable)
     .where(and(
       eq(ordersTable.userId, userId),
-      gte(ordersTable.createdAt, thirtyDaysAgo)
+      gte(ordersTable.createdAt, startDate)
     ))
     .groupBy(sql`date_trunc('day', ${ordersTable.createdAt})`)
     .orderBy(sql`date_trunc('day', ${ordersTable.createdAt})`);

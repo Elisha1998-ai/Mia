@@ -238,7 +238,7 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
     
     setIsGeneratingDescription(true);
     try {
-      const response = await fetch('http://localhost:8000/mia/generate-description', {
+      const response = await fetch('/api/mia/generate-description', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -315,14 +315,14 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
         <Dialog.Content className="fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-[700px] bg-background md:border border-border-custom md:rounded-2xl z-[101] overflow-hidden flex flex-col h-full md:h-[70vh] inset-0 md:inset-auto">
           
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-border-custom bg-background sticky top-0 z-10">
+          <div className="flex items-center justify-between p-3 border-b border-border-custom bg-background sticky top-0 z-10">
             <div className="flex items-center gap-4">
               <button onClick={onClose} className="md:hidden p-2 -ml-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
                 <ChevronLeft className="w-6 h-6" />
               </button>
-              <Dialog.Title className="text-lg font-bold text-foreground">
-                {product ? 'Edit Product' : 'Add New Product'}
-              </Dialog.Title>
+              <Dialog.Title className="text-lg font-bold text-foreground hidden md:block">
+              {product ? 'Edit Product' : 'Add New Product'}
+            </Dialog.Title>
             </div>
             <Dialog.Close asChild>
               <button className="hidden md:block p-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
@@ -344,7 +344,7 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Basic Information</h3>
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Product Name</label>
                     <input 
                       required
@@ -354,7 +354,7 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
                     />
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">SKU Code (Optional)</label>
                     <input 
                       value={formData.sku}
@@ -363,7 +363,7 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
                     />
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Category</label>
                     <div className="relative">
                       <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
@@ -375,8 +375,8 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-                    <label className="text-sm font-semibold text-foreground/80 pt-2.5">Product Images</label>
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-start gap-2 md:gap-4">
+                    <label className="text-sm font-semibold text-foreground/80 pt-0 md:pt-2.5">Product Images</label>
                     <ImageUpload 
                       images={formData.images}
                       onChange={imgs => setFormData({...formData, images: imgs})}
@@ -401,7 +401,7 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
 
                   {!formData.hasVariants ? (
                     <>
-                      <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                      <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                         <label className="text-sm font-semibold text-foreground/80">Price (NGN)</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/30">₦</span>
@@ -416,7 +416,7 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                      <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                         <label className="text-sm font-semibold text-foreground/80">Stock Quantity</label>
                         <input 
                           required={!formData.hasVariants}
@@ -444,7 +444,7 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
                       
                       <div className="space-y-3">
                         {formData.variants.map((variant, index) => (
-                          <div key={index} className="grid grid-cols-[1fr_1fr_100px_80px_40px] gap-3 items-end bg-foreground/[0.02] p-3 rounded-xl border border-border-custom/50">
+                          <div key={index} className="flex flex-col md:grid md:grid-cols-[1fr_1fr_100px_80px_40px] gap-3 md:items-end bg-foreground/[0.02] p-3 rounded-xl border border-border-custom/50">
                             <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider ml-1">Variant Name</label>
                               <input
@@ -513,7 +513,7 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Shipping & Details</h3>
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Weight (kg) (Optional)</label>
                     <input 
                       value={formData.weight}
@@ -522,8 +522,8 @@ export const AddProductModal = ({ isOpen, onClose, onSave, product }: AddProduct
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
                     />
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-                    <div className="flex flex-col gap-1 pt-2.5">
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-start gap-2 md:gap-4">
+                    <div className="flex flex-row md:flex-col gap-2 md:gap-1 pt-0 md:pt-2.5 items-center md:items-start justify-between md:justify-start">
                       <label className="text-sm font-semibold text-foreground/80">Description</label>
                       <button
                         type="button"

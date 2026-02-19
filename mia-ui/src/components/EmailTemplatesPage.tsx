@@ -17,9 +17,11 @@ import {
   Upload,
   Globe,
   MessageSquare,
-  ChevronLeft
+  ChevronLeft,
+  Loader2
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { useSettings } from '@/hooks/useData';
 
 interface EmailTemplate {
   id: string;
@@ -32,6 +34,39 @@ interface EmailTemplate {
 }
 
 const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  const { settings, updateSettings } = useSettings();
+  const [formData, setFormData] = React.useState({
+    senderName: '',
+    senderEmail: '',
+    storeLogo: '',
+    primaryColor: '#6366f1'
+  });
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (settings) {
+      setFormData({
+        senderName: settings.senderName || 'Mia Store',
+        senderEmail: settings.senderEmail || 'support@miastore.com',
+        storeLogo: settings.storeLogo || '',
+        primaryColor: settings.primaryColor || '#6366f1'
+      });
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await updateSettings(formData);
+      onClose();
+    } catch (error) {
+      console.error('Failed to save email settings:', error);
+      alert('Failed to save email settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
@@ -44,7 +79,7 @@ const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClos
               <button onClick={onClose} className="md:hidden p-2 -ml-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
                 <ChevronLeft className="w-6 h-6" />
               </button>
-              <Dialog.Title className="text-lg font-bold text-foreground">
+              <Dialog.Title className="text-lg font-bold text-foreground hidden md:block">
                 Global Email Settings
               </Dialog.Title>
             </div>
@@ -54,10 +89,11 @@ const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClos
               </button>
             </Dialog.Close>
             <button 
-              onClick={onClose}
-              className="md:hidden px-4 py-2 bg-foreground text-background rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="md:hidden px-4 py-2 bg-accent text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              Save
+              {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>
 
@@ -68,11 +104,12 @@ const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClos
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Sender Information</h3>
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="40px_] items-center gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Sender Name</label>
                     <input 
                       type="text" 
-                      defaultValue="Mia Store" 
+                      value={formData.senderName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, senderName: e.target.value }))}
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium" 
                     />
                   </div>
@@ -80,7 +117,8 @@ const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClos
                     <label className="text-sm font-semibold text-foreground/80">Reply-to Email</label>
                     <input 
                       type="email" 
-                      defaultValue="support@miastore.com" 
+                      value={formData.senderEmail}
+                      onChange={(e) => setFormData(prev => ({ ...prev, senderEmail: e.target.value }))}
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium" 
                     />
                   </div>
@@ -90,44 +128,44 @@ const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClos
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Email Branding</h3>
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-                    <label className="text-sm font-semibold text-foreground/80 pt-2.5">Store Logo</label>
-                    <div className="border-2 border-dashed border-border-custom rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-3 group hover:border-accent/30 hover:bg-accent/[0.02] transition-all cursor-pointer bg-foreground/[0.02]">
-                      <div className="w-12 h-12 rounded-2xl bg-foreground/5 text-foreground/20 group-hover:bg-accent/10 group-hover:text-accent flex items-center justify-center transition-all">
-                        <Upload className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-foreground">Upload Store Logo</h4>
-                        <p className="text-[10px] text-foreground/40 font-bold uppercase tracking-wider mt-1">PNG, JPG up to 5MB</p>
-                      </div>
-                    </div>
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] items-start gap-2 md:gap-4">
+                    <label className="text-sm font-semibold text-foreground/80 md:pt-2.5">Store Logo URL</label>
+                    <input 
+                      type="text" 
+                      value={formData.storeLogo}
+                      onChange={(e) => setFormData(prev => ({ ...prev, storeLogo: e.target.value }))}
+                      placeholder="https://..."
+                      className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium" 
+                    />
                   </div>
                   <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Primary Color</label>
                     <div className="flex items-center gap-3">
                       <input 
                         type="color" 
-                        defaultValue="#6366f1" 
+                        value={formData.primaryColor}
+                        onChange={(e) => setFormData(prev => ({ ...prev, primaryColor: e.target.value }))}
                         className="w-10 h-10 rounded-xl border border-border-custom bg-transparent cursor-pointer overflow-hidden p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none" 
                       />
-                      <span className="text-sm font-mono text-foreground/60 font-bold">#6366f1</span>
+                      <span className="text-sm font-mono text-foreground/60 font-bold">{formData.primaryColor}</span>
                     </div>
                   </div>
                 </div>
               </section>
 
+
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Footer Information</h3>
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-                    <label className="text-sm font-semibold text-foreground/80 pt-2.5">Address</label>
+                  <div className="40px_] items-start gap-4">
+                    <label className="text-sm font-semibold text-foreground/80 2.5">Address</label>
                     <textarea 
                       rows={3} 
                       defaultValue="123 Commerce St, Suite 100&#10;Lagos, Nigeria" 
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium resize-none" 
                     />
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Facebook URL</label>
                     <input 
                       type="text" 
@@ -135,7 +173,7 @@ const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClos
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium" 
                     />
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="flex flex-col md:grid md:grid-cols-[140px_1fr] md:items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Instagram URL</label>
                     <input 
                       type="text" 
@@ -152,15 +190,18 @@ const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClos
           <div className="p-5 border-t border-border-custom bg-background flex items-center justify-end gap-3">
             <button 
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-foreground/40 hover:text-foreground transition-all"
+              disabled={isSaving}
+              className="px-6 py-2.5 rounded-xl text-sm font-bold text-foreground/40 hover:text-foreground transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button 
-              onClick={onClose}
-              className="bg-accent hover:bg-accent/90 text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-accent/20"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="bg-accent hover:bg-accent/90 text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-accent/20 flex items-center gap-2 disabled:opacity-50"
             >
-              Save Settings
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSaving ? 'Saving...' : 'Save Settings'}
             </button>
           </div>
         </Dialog.Content>

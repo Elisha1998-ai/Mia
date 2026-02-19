@@ -253,6 +253,49 @@ export const useDashboardStats = () => {
   };
 };
 
+// Hook for store settings
+export const useSettings = () => {
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiService.getSettings();
+      setSettings(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch settings');
+      console.error('Error fetching settings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSettings = async (data: Partial<StoreSettings>) => {
+    try {
+      setLoading(true);
+      const updated = await apiService.updateSettings(data);
+      setSettings(updated);
+      return updated;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update settings');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    settings,
+    loading,
+    error,
+    fetchSettings,
+    updateSettings
+  };
+};
+
 // Hook for discounts data
 export const useDiscounts = () => {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -318,46 +361,5 @@ export const useDiscounts = () => {
     createDiscount,
     updateDiscount,
     deleteDiscount
-  };
-};
-
-// Hook for store settings
-export const useSettings = () => {
-  const [settings, setSettings] = useState<StoreSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await apiService.getSettings();
-      setSettings(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch settings');
-      console.error('Error fetching settings:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateSettings = async (data: Partial<StoreSettings>) => {
-    try {
-      setError(null);
-      const updatedSettings = await apiService.updateSettings(data);
-      setSettings(updatedSettings);
-      return updatedSettings;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update settings');
-      throw err;
-    }
-  };
-
-  return {
-    settings,
-    loading,
-    error,
-    fetchSettings,
-    updateSettings
   };
 };

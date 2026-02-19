@@ -58,7 +58,7 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
     e.preventDefault();
     onAdd({
       ...formData,
-      id: discount?.id || Math.random().toString(36).substr(2, 9),
+      id: discount?.id, // Let the backend generate the ID
       status: discount?.status || 'Active',
       usageCount: discount?.usageCount || 0,
     });
@@ -72,12 +72,12 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
         <Dialog.Content className="fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-[600px] bg-background md:border border-border-custom md:rounded-2xl z-[101] overflow-hidden flex flex-col h-full md:h-[70vh] inset-0 md:inset-auto">
           
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-border-custom bg-background sticky top-0 z-10">
+          <div className="flex items-center justify-between p-2 border-b border-border-custom bg-background sticky top-0 z-10">
             <div className="flex items-center gap-4">
               <button onClick={onClose} className="md:hidden p-2 -ml-2 hover:bg-foreground/5 rounded-full transition-colors text-foreground/40 hover:text-foreground">
                 <ChevronLeft className="w-6 h-6" />
               </button>
-              <Dialog.Title className="text-lg font-bold text-foreground">
+              <Dialog.Title className="sr-only">
                 {discount ? 'Edit Discount' : 'Create Discount'}
               </Dialog.Title>
             </div>
@@ -88,7 +88,7 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
             </Dialog.Close>
             <button 
               onClick={handleSubmit}
-              className="md:hidden px-4 py-2 bg-foreground text-background rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+              className="md:hidden px-4 py-2 bg-accent text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
             >
               Save
             </button>
@@ -101,7 +101,7 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Discount Information</h3>
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Discount Code</label>
                     <input 
                       required
@@ -111,8 +111,7 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium uppercase"
                     />
                   </div>
-
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Type</label>
                     <div className="relative group">
                       <select 
@@ -127,7 +126,7 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Value</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/30">
@@ -149,7 +148,7 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
               <section>
                 <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-6">Duration</h3>
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">Start Date</label>
                     <input 
                       required
@@ -159,7 +158,7 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
                       className="w-full bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
                     />
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="grid md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
                     <label className="text-sm font-semibold text-foreground/80">End Date</label>
                     <input 
                       type="date"
@@ -184,7 +183,7 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd, discount }: { isOpen: boolea
             </button>
             <button 
               onClick={handleSubmit}
-              className="bg-accent hover:bg-accent/90 text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-accent/20"
+              className="px-6 py-2 bg-accent text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
             >
               {discount ? 'Save Changes' : 'Create Discount'}
             </button>
@@ -468,7 +467,7 @@ export const DiscountsPage = () => {
           <h1 className="text-xl font-bold text-foreground">Discounts</h1>
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="p-2 bg-foreground text-background rounded-xl active:scale-95 transition-all"
+            className="p-2 bg-accent text-white rounded-xl active:scale-95 transition-all"
           >
             <Plus className="w-5 h-5" />
           </button>

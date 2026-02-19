@@ -15,7 +15,9 @@ import {
   Users,
   Mail,
   Phone,
-  History
+  History,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 
 import { useCustomers } from '@/hooks/useData';
@@ -436,10 +438,10 @@ export const CustomersPage = () => {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium hover:brightness-110 transition-all shadow-lg shadow-accent/10"
+            className="w-10 h-10 md:w-auto md:px-6 md:py-2.5 bg-accent hover:bg-accent/90 text-white rounded-full md:rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-accent/20"
           >
-            <Plus className="w-4 h-4" />
-            Add Customer
+            <Plus className="w-5 h-5" />
+            <span className="hidden md:inline text-sm font-bold">Add Customer</span>
           </button>
         </div>
       </div>
@@ -696,15 +698,34 @@ export const CustomersPage = () => {
       <div className="md:hidden px-4 py-6 border-t border-border-custom flex items-center justify-center bg-background">
         <div className="flex items-center gap-1">
           <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronsLeft className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-1 px-4">
-            <span className="w-2 h-2 rounded-full bg-accent" />
-            <span className="w-2 h-2 rounded-full bg-foreground/10" />
-            <span className="w-2 h-2 rounded-full bg-foreground/10" />
+          <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          
+          <div className="flex items-center gap-1 mx-2">
+            {[1, 2, 3].map((page) => (
+              <button 
+                key={page}
+                className={`w-8 h-8 rounded-lg text-[13px] font-medium transition-all ${
+                  page === 1 
+                    ? 'bg-foreground/[0.05] text-foreground border border-border-custom' 
+                    : 'text-foreground/40 hover:text-foreground/60'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <span className="px-1 text-foreground/30">...</span>
+            <button className="w-8 h-8 rounded-lg text-[13px] font-medium text-foreground/40">16</button>
           </div>
-          <button className="p-2 rounded-lg text-foreground/40">
-            <ChevronRight className="w-5 h-5" />
+
+          <button className="p-2 rounded-lg text-foreground/40 hover:text-foreground">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button className="p-2 rounded-lg text-foreground/40 hover:text-foreground">
+            <ChevronsRight className="w-5 h-5" />
           </button>
         </div>
       </div>
