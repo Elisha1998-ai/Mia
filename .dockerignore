@@ -1,0 +1,11 @@
+mia-ui/
+.git/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+docker-compose.yml
+README.md
+tests/

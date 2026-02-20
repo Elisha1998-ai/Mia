@@ -1,0 +1,312 @@
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
+from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.tools import tool
+import os
+import json
+from dotenv import load_dotenv
+
+# Load .env if it exists
+load_dotenv(override=False)
+
+@tool
+def get_store_stats():
+    """Get the current store statistics including product count, order count, total revenue, and customer count."""
+    return "This tool is used by the backend to inject business context. Use the provided LIVE STORE DATA SUMMARY instead."
+
+@tool
+def create_document(doc_type: str, details: str):
+    """
+    Create a professional ecommerce document (policy, invoice, or legal text).
+    doc_type: The type of document (e.g., 'refund_policy', 'shipping_policy', 'invoice').
+    details: Any specific details to include in the document.
+    """
+    return f"REQUEST_DOC_CREATION:{doc_type}:{details}"
+
+@tool
+def list_products(limit: int = 50):
+    """
+    List, show, or display the products currently in the store inventory.
+    Use this tool when the user asks "list all products", "show my products", "what products do I have?", etc.
+    """
+    return "REQUEST_PRODUCT_LIST"
+
+@tool
+def import_products(product_list_text: str):
+    """
+    Import NEW products provided by the user in text format.
+    Use this tool ONLY when the user explicitly provides a text list of products to add or import.
+    DO NOT use this tool if the user is asking to list, show, or view existing products.
+    product_list_text: The raw text containing product names, prices, and other details.
+    """
+    return f"REQUEST_PRODUCT_IMPORT:{product_list_text}"
+
+@tool
+def generate_brand_assets(business_name: str, niche: str):
+    """
+    Generate brand assets like descriptions and strategic plans for a new business.
+    business_name: The name of the business.
+    niche: The business niche.
+    """
+    return f"REQUEST_BRAND_GEN:{business_name}:{niche}"
+
+@tool
+def setup_storefront(business_name: str, niche: str):
+    """
+    Setup a high-converting storefront for the business.
+    business_name: The name of the business.
+    niche: The business niche.
+    """
+    return f"REQUEST_STORE_SETUP:{business_name}:{niche}"
+
+@tool
+def customize_branding(primary_color: str = None, heading_font: str = None, body_font: str = None, hero_image_url: str = None):
+    """
+    Customize the store's branding including colors, fonts, and hero images.
+    primary_color: Hex code for the primary brand color (e.g., '#FF5733').
+    heading_font: Font family for headings. Options: 'Instrument Serif', 'Playfair Display', 'Montserrat', 'Inter', 'Roboto', 'Lora'.
+    body_font: Font family for body text. Options: 'Inter', 'Montserrat', 'Roboto', 'Lora'.
+    hero_image_url: URL for the hero section background image. Use high-quality Unsplash URLs for niches (e.g., 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571' for skincare).
+    """
+    return f"REQUEST_BRANDING_CUSTOMIZATION:{primary_color}:{heading_font}:{body_font}:{hero_image_url}"
+
+@tool
+def create_invoice(customer_name: str, amount: float, items: str):
+    """
+    Generate an invoice PDF for a customer.
+    customer_name: Name of the customer.
+    amount: Total amount of the invoice.
+    items: A description of items (e.g., "Web Design, Hosting").
+    """
+    return f"REQUEST_INVOICE:{customer_name}:{amount}:{items}"
+
+def mia_unified_agent(message, business_context=None):
+    """
+    Unified Mia agent using function calling logic.
+    """
+    load_dotenv(override=False)
+    api_key = os.getenv("GROQ_API_KEY")
+    print(f"DEBUG: Using GROQ_API_KEY: {api_key[:10]}...")
+    if not api_key:
+        return {"tool": None, "content": "I'm sorry, but I can't access my AI brain right now. Please make sure the API key is configured correctly."}
+
+    try:
+        llm = ChatGroq(
+            temperature=0.0, # Zero temperature for absolute facts
+            model_name="llama-3.3-70b-versatile",
+            groq_api_key=api_key
+        ).bind_tools([create_document, import_products, list_products, generate_brand_assets, setup_storefront, customize_branding, create_invoice])
+
+        # DATA-FIRST SYSTEM PROMPT: Facts are provided at the very top.
+        system_prompt = f"""### YOUR DATA SOURCE (TRUTH):
+{business_context if business_context else "No store data available."}
+
+### YOUR IDENTITY:
+You are Mia, the expert Business Manager for this store. 
+
+### CRITICAL RULES:
+1. ALWAYS use the numbers provided in the 'YOUR DATA SOURCE' above to answer questions. 
+2. If a user asks "How many products/orders/customers?", you MUST look at the numbers above and state them directly.
+3. NEVER say you don't have access to the data. If the data is 0, say it is 0.
+4. If you need to perform an action (Create Doc, Import Products, etc.), use your TOOLS.
+5. If no action is needed, respond briefly and professionally.
+6. Use Nigerian Naira (₦) for all currency.
+"""
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=message)
+        ]
+
+        response = llm.invoke(messages)
+        
+        # Check if the AI called a tool
+        if response.tool_calls:
+            tool_call = response.tool_calls[0]
+            return {
+                "tool": tool_call["name"],
+                "args": tool_call["args"],
+                "content": response.content
+            }
+        
+        return {
+            "tool": None,
+            "content": response.content
+        }
+
+    except Exception as e:
+        print(f"UNIFIED AGENT ERROR: {e}")
+        return {"tool": None, "content": f"I encountered an error: {str(e)}"}
+
+# Keep old tasks for backward compatibility or internal use if needed, but mark as legacy
+def document_specialist_task(task_description, business_context=None):
+    # Legacy wrapper
+    return run_agent_task("Mia (Legal Specialist)", "Write docs", "Pro writer", task_description, business_context)
+
+def run_agent_task(persona_name, persona_goal, persona_backstory, task_description, business_context=None):
+    """
+    Core function to run an agent task using LangChain and Groq.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        print("ERROR: GROQ_API_KEY not found in environment variables.")
+        return "I'm sorry, but I can't access my AI brain right now. Please make sure the API key is configured correctly."
+
+    try:
+        # Use a reliable model
+        llm = ChatGroq(
+            temperature=0.7,
+            model_name="llama-3.3-70b-versatile",
+            groq_api_key=api_key
+        )
+        
+        system_prompt = f"""You are {persona_name}. Your goal is {persona_goal}. Your background: {persona_backstory}
+
+        CRITICAL INSTRUCTION:
+        If a user asks you to do something that is outside your expertise, impossible with your current tools, or unethical, you MUST politely but firmly object. 
+        Explain clearly what you can and cannot do. 
+
+        IMPORTANT: You HAVE direct access to the store's database via the 'LIVE STORE DATA SUMMARY' provided below. 
+        If data is provided in the summary, you MUST use it to answer the user's question accurately. 
+        NEVER claim you don't have access to the database if the data is present in the context.
+        If the data is missing from the context, only then should you state you don't have that specific information.
+
+        Honesty builds trust."""
+        
+        if business_context:
+            print(f"DEBUG: Injecting business context into {persona_name} prompt (Length: {len(business_context)})")
+            system_prompt += f"\n\n{business_context}"
+        else:
+            print(f"DEBUG: No business context provided for {persona_name}")
+            
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=task_description)
+        ]
+        
+        response = llm.invoke(messages)
+        return response.content
+    except Exception as e:
+        print(f"AGENT ERROR ({persona_name}): {e}")
+        # Re-raise to be caught by main.py
+        raise e
+
+# Persona definitions (as functions or data objects)
+def data_architect_task(task_description, business_context=None):
+    return run_agent_task(
+        "Data Architect",
+        "Clean and map CSV data to the ecommerce database schema",
+        "Expert in data engineering and SQL. You ensure all product data is valid.",
+        task_description,
+        business_context
+    )
+
+def accountant_task(task_description, business_context=None):
+    return run_agent_task(
+        "Accountant",
+        "Generate invoices and track profit margins",
+        "Detail-oriented financial expert who manages the store balance sheet.",
+        task_description,
+        business_context
+    )
+
+def copywriter_task(task_description, business_context=None):
+    return run_agent_task(
+        "Copywriter",
+        "Write persuasive and brand-aligned storefront copy",
+        "A marketing wordsmith who knows how to capture a brand's voice and convert visitors into buyers.",
+        task_description,
+        business_context
+    )
+
+def support_agent_task(task_description, business_context=None):
+    return run_agent_task(
+        "Mia (Support Agent)",
+        "Greet users warmly and provide concise help",
+        "A friendly and helpful AI assistant named Mia. You keep your responses brief, professional, and empathetic. Never provide long technical lists unless explicitly asked.",
+        task_description,
+        business_context
+    )
+
+def general_advisor_task(task_description, business_context=None):
+    return run_agent_task(
+        "Mia (Ecommerce Advisor)",
+        "Provide expert ecommerce advice and growth strategies based on the store's data",
+        "A knowledgeable ecommerce consultant who gives actionable, concise advice. You have access to the live store data and use it to provide specific, data-driven insights. You focus on helping the user grow their business without being overly wordy. Use Nigerian Naira (₦) for all currency references.",
+        task_description,
+        business_context
+    )
+
+def marketing_agent_task(task_description, business_context=None):
+    return run_agent_task(
+        "Marketing Agent",
+        "Create email marketing campaigns, sales funnels, and upsell logic",
+        "A high-energy growth hacker who focuses on increasing customer lifetime value (LTV).",
+        task_description,
+        business_context
+    )
+
+def intent_classifier_task(message):
+    return run_agent_task(
+        "Intent Classifier",
+        "Categorize user requests into specific ecommerce tasks",
+        """Analyze the user's message and return ONLY ONE of these keywords: 
+        'greeting', 
+        'brand_generation', 
+        'store_setup', 
+        'branding_customization',
+        'product_extraction', 
+        'insight_request', 
+        'document_generation', 
+        'invoice_generation',
+        'general_query'. 
+
+        Rules:
+        - 'store_setup': Use this when the user asks to "build a store", "setup my shop", "create my storefront", etc.
+        - 'branding_customization': Use this when the user wants to change colors, fonts, or overall look of the store.
+        - 'insight_request': Use this when the user is asking FOR information about their store, data, stats, products, orders, or customers. 
+          Examples: "How many products?", "Show me my orders", "Who are my top customers?", "Give me a summary of my store".
+        - 'product_extraction': Use this ONLY when the user is PROVIDING product data to be added or imported. 
+          Examples: "Add these products: [list]", "Import my product list", "Here is a list of my inventory".
+        - 'document_generation': Use ONLY for EXPLICIT requests to draft/write a policy or legal document.
+        - 'invoice_generation': Use for requests to generate/create an invoice.
+        - 'general_query': Use for general questions, advice, or conversation that doesn't fit the above.
+        
+        CRITICAL: If the user is asking "How many...", "What is...", "Show me...", it is an 'insight_request', NOT 'product_extraction'.""",
+        message
+    )
+
+def parameter_extractor_task(message, business_context=None):
+    return run_agent_task(
+        "Parameter Extractor",
+        "Extract business name and niche from the message",
+        "An expert at identifying entities. Return ONLY a JSON object with 'business_name' and 'niche'. If not found, use 'Unknown'. Example: {'business_name': 'Lumos', 'niche': 'skincare'}",
+        message,
+        business_context
+    )
+
+def logistics_agent_task(task_description):
+    return run_agent_task(
+        "Logistics Agent",
+        "Track shipments and coordinate with carriers",
+        "A reliable coordinator who ensures products reach customers on time.",
+        task_description
+    )
+
+def brand_designer_task(business_name: str, niche: str):
+    return run_agent_task(
+        "Brand Designer",
+        "Generate a complete brand identity",
+        """Create a complete brand identity package. Return ONLY valid JSON with this structure:
+        {
+            "business_name": "...",
+            "niche": "...",
+            "description": "A compelling 2-sentence description of the brand.",
+            "colors": ["#Hex1", "#Hex2", "#Hex3"],
+            "fonts": {"heading": "FontName", "body": "FontName"},
+            "tagline": "A catchy tagline"
+        }
+        """,
+        f"Create a brand for {business_name} in the {niche} niche."
+    )
