@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatInterface } from '@/components/ChatInterface';
 import { Menu } from 'lucide-react';
@@ -13,26 +14,31 @@ import { DiscountsPage } from '@/components/DiscountsPage';
 import { ThemeEditorPage } from '@/components/ThemeEditorPage';
 import { EmailTemplatesPage } from '@/components/EmailTemplatesPage';
 import { useChat } from '@/hooks/useChat';
-import { useSearchParams } from 'next/navigation';
+import { useStoreBuilder } from '@/hooks/useStoreBuilder';
+import { StoreBuilderChat } from '@/components/StoreBuilderChat';
+import { StoreBuilderPreview } from '@/components/StoreBuilderPreview';
 import { useSettings } from '@/hooks/useData';
 
-export function DashboardClient() {
+export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' }) {
     const [mounted, setMounted] = React.useState(false);
     const searchParams = useSearchParams();
-    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | null;
+    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' | null;
     
     const { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode } = useChat();
-    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates'>('products');
+    const storeBuilder = useStoreBuilder();
+    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder'>(defaultView || 'products');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
     const { settings, fetchSettings } = useSettings();
 
     React.useEffect(() => {
         setMounted(true);
         fetchSettings();
-        if (viewParam && ['products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates'].includes(viewParam)) {
+        if (viewParam && ['products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates', 'store-builder'].includes(viewParam)) {
             setActiveView(viewParam);
+        } else if (defaultView) {
+            setActiveView(defaultView);
         }
-    }, [viewParam]);
+    }, [viewParam, defaultView]);
 
     const adminName = settings?.adminName || 'User';
     const initials = adminName
@@ -59,13 +65,27 @@ export function DashboardClient() {
             <div className="hidden md:grid md:grid-cols-[30%_1fr_80px] w-full h-full">
                 {/* Col 1: Chat Interface (30%) */}
                 <div className="border-r border-border-custom h-full overflow-hidden bg-background">
-                    <ChatInterface
-                        messages={messages}
-                        onSend={sendMessage}
-                        isLoading={isLoading}
-                        onMessageComplete={markMessageComplete}
-                        onTriggerDemo={triggerDemoMode}
-                    />
+                    {activeView === 'store-builder' ? (
+                        <StoreBuilderChat 
+                            messages={storeBuilder.messages}
+                            isGenerating={storeBuilder.isGenerating}
+                            prompt={storeBuilder.prompt}
+                            setPrompt={storeBuilder.setPrompt}
+                            handleGenerate={storeBuilder.handleGenerate}
+                            handleFontSelection={storeBuilder.handleFontSelection}
+                            stage={storeBuilder.stage}
+                            progressStep={storeBuilder.progressStep}
+                            PROGRESS_STEPS={storeBuilder.PROGRESS_STEPS}
+                        />
+                    ) : (
+                        <ChatInterface
+                            messages={messages}
+                            onSend={sendMessage}
+                            isLoading={isLoading}
+                            onMessageComplete={markMessageComplete}
+                            onTriggerDemo={triggerDemoMode}
+                        />
+                    )}
                 </div>
 
                 {/* Col 2: Main Content (60%) */}
@@ -78,6 +98,15 @@ export function DashboardClient() {
                     {activeView === 'discounts' && <DiscountsPage />}
                     {activeView === 'theme-editor' && <ThemeEditorPage />}
                     {activeView === 'email-templates' && <EmailTemplatesPage />}
+                    {activeView === 'store-builder' && (
+                        <StoreBuilderPreview 
+                            config={storeBuilder.config}
+                            currentView={storeBuilder.currentView}
+                            setCurrentView={storeBuilder.setCurrentView}
+                            regenerateVariant={storeBuilder.regenerateVariant}
+                            onUpdateConfig={storeBuilder.setConfig}
+                        />
+                    )}
                     {/* Fallback for 'chat' view on desktop or others */}
                     {(activeView === 'chat' || !activeView) && <ProductsPage />}
                 </main>
@@ -127,6 +156,19 @@ export function DashboardClient() {
                     {activeView === 'discounts' && <DiscountsPage />}
                     {activeView === 'theme-editor' && <ThemeEditorPage />}
                     {activeView === 'email-templates' && <EmailTemplatesPage />}
+                    {activeView === 'store-builder' && (
+                        <StoreBuilderChat 
+                            messages={storeBuilder.messages}
+                            isGenerating={storeBuilder.isGenerating}
+                            prompt={storeBuilder.prompt}
+                            setPrompt={storeBuilder.setPrompt}
+                            handleGenerate={storeBuilder.handleGenerate}
+                            handleFontSelection={storeBuilder.handleFontSelection}
+                            stage={storeBuilder.stage}
+                            progressStep={storeBuilder.progressStep}
+                            PROGRESS_STEPS={storeBuilder.PROGRESS_STEPS}
+                        />
+                    )}
                 </main>
 
                 <Sidebar

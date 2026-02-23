@@ -17,7 +17,8 @@ import {
   Mail,
   Share2,
   Menu,
-  X as CloseIcon
+  X as CloseIcon,
+  Sparkles
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useState, useEffect } from 'react';
@@ -27,8 +28,8 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useSettings } from '@/hooks/useData';
 
 interface SidebarProps {
-  activeView: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates';
-  onViewChange: (view: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates') => void;
+  activeView: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder';
+  onViewChange: (view: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder') => void;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
   className?: string;
@@ -61,6 +62,7 @@ export const Sidebar = ({ activeView, onViewChange, isMobileOpen, onMobileClose,
     { id: 'orders', icon: ShoppingCart, label: 'Orders' },
     { id: 'customers', icon: Users, label: 'Customers' },
     { id: 'discounts', icon: Ticket, label: 'Discounts' },
+    { id: 'store-builder', icon: Sparkles, label: 'Store Builder' },
     { id: 'theme-editor', icon: Palette, label: 'Theme Editor' },
     { id: 'email-templates', icon: Mail, label: 'Emails' },
     { id: 'previews', icon: Layout, label: 'Design Previews' },

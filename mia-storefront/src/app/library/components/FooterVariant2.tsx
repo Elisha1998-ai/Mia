@@ -1,4 +1,5 @@
 import React from 'react';
+import { EditableText } from '@/components/EditableText';
 
 export interface FooterProps {
   storeName?: string;
@@ -6,10 +7,12 @@ export interface FooterProps {
     primaryColor?: string;
     headingFont?: string;
     bodyFont?: string;
+    footerDescription?: string;
   };
+  onUpdateSettings?: (key: string, value: string) => void;
 }
 
-export default function FooterVariant2({ storeName = "LINOGE", settings }: FooterProps) {
+export default function FooterVariant2({ storeName = "LINOGE", settings, onUpdateSettings }: FooterProps) {
   const primaryColor = settings?.primaryColor || "#000000";
   const headingFont = settings?.headingFont || "inherit";
   const bodyFont = settings?.bodyFont || "inherit";
@@ -21,10 +24,21 @@ export default function FooterVariant2({ storeName = "LINOGE", settings }: Foote
         {/* Left Column */}
         <div className="max-w-md">
           <h3 className="text-2xl font-bold uppercase mb-4 tracking-wide" style={{ fontFamily: headingFont, color: primaryColor !== '#000000' ? primaryColor : 'white' }}>Get in touch with {storeName}</h3>
-          <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-            Contact us and our managers will be happy to answer all your questions.
-          </p>
           
+          {onUpdateSettings ? (
+            <EditableText
+              initialValue={settings?.footerDescription || 'Contact us and our managers will be happy to answer all your questions.'}
+              onSave={(val) => onUpdateSettings('footerDescription', val)}
+              tagName="p"
+              className="text-gray-400 text-sm mb-8 leading-relaxed"
+              multiline
+            />
+          ) : (
+            <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+              {settings?.footerDescription || 'Contact us and our managers will be happy to answer all your questions.'}
+            </p>
+          )}
+
           <div className="space-y-2 text-sm text-gray-300">
             <p className="uppercase tracking-wider font-bold text-white mb-2" style={{ fontFamily: headingFont }}>Socials</p>
             <div className="flex gap-4">

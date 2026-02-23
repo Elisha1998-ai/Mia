@@ -6,6 +6,7 @@ import {
   Filter, ChevronDown
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
+import { EditableText } from '@/components/EditableText';
 
 interface Product {
   id: string;
@@ -23,6 +24,8 @@ interface StoreSettings {
   currency: string;
   heroTitle?: string;
   heroDescription?: string;
+  heroButtonText?: string;
+  heroImage?: string;
   footerDescription?: string;
   socialInstagram?: string;
   socialTwitter?: string;
@@ -42,6 +45,7 @@ interface StorefrontProps {
   loading?: boolean;
   showNavbar?: boolean;
   showFooter?: boolean;
+  onUpdateSettings?: (key: keyof StoreSettings, value: string) => void;
 }
 
 export default function StorefrontWireframe({ 
@@ -49,7 +53,8 @@ export default function StorefrontWireframe({
   settings, 
   loading = false,
   showNavbar = true,
-  showFooter = true
+  showFooter = true,
+  onUpdateSettings
 }: StorefrontProps) {
   const { primaryColor, headingFont, bodyFont } = settings || {};
 
@@ -209,26 +214,70 @@ export default function StorefrontWireframe({
       )}
 
       {/* Hero Section */}
-      <div className="relative h-[600px] lg:h-[800px] bg-gray-900 overflow-hidden">
+      <div className="relative h-[600px] lg:h-[800px] bg-gray-900 overflow-hidden group">
         {/* Background Image Placeholder - using gradient/color to simulate the blue sky look */}
         <div className="absolute inset-0 bg-[#547C96]">
-           {/* You would replace this with a real img tag if you had one */}
+           {settings?.heroImage && (
+             <img src={settings.heroImage} alt="Hero Background" className="w-full h-full object-cover opacity-80" />
+           )}
            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/90"></div>
         </div>
 
+        {onUpdateSettings && (
+          <button 
+            onClick={() => {
+              const url = window.prompt("Enter background image URL:", settings?.heroImage || "");
+              if (url !== null) onUpdateSettings('heroImage', url);
+            }}
+            className="absolute top-4 right-4 z-20 bg-white/90 hover:bg-white text-black px-4 py-2 rounded-md text-sm font-medium shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            Change Background
+          </button>
+        )}
+
         <div className="relative max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-end pb-24">
           <div className="max-w-xl text-white text-left">
-            <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-4" style={{ fontFamily: headingFont }}>
-              {settings?.heroTitle || 'Jackets for the Modern Man'}
-            </h1>
-            <p className="text-lg text-white/80 mb-8 max-w-lg">
-               {settings?.heroDescription || 'Discover the latest trends in fashion with our exclusive collection. Elegant, stylish, and perfect for any occasion.'}
-            </p>
+            {onUpdateSettings ? (
+              <EditableText
+                initialValue={settings?.heroTitle || 'Jackets for the Modern Man'}
+                onSave={(val) => onUpdateSettings('heroTitle', val)}
+                tagName="h1"
+                className="text-5xl md:text-7xl font-bold leading-tight mb-4"
+                style={{ fontFamily: headingFont }}
+              />
+            ) : (
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-4" style={{ fontFamily: headingFont }}>
+                {settings?.heroTitle || 'Jackets for the Modern Man'}
+              </h1>
+            )}
+            
+            {onUpdateSettings ? (
+              <EditableText
+                initialValue={settings?.heroDescription || 'Discover the latest trends in fashion with our exclusive collection. Elegant, stylish, and perfect for any occasion.'}
+                onSave={(val) => onUpdateSettings('heroDescription', val)}
+                tagName="p"
+                className="text-lg text-white/80 mb-8 max-w-lg"
+                multiline
+              />
+            ) : (
+              <p className="text-lg text-white/80 mb-8 max-w-lg">
+                {settings?.heroDescription || 'Discover the latest trends in fashion with our exclusive collection. Elegant, stylish, and perfect for any occasion.'}
+              </p>
+            )}
+
             <button 
               className="inline-flex items-center space-x-2 bg-white text-black px-8 py-4 rounded-full font-medium hover:bg-gray-100 transition-colors"
               style={{ color: primaryColor }}
             >
-              <span>Shop Now</span>
+              {onUpdateSettings ? (
+                <EditableText
+                  initialValue={settings?.heroButtonText || 'Shop Now'}
+                  onSave={(val) => onUpdateSettings('heroButtonText', val)}
+                  tagName="span"
+                />
+              ) : (
+                <span>{settings?.heroButtonText || 'Shop Now'}</span>
+              )}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

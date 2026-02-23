@@ -1,4 +1,5 @@
 import React from 'react';
+import { EditableText } from '@/components/EditableText';
 
 export interface FooterProps {
   storeName?: string;
@@ -6,10 +7,12 @@ export interface FooterProps {
     primaryColor?: string;
     headingFont?: string;
     bodyFont?: string;
+    footerDescription?: string;
   };
+  onUpdateSettings?: (key: string, value: string) => void;
 }
 
-export default function FooterWireframe({ storeName = "Mia Store", settings }: FooterProps) {
+export default function FooterWireframe({ storeName = "Mia Store", settings, onUpdateSettings }: FooterProps) {
   const primaryColor = settings?.primaryColor || "#000000";
   const headingFont = settings?.headingFont || "inherit";
   const bodyFont = settings?.bodyFont || "inherit";
@@ -19,9 +22,20 @@ export default function FooterWireframe({ storeName = "Mia Store", settings }: F
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
           <h3 className="font-bold text-gray-900 mb-4" style={{ fontFamily: headingFont, color: primaryColor }}>{storeName}</h3>
-          <p className="text-sm leading-relaxed">
-            Premium quality essentials for the modern lifestyle. Designed with care and crafted to last.
-          </p>
+          
+          {onUpdateSettings ? (
+            <EditableText
+              initialValue={settings?.footerDescription || 'Premium quality essentials for the modern lifestyle. Designed with care and crafted to last.'}
+              onSave={(val) => onUpdateSettings('footerDescription', val)}
+              tagName="p"
+              className="text-sm leading-relaxed"
+              multiline
+            />
+          ) : (
+            <p className="text-sm leading-relaxed">
+              {settings?.footerDescription || 'Premium quality essentials for the modern lifestyle. Designed with care and crafted to last.'}
+            </p>
+          )}
         </div>
         
         <div>
