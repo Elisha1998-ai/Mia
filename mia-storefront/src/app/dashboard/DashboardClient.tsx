@@ -22,14 +22,14 @@ export function DashboardClient() {
     const viewParam = searchParams.get('view') as 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | null;
     
     const { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode } = useChat();
-    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates'>('chat');
+    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates'>('products');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
     const { settings, fetchSettings } = useSettings();
 
     React.useEffect(() => {
         setMounted(true);
         fetchSettings();
-        if (viewParam && ['chat', 'products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates'].includes(viewParam)) {
+        if (viewParam && ['products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates'].includes(viewParam)) {
             setActiveView(viewParam);
         }
     }, [viewParam]);
@@ -55,18 +55,47 @@ export function DashboardClient() {
 
     return (
         <div className="flex h-screen bg-background text-foreground overflow-hidden transition-colors relative">
-            {/* Navigation Sidebar (Desktop) / Drawer (Mobile) */}
-            <Sidebar
-                activeView={activeView}
-                onViewChange={setActiveView}
-                isMobileOpen={isMobileSidebarOpen}
-                onMobileClose={() => setIsMobileSidebarOpen(false)}
-            />
+            {/* Desktop Layout (3 Columns) */}
+            <div className="hidden md:grid md:grid-cols-[30%_1fr_80px] w-full h-full">
+                {/* Col 1: Chat Interface (30%) */}
+                <div className="border-r border-border-custom h-full overflow-hidden bg-background">
+                    <ChatInterface
+                        messages={messages}
+                        onSend={sendMessage}
+                        isLoading={isLoading}
+                        onMessageComplete={markMessageComplete}
+                        onTriggerDemo={triggerDemoMode}
+                    />
+                </div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col relative overflow-hidden bg-background transition-colors">
-                {/* Mobile Top Header - App style */}
-                <header className="md:hidden flex items-center justify-between px-6 py-4 border-b border-border-custom bg-background/80 backdrop-blur-md sticky top-0 z-40">
+                {/* Col 2: Main Content (60%) */}
+                <main className="h-full flex flex-col min-h-0 overflow-hidden relative bg-background">
+                    {activeView === 'products' && <ProductsPage />}
+                    {activeView === 'orders' && <OrdersPage />}
+                    {activeView === 'customers' && <CustomersPage />}
+                    {activeView === 'previews' && <PreviewsPage />}
+                    {activeView === 'analytics' && <AnalyticsPage />}
+                    {activeView === 'discounts' && <DiscountsPage />}
+                    {activeView === 'theme-editor' && <ThemeEditorPage />}
+                    {activeView === 'email-templates' && <EmailTemplatesPage />}
+                    {/* Fallback for 'chat' view on desktop or others */}
+                    {(activeView === 'chat' || !activeView) && <ProductsPage />}
+                </main>
+
+                {/* Col 3: Sidebar (10%) */}
+                <div className="border-l border-border-custom h-full bg-sidebar">
+                    <Sidebar
+                        activeView={activeView}
+                        onViewChange={setActiveView}
+                        className="w-full h-full border-none"
+                        showChat={false}
+                    />
+                </div>
+            </div>
+
+            {/* Mobile Layout (Original Stack) */}
+            <div className="md:hidden flex flex-col h-full w-full">
+                <header className="flex items-center justify-between px-6 py-4 border-b border-border-custom bg-background/80 backdrop-blur-md sticky top-0 z-40">
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={() => setIsMobileSidebarOpen(true)}
@@ -99,6 +128,14 @@ export function DashboardClient() {
                     {activeView === 'theme-editor' && <ThemeEditorPage />}
                     {activeView === 'email-templates' && <EmailTemplatesPage />}
                 </main>
+
+                <Sidebar
+                    activeView={activeView}
+                    onViewChange={setActiveView}
+                    isMobileOpen={isMobileSidebarOpen}
+                    onMobileClose={() => setIsMobileSidebarOpen(false)}
+                    showChat={true}
+                />
             </div>
         </div>
     );

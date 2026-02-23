@@ -31,9 +31,11 @@ interface SidebarProps {
   onViewChange: (view: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates') => void;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
+  className?: string;
+  showChat?: boolean;
 }
 
-export const Sidebar = ({ activeView, onViewChange, isMobileOpen, onMobileClose }: SidebarProps) => {
+export const Sidebar = ({ activeView, onViewChange, isMobileOpen, onMobileClose, className, showChat = true }: SidebarProps) => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -147,7 +149,7 @@ export const Sidebar = ({ activeView, onViewChange, isMobileOpen, onMobileClose 
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-[72px] border-r border-border-custom bg-sidebar flex-col items-center py-6 gap-6 z-50 transition-colors">
+      <aside className={`hidden md:flex flex-col items-center py-6 gap-6 z-50 transition-colors bg-sidebar ${className || 'w-[72px] border-r border-border-custom'}`}>
         {sidebarContent}
       </aside>
 

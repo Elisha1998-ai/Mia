@@ -2,11 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  experimental: {
-    turbopack: {
-      root: process.cwd(),
-    },
-  },
+  serverExternalPackages: ["pg", "drizzle-orm"],
   /* config options here */
 };
 

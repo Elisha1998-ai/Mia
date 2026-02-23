@@ -147,94 +147,29 @@ You are Mia, the expert Business Manager for this store.
 1. ALWAYS use the numbers provided in the 'YOUR DATA SOURCE' above to answer questions. 
 2. If a user asks "How many products/orders/customers?", you MUST look at the numbers above and state them directly.
 3. NEVER say you don't have access to the data. If the data is 0, say it is 0.
-4. If you need to perform an action (Create Doc, Add/Import Products, Edit Product, Update Order, List Products etc.), use your TOOLS.
-5. **DIRECT DATABASE ACCESS**: You have a 'runSql' tool. If you cannot find data using standard tools (like 'listProducts'), or if the user claims data exists that you can't see, USE 'runSql' to inspect the raw tables.
-   - Example: "SELECT * FROM product LIMIT 5" to see if products exist at all.
-   - Example: "SELECT * FROM "user"" to see user IDs.
-   - This allows you to debug issues where data might be assigned to a different user ID.
-6. If no action is needed, respond briefly and professionally.
-7. Use Nigerian Naira (₦) for all currency.
+4. If you need to perform an action (Add/Import Products, Edit Product, Update Order, List Products etc.), use your TOOLS.
+5. If no action is needed, respond briefly and professionally.
+6. Use Nigerian Naira (₦) for all currency.
+7. If there are items in 'INVENTORY ALERTS', bring them to the user's attention when they ask about store status.
+8. When calling a tool, DO NOT generate any text response. Let the tool execute first.
 `;
 
     // Using Llama 3.3 70B via Groq
-    const { text, toolResults, toolCalls } = await generateText({
+    const { text, toolResults, toolCalls, steps } = await generateText({
       model: groq('llama-3.3-70b-versatile'),
       system: systemPrompt,
       prompt: message,
       tools: {
-        createDocument: tool({
-          description: 'Create a professional ecommerce document (policy, invoice, or legal text).',
-          parameters: z.object({
-            docType: z.string().optional().describe("The type of document (e.g., 'refund_policy', 'shipping_policy', 'invoice')."),
-            type: z.string().optional().describe("Alias for docType."),
-            details: z.string().optional().describe("Any specific details to include in the document."),
-            content: z.string().optional().describe("Alias for details."),
-          }),
-          execute: async ({ docType, type, details, content }) => {
-            const finalType = docType || type || "document";
-            const finalDetails = details || content || "No details provided";
-
-            // Generate a more realistic draft based on the docType
-            let draftContent = "";
-            const title = finalType.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-            
-            if (finalType.includes("refund") || finalType.includes("return")) {
-                draftContent = `# ${title}\n\n**Effective Date:** ${new Date().toLocaleDateString()}\n\n## 1. Return Policy\nWe want you to be completely satisfied with your purchase. If you are not satisfied, you may return the item within 30 days of delivery.\n\n## 2. Refunds\nOnce we receive your item, we will inspect it and notify you that we have received your returned item. We will immediately notify you on the status of your refund after inspecting the item.\n\n## 3. Shipping\nYou will be responsible for paying for your own shipping costs for returning your item. Shipping costs are non-refundable.`;
-            } else if (finalType.includes("privacy")) {
-                draftContent = `# ${title}\n\n**Last Updated:** ${new Date().toLocaleDateString()}\n\n## 1. Information Collection\nWe collect information from you when you register on our site, place an order, subscribe to our newsletter or fill out a form.\n\n## 2. Information Usage\nAny of the information we collect from you may be used to personalize your experience, improve our website, or process transactions.`;
-            } else if (finalType.includes("invoice")) {
-                let orderNumber = null;
-                // Try to extract order number from details
-                const match = finalDetails.match(/(?:order|#)\s*([a-zA-Z0-9-]+)/i);
-                if (match) {
-                    orderNumber = match[1];
-                } else {
-                    // Try to find the latest order for the store
-                    const latestOrder = await db.query.orders.findFirst({
-                        where: eq(orders.userId, userId),
-                        orderBy: [desc(orders.createdAt)],
-                    });
-                    if (latestOrder) {
-                        orderNumber = latestOrder.orderNumber;
-                    }
-                }
-
-                if (!orderNumber) {
-                     return {
-                        error: "I couldn't find an order number to generate the invoice for. Please specify the order number."
-                     };
-                }
-
-                return {
-                    type: "invoice",
-                    title: `Invoice #${orderNumber}`,
-                    description: `Invoice for order #${orderNumber} is ready.`,
-                    url: `/api/documents/invoice/${orderNumber}`,
-                    actions: ["download_pdf", "email"]
-                };
-            } else {
-                draftContent = `# ${title}\n\nThis is a draft document based on your request: "${finalDetails}".\n\n## Overview\n[Add overview here]\n\n## Details\n[Add specific details here]\n\n## Conclusion\n[Add conclusion here]`;
-            }
-
-            return {
-              type: "document",
-              title: title,
-              description: draftContent, // Changed from 'content' to 'description' to match frontend Widget interface
-              actions: ["download", "copy", "edit"]
-            };
-          },
-        }),
-
         editProduct: tool({
           description: 'Edit a product\'s details (price, stock, name, description).',
           parameters: z.object({
             identifier: z.string().describe("The name or SKU of the product to edit."),
-            price: z.coerce.number().optional(),
-            stockQuantity: z.coerce.number().optional(),
-            stock: z.coerce.number().optional().describe("Alias for stockQuantity"),
+            price: z.number().optional(),
+            stockQuantity: z.number().optional(),
+            stock: z.number().optional().describe("Alias for stockQuantity"),
             name: z.string().optional(),
             description: z.string().optional(),
-          }),
+          }).passthrough(),
           execute: async ({ identifier, price, stockQuantity, stock, name, description }) => {
             try {
               const finalStock = stockQuantity !== undefined ? stockQuantity : stock;
@@ -402,15 +337,33 @@ You are Mia, the expert Business Manager for this store.
           },
         }),
         addProduct: tool({
-          description: 'Add a SINGLE new product to the inventory.',
+          description: 'Add a SINGLE new product to the inventory. If the user does not provide all details (name, price), use this tool anyway with partial info, and the system will ask for the rest.',
           parameters: z.object({
-            name: z.string().describe("The name of the product."),
-            price: z.coerce.number().describe("The price of the product."),
-            stock: z.coerce.number().optional().describe("Initial stock quantity (default 1)."),
+            name: z.string().optional().describe("The name of the product."),
+            price: z.number().optional().describe("The price of the product."),
+            stock: z.number().optional().describe("Initial stock quantity (default 1)."),
             sku: z.string().optional().describe("Optional SKU. If not provided, one will be generated."),
             description: z.string().optional().describe("Product description."),
-          }),
+          }).passthrough(),
           execute: async ({ name, price, stock = 1, sku, description }) => {
+            console.log("addProduct tool executed with:", { name, price, stock, sku, description });
+            // Check if we have the minimum required fields
+            // Explicitly check for "undefined" string just in case the LLM passes it literally
+            if (!name || name === "undefined" || price === undefined) {
+               return {
+                 success: false,
+                 requires_form: true,
+                 error: "Please fill out the product details below.",
+                 prefilled: { 
+                    name: name === "undefined" ? "" : name, 
+                    price, 
+                    stock, 
+                    sku: sku === "undefined" ? "" : sku, 
+                    description 
+                 }
+               };
+            }
+
             try {
                const finalSku = sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
                
@@ -574,15 +527,17 @@ You are Mia, the expert Business Manager for this store.
 
     // Check if any tool was executed and format the "widget" response
     if (toolCalls && toolCalls.length > 0) {
-      // Find the most relevant tool call (prioritize setupStorefront, createDocument, importProducts)
+      // Find the most relevant tool call (prioritize setupStorefront, importProducts)
       // For now, we take the last one as it's likely the final action
       const lastTool = toolCalls[toolCalls.length - 1]; 
       
       // Try to find result in toolResults
-      let result = toolResults?.find(r => r.toolCallId === lastTool.toolCallId)?.result;
+      const toolResultObj = toolResults?.find(r => r.toolCallId === lastTool.toolCallId);
+      // ai sdk toolResult can have 'result' or 'output' depending on version/context
+      let result = toolResultObj?.result || (toolResultObj as any)?.output;
       
       // Safe access to args
-      const args = lastTool.args || {};
+      const args = lastTool.args || (lastTool as any).input || {};
 
       // Fallback: if result is missing but we know the tool, try to infer success or use a generic success message
       if (!result) {
@@ -597,19 +552,7 @@ You are Mia, the expert Business Manager for this store.
       }
 
       if (result) {
-        if (lastTool.toolName === "createDocument") {
-            if (result.type === "invoice") {
-                finalResponse.intent = "invoice_generation";
-                finalResponse.steps = ["Fetching order details", "Calculating taxes", "Generating PDF"];
-                finalResponse.widget = result;
-                finalResponse.content = "I've generated the invoice for you. You can download it below.";
-            } else {
-                finalResponse.intent = "document_generation";
-                finalResponse.steps = ["Analyzing requirements", "Drafting document structure", "Polishing final text"];
-                finalResponse.widget = result;
-                finalResponse.content = `I've drafted the ${args.docType || args.type || 'document'} for you.`;
-            }
-        } else if (lastTool.toolName === "listProducts") {
+        if (lastTool.toolName === "listProducts") {
             finalResponse.intent = "product_list";
             if (result.success && result.products && result.products.length > 0) {
                 const productList = result.products.map((p: any) => {
@@ -624,9 +567,19 @@ You are Mia, the expert Business Manager for this store.
              }
          } else if (lastTool.toolName === "addProduct") {
              finalResponse.intent = "product_creation";
-             finalResponse.content = result.success 
-                ? `I've added **${result.productName}** to your inventory (SKU: ${result.sku}).` 
-                : `Failed to add product: ${result.error}`;
+             if (result.requires_form) {
+                finalResponse.widget = {
+                  type: 'product_form',
+                  title: 'Add New Product',
+                  description: 'Please fill in the details below.',
+                  defaultValues: result.prefilled
+                };
+                finalResponse.content = "I can help with that. Please fill out the form below with the product details.";
+             } else {
+                finalResponse.content = result.success 
+                  ? `I've added **${result.productName}** to your inventory (SKU: ${result.sku}).` 
+                  : `Failed to add product: ${result.error}`;
+             }
          } else if (lastTool.toolName === "importProducts") {
           finalResponse.intent = "product_extraction";
           finalResponse.steps = ["Parsing text", "Extracting product details", "Saving to inventory"];

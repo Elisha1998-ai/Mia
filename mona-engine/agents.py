@@ -157,10 +157,8 @@ MONA_TOOLS = [
     list_orders,
     update_order_status,
     list_customers,
-    create_invoice,
     setup_store,
     customize_branding,
-    create_document,
 ]
 
 

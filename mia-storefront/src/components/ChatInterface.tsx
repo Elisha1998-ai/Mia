@@ -9,14 +9,126 @@ import { useNotificationLogic } from '@/hooks/useNotificationLogic';
 import { NotificationCard } from './NotificationCard';
 
 interface Widget {
-  type: 'invoice' | 'document' | 'link' | 'store_preview';
+  type: 'invoice' | 'document' | 'link' | 'store_preview' | 'product_form';
   title?: string;
   description?: string;
   imageUrl?: string;
   link?: string;
   url?: string;
   storeName?: string;
+  defaultValues?: {
+    name?: string;
+    price?: number;
+    stock?: number;
+    description?: string;
+    sku?: string;
+  };
 }
+
+const ProductFormWidget = ({ widget, onSubmit }: { widget: Widget, onSubmit: (data: any) => void }) => {
+  const [formData, setFormData] = useState({
+    name: widget.defaultValues?.name || '',
+    price: widget.defaultValues?.price || '',
+    stock: widget.defaultValues?.stock || 1,
+    description: widget.defaultValues?.description || '',
+    sku: widget.defaultValues?.sku || ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    // Simulate slight delay for UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    onSubmit(formData);
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div className="my-4 border border-border-custom rounded-2xl bg-background overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-md w-full">
+      
+      <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-foreground/70 uppercase tracking-wider">Product Name *</label>
+          <input 
+            required
+            type="text" 
+            value={formData.name}
+            onChange={e => setFormData({...formData, name: e.target.value})}
+            placeholder="e.g. Vintage Leather Jacket"
+            className="w-full px-3 py-2 rounded-lg bg-foreground/5 border border-transparent focus:bg-background focus:border-accent outline-none transition-all text-sm"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-foreground/70 uppercase tracking-wider">Price (₦) *</label>
+            <input 
+              required
+              type="number" 
+              min="0"
+              step="0.01"
+              value={formData.price}
+              onChange={e => setFormData({...formData, price: e.target.value})}
+              placeholder="0.00"
+              className="w-full px-3 py-2 rounded-lg bg-foreground/5 border border-transparent focus:bg-background focus:border-accent outline-none transition-all text-sm"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-foreground/70 uppercase tracking-wider">Stock Qty</label>
+            <input 
+              type="number" 
+              min="0"
+              value={formData.stock}
+              onChange={e => setFormData({...formData, stock: Number(e.target.value)})}
+              className="w-full px-3 py-2 rounded-lg bg-foreground/5 border border-transparent focus:bg-background focus:border-accent outline-none transition-all text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-foreground/70 uppercase tracking-wider">Description</label>
+          <textarea 
+            rows={3}
+            value={formData.description}
+            onChange={e => setFormData({...formData, description: e.target.value})}
+            placeholder="Describe your product..."
+            className="w-full px-3 py-2 rounded-lg bg-foreground/5 border border-transparent focus:bg-background focus:border-accent outline-none transition-all text-sm resize-none"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-foreground/70 uppercase tracking-wider">SKU (Optional)</label>
+          <input 
+            type="text" 
+            value={formData.sku}
+            onChange={e => setFormData({...formData, sku: e.target.value})}
+            placeholder="Leave blank to auto-generate"
+            className="w-full px-3 py-2 rounded-lg bg-foreground/5 border border-transparent focus:bg-background focus:border-accent outline-none transition-all text-sm"
+          />
+        </div>
+
+        <button 
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full py-2.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Saving Product...
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              Submit
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+};
 
 interface Message {
   role: 'user' | 'assistant';
@@ -57,7 +169,7 @@ const WidgetModal = ({ widget, onClose }: { widget: Widget, onClose: () => void 
             widget.url ? (
                <div className="w-full h-full min-h-[600px] flex flex-col gap-4">
                   <div className="flex justify-end gap-2">
-                     <a href={widget.url} download target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors text-sm">
+                     <a href={widget.url} download target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-accent text-white dark:text-black rounded-lg hover:bg-accent/90 transition-colors text-sm">
                         <Download className="w-4 h-4" /> Download PDF
                      </a>
                   </div>
@@ -125,7 +237,7 @@ const WidgetModal = ({ widget, onClose }: { widget: Widget, onClose: () => void 
           >
             Close
           </button>
-          <button className="flex items-center gap-2 px-5 py-2 bg-accent text-white rounded-xl text-sm font-bold hover:bg-accent/90 transition-all shadow-lg shadow-accent/20">
+          <button className="flex items-center gap-2 px-5 py-2 bg-accent text-white dark:text-black rounded-xl text-sm font-bold hover:bg-accent/90 transition-all shadow-lg shadow-accent/20">
             <Download className="w-4 h-4" /> Download {widget.type}
           </button>
         </div>
@@ -400,7 +512,7 @@ const ChatWidget = ({ widget, onPreview }: { widget: Widget, onPreview?: (w: Wid
             target="_blank" 
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent/90 transition-all text-xs font-bold uppercase tracking-wider shadow-lg shadow-accent/20"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent text-white dark:text-black hover:bg-accent/90 transition-all text-xs font-bold uppercase tracking-wider shadow-lg shadow-accent/20"
           >
             Preview Store <ExternalLink className="w-3.5 h-3.5" />
           </a>
@@ -466,71 +578,45 @@ interface ChatInterfaceProps {
 }
 
 export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, onTriggerDemo }: ChatInterfaceProps) => {
+  const { settings, fetchSettings } = useSettings();
+  const [activePreviewWidget, setActivePreviewWidget] = useState<Widget | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState('');
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [greeting, setGreeting] = useState('Hello');
-  const [activePreviewWidget, setActivePreviewWidget] = useState<Widget | null>(null);
-  const { settings, fetchSettings } = useSettings();
-  const { notifications } = useNotificationLogic();
   const [showNotification, setShowNotification] = useState(false);
   const [isNotificationCollapsed, setIsNotificationCollapsed] = useState(false);
-  const [notificationIndex, setNotificationIndex] = useState(0);
   const router = useRouter();
-
-  // Reset index when notifications change to ensure we don't go out of bounds
-  // Only show notifications if there are actual notifications
-  useEffect(() => {
-    if (notifications.length > 0) {
-      setNotificationIndex(0);
-      setShowNotification(true);
-    } else {
-      setShowNotification(false);
-    }
-  }, [notifications.length]);
-
-  const currentNotification = notifications.length > 0 ? notifications[notificationIndex] : null;
-
-  const handleNotificationClose = () => {
-    if (notifications.length <= 1) {
-      setShowNotification(false);
-      return;
-    }
-    
-    setShowNotification(false);
-    setTimeout(() => {
-      setNotificationIndex((prev) => (prev + 1) % notifications.length);
-      setShowNotification(true);
-      setIsNotificationCollapsed(false);
-    }, 1500);
-  };
-
-  const handleNotificationAction = (actionId: string) => {
-    console.log('Action triggered:', actionId);
-    
-    if (actionId === 'connect-store') {
-      router.push('/onboarding');
-    } else if (actionId.includes('stock') || actionId.includes('product') || (actionId.startsWith('view-') && !actionId.includes('order') && !actionId.includes('profile'))) {
-      // Navigate to product page or store
-      const parts = actionId.split('-');
-      const id = parts.length > 1 ? parts[parts.length - 1] : null;
-      if (id) {
-        router.push(`/store/products/${id}`);
-      } else {
-        router.push('/store');
-      }
-    } else if (actionId.includes('order') || actionId === 'send_reminder') {
-      // Redirect to orders page
-      router.push('/orders');
-    } else if (actionId.includes('offer') || actionId.includes('email') || actionId.includes('profile')) {
-      // Redirect to dashboard/customers
-      router.push('/dashboard');
-    }
-  };
+  
+  const { 
+    currentNotification, 
+    markAsRead, 
+    handleAction 
+  } = useNotificationLogic();
 
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  // Auto-show notifications when they arrive
+  useEffect(() => {
+    if (currentNotification && !currentNotification.read) {
+      setShowNotification(true);
+    }
+  }, [currentNotification]);
+
+  const handleNotificationClose = () => {
+    setShowNotification(false);
+    if (currentNotification) {
+      markAsRead(currentNotification.id);
+    }
+  };
+
+  const handleNotificationAction = (actionId: string) => {
+    if (currentNotification) {
+      handleAction(currentNotification.id, actionId);
+      setShowNotification(false);
+    }
+  };
 
   const handleCopy = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
@@ -543,117 +629,44 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
   };
 
   useEffect(() => {
-    const updateGreeting = () => {
-      const hour = new Date().getHours();
-      const username = settings?.adminName?.split(' ')[0] || "there";
-      const greetings = [
-        `Hello ${username}`,
-        "What's up today?"
-      ];
-      
-      // Add time-based greeting
-      if (hour < 12) greetings.unshift(`Good morning ${username}`);
-      else if (hour < 18) greetings.unshift(`Good afternoon ${username}`);
-      else greetings.unshift(`Good evening ${username}`);
-
-      // Pick random greeting (weighted towards time-based)
-      const random = Math.random();
-      if (random < 0.6) {
-        setGreeting(greetings[0]); // 60% chance for time-based
-      } else {
-        setGreeting(greetings[Math.floor(Math.random() * (greetings.length - 1)) + 1]);
-      }
-    };
-
-    updateGreeting();
-    // Update every minute
-    const interval = setInterval(updateGreeting, 60000);
-    return () => clearInterval(interval);
-  }, [settings]);
-
-  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent, customInput?: string) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    onSend(input);
+    const messageContent = customInput || input;
+    if (!messageContent?.trim() && !customInput) return;
+    if (isLoading) return;
+    
+    onSend(messageContent);
     setInput('');
   };
 
+  const handleFormSubmit = async (data: any) => {
+    // Construct a natural language command from the form data
+    const command = `Add product: ${data.name} price ${data.price} stock ${data.stock} ${data.description ? `description "${data.description}"` : ''} ${data.sku ? `sku ${data.sku}` : ''}`;
+    
+    // Trigger submission directly via onSend to avoid potential issues with handleSubmit's isLoading check
+    // If the form is visible, the previous turn is complete, so we should be able to send.
+    if (!isLoading) {
+      onSend(command);
+    } else {
+      // Fallback: wait a bit or just try anyway? 
+      // If isLoading is true, maybe the AI is still "thinking" about something else?
+      // But typically, the user interacting with a widget means the turn is over.
+      // Let's force it, assuming the UI state might be slightly out of sync or just needs to be overridden for user action.
+      // Actually, let's just log and try.
+      console.log("Form submitted while isLoading was true, forcing send.");
+      onSend(command);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background">
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent ${messages.length > 0 ? 'pb-64' : ''}`}>
+    <div className="flex flex-col h-full bg-background relative">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] pb-64`}>
         <div className={`max-w-3xl mx-auto w-full space-y-6 ${messages.length === 0 ? 'h-full flex flex-col justify-center' : ''}`}>
-        {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-6">
-            <div className="space-y-2 max-w-lg">
-              <h2 className="text-xl md:text-4xl font-sans font-medium text-foreground/90 tracking-tight">
-                {greeting}
-              </h2>
-            </div>
-            
-            <div className="w-full space-y-4">
-              <div className="w-full relative group flex flex-col items-center">
-                {showNotification && currentNotification && (
-                  <div className="w-full z-10 -mb-[1px]">
-                    <NotificationCard
-                      type={currentNotification.type}
-                      title={currentNotification.title}
-                      description=""
-                      timestamp={currentNotification.timestamp}
-                      isVisible={showNotification}
-                      isCollapsed={isNotificationCollapsed}
-                      onToggleCollapse={() => setIsNotificationCollapsed(!isNotificationCollapsed)}
-                      onClose={handleNotificationClose}
-                      actions={currentNotification.actions.map(action => ({
-                        label: action.label,
-                        onClick: () => handleNotificationAction(action.actionId),
-                        variant: action.variant
-                      }))}
-                    />
-                  </div>
-                )}
-                <form onSubmit={handleSubmit} className={`w-full bg-input-bg border-x border-b border-border-custom focus-within:border-foreground/10 transition-all ${showNotification && !isNotificationCollapsed ? 'rounded-b-3xl rounded-t-none border-t-0' : 'rounded-3xl border-t' } p-3`}>
-                  <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type / for commands"
-                    className="w-full bg-transparent border-none outline-none text-lg text-foreground/90 placeholder-foreground/40 resize-none min-h-[60px] px-2 pt-1"
-                    rows={1}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
-                  />
-                  <div className="flex items-center justify-between mt-1 px-1">
-                    <button type="button" className="p-1.5 text-foreground/50 hover:text-foreground/70 hover:bg-foreground/5 rounded-xl transition-all">
-                      <Plus className="w-5 h-5" />
-                    </button>
-                    
-                    <div className="flex items-center gap-3">
-                      <button type="button" className="flex items-center gap-2 px-2.5 py-1 text-xs text-foreground/50 hover:text-foreground/70 hover:bg-foreground/5 rounded-lg transition-all border border-border-custom">
-                        Mia 2.0 <ChevronDown className="w-3 h-3" />
-                      </button>
-                      <button 
-                        type="submit"
-                        disabled={!input.trim() || isLoading}
-                        className="p-1.5 bg-accent/80 hover:bg-accent text-white rounded-xl transition-all shadow-lg disabled:opacity-30"
-                      >
-                        <ArrowUp className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
 
         {messages.map((m, idx) => (
           <div key={idx} className={`flex gap-6 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -723,7 +736,11 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
                         <DocumentCanvas key={wIdx} widget={widget} />
                       ) : (
                         <div key={wIdx} className="space-y-4">
-                          <ChatWidget widget={widget} onPreview={setActivePreviewWidget} />
+                          {widget.type === 'product_form' ? (
+                            <ProductFormWidget widget={widget} onSubmit={handleFormSubmit} />
+                          ) : (
+                            <ChatWidget widget={widget} onPreview={setActivePreviewWidget} />
+                          )}
                         </div>
                       )
                     ))}
@@ -766,8 +783,7 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
       </div>
 
       {/* Persistent Input for active chat */}
-      {messages.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 pt-20 pb-8 px-4 bg-gradient-to-t from-background via-background via-80% to-transparent pointer-events-none z-10">
+      <div className="absolute bottom-0 left-0 right-0 pt-20 pb-8 px-4 bg-gradient-to-t from-background via-background via-80% to-transparent pointer-events-none z-10">
           <div className="max-w-3xl mx-auto relative pointer-events-auto flex flex-col items-center">
             
             {showNotification && currentNotification && (
@@ -811,7 +827,7 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
                 <button 
                   type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="p-1.5 bg-accent/80 hover:bg-accent text-white rounded-xl transition-all shadow-lg disabled:opacity-30"
+                  className="p-1.5 bg-accent/80 hover:bg-accent text-white dark:text-black rounded-xl transition-all shadow-lg disabled:opacity-30"
                 >
                   <ArrowUp className="w-5 h-5" />
                 </button>
@@ -819,7 +835,6 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
             </form>
           </div>
         </div>
-      )}
 
       {/* Widget Preview Modal */}
       {activePreviewWidget && (
