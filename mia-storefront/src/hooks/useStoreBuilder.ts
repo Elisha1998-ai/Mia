@@ -70,7 +70,7 @@ const generateConfig = (prompt: string, preferences?: { color?: string, font?: s
   // Variants - Randomize if not specific
   const navbarVariant = isMinimal ? 'v2' : (Math.random() > 0.5 ? 'v1' : 'v2');
   const footerVariant = isMinimal ? 'v2' : (Math.random() > 0.5 ? 'v1' : 'v2');
-  const checkoutVariant = isMinimal ? 'v2' : (Math.random() > 0.5 ? 'v1' : 'v2');
+  const checkoutVariant = isMinimal ? 'v2' : (Math.random() < 0.33 ? 'v1' : Math.random() < 0.66 ? 'v2' : 'v3');
 
   // Copy Generation (Mock AI)
   let heroTitle = "Elevate Your Lifestyle";
@@ -95,7 +95,7 @@ const generateConfig = (prompt: string, preferences?: { color?: string, font?: s
       navbar: navbarVariant,
       footer: footerVariant,
       checkout: checkoutVariant,
-      storefront: 'v1',
+      hero: 'v1',
     },
     copy: {
       heroTitle,
@@ -103,7 +103,8 @@ const generateConfig = (prompt: string, preferences?: { color?: string, font?: s
       heroButton: "Shop Collection",
       aboutTitle: `About ${storeName}`,
       aboutText: "We believe in quality, sustainability, and exceptional design. Our mission is to bring you the best products that enhance your daily life.",
-      footerDescription: "Premium quality essentials for the modern lifestyle. Designed with care and crafted to last."
+      footerDescription: "Premium quality essentials for the modern lifestyle. Designed with care and crafted to last.",
+      footerBigText: "Create Your<br/>Own Unique<br/>Look"
     }
   };
 };
@@ -233,8 +234,23 @@ export const useStoreBuilder = () => {
 
   const regenerateVariant = () => {
     if (config) {
-      const newConfig = generateConfig("Regenerate " + config.branding.storeName);
-      setConfig(newConfig);
+      const randomVariant = () => (Math.random() > 0.5 ? 'v1' : 'v2') as 'v1' | 'v2';
+      const randomCheckoutVariant = () => {
+        const r = Math.random();
+        if (r < 0.33) return 'v1';
+        if (r < 0.66) return 'v2';
+        return 'v3';
+      };
+      
+      setConfig({
+        ...config,
+        variants: {
+          navbar: randomVariant(),
+          footer: randomVariant(),
+          checkout: randomCheckoutVariant(),
+          hero: randomVariant(),
+        }
+      });
     }
   };
 
@@ -252,7 +268,6 @@ export const useStoreBuilder = () => {
     PROGRESS_STEPS,
     handleGenerate,
     handleFontSelection,
-    regenerateVariant,
-    setConfig
+    regenerateVariant
   };
 };

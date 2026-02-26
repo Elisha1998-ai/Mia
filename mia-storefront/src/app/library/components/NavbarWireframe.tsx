@@ -9,9 +9,10 @@ export interface NavbarProps {
     headingFont?: string;
     bodyFont?: string;
   };
+  onSearch?: () => void;
 }
 
-export default function NavbarWireframe({ storeName = "Mia Store", cartCount = 0, settings }: NavbarProps) {
+export default function NavbarWireframe({ storeName = "Mia Store", cartCount = 0, settings, onSearch }: NavbarProps) {
   const primaryColor = settings?.primaryColor || "#000000";
   const headingFont = settings?.headingFont || "inherit";
   const bodyFont = settings?.bodyFont || "inherit";
@@ -31,7 +32,7 @@ export default function NavbarWireframe({ storeName = "Mia Store", cartCount = 0
       </nav>
 
       <div className="flex items-center gap-4 text-gray-600">
-        <Search className="w-5 h-5 hover:text-black cursor-pointer transition-colors" />
+        <Search className="w-5 h-5 hover:text-black cursor-pointer transition-colors" onClick={onSearch} />
         <div className="relative hover:text-black cursor-pointer transition-colors">
           <ShoppingBag className="w-5 h-5" />
           {cartCount > 0 && (

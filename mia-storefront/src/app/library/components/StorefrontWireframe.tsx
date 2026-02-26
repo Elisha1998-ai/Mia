@@ -1,113 +1,49 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { 
-  ShoppingBag, Menu, X, Search, User, Heart, 
-  ChevronRight, ChevronLeft, Star, ArrowRight,
-  Instagram, Twitter, Facebook, Youtube,
-  Filter, ChevronDown
+  ShoppingBag, 
+  Search, 
+  Menu, 
+  X, 
+  ArrowRight,
+  Instagram,
+  Twitter,
+  Facebook,
+  Youtube
 } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
 import { EditableText } from '@/components/EditableText';
+import ProductListWireframe from './ProductListWireframe';
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  salePrice?: number;
-  image?: string;
-  category: string;
-  isNew?: boolean;
-  rating?: number; // Added for the star rating
-}
-
-interface StoreSettings {
-  storeName: string;
-  currency: string;
-  heroTitle?: string;
-  heroDescription?: string;
-  heroButtonText?: string;
-  heroImage?: string;
-  footerDescription?: string;
-  socialInstagram?: string;
-  socialTwitter?: string;
-  socialFacebook?: string;
-  socialYoutube?: string;
-  storeAddress?: string;
-  storePhone?: string;
-  adminEmail?: string;
-  primaryColor?: string;
-  headingFont?: string;
-  bodyFont?: string;
-}
-
-interface StorefrontProps {
-  products?: Product[];
-  settings?: StoreSettings;
-  loading?: boolean;
+export interface StorefrontProps {
+  settings?: {
+    storeName?: string;
+    primaryColor?: string;
+    headingFont?: string;
+    bodyFont?: string;
+    heroTitle?: string;
+    heroDescription?: string;
+    heroButtonText?: string;
+    heroImage?: string;
+  };
+  products?: Record<string, unknown>[];
   showNavbar?: boolean;
   showFooter?: boolean;
-  onUpdateSettings?: (key: keyof StoreSettings, value: string) => void;
+  onUpdateSettings?: (key: string, value: string) => void;
 }
 
 export default function StorefrontWireframe({ 
-  products = [], 
   settings, 
-  loading = false,
-  showNavbar = true,
+  products = [], 
+  showNavbar = true, 
   showFooter = true,
-  onUpdateSettings
+  onUpdateSettings 
 }: StorefrontProps) {
-  const { primaryColor, headingFont, bodyFont } = settings || {};
+  const primaryColor = settings?.primaryColor || '#000000';
+  const headingFont = settings?.headingFont || 'inherit';
+  const bodyFont = settings?.bodyFont || 'inherit';
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [sortOption, setSortOption] = useState('default');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isSortOpen, setIsSortOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  // Derive categories from products, but prioritize the design's suggested tabs if possible
-  // For this wireframe, we'll just use the dynamic categories + 'All'
-  const categories = useMemo(() => {
-    const cats = new Set(products.map(p => p.category).filter(Boolean));
-    return ['All', ...Array.from(cats)];
-  }, [products]);
-
-  // Filter products for "New Arrivals" section
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
-    if (selectedCategory !== 'All') {
-      result = result.filter(p => p.category === selectedCategory);
-    }
-    
-    // Apply sorting
-    if (sortOption === 'price-low-high') {
-      result.sort((a, b) => (a.salePrice || a.price) - (b.salePrice || b.price));
-    } else if (sortOption === 'price-high-low') {
-      result.sort((a, b) => (b.salePrice || b.price) - (a.salePrice || a.price));
-    } else if (sortOption === 'name-a-z') {
-      result.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    // Limit to 8 products for the "New Arrivals" grid
-    return result.slice(0, 8);
-  }, [products, selectedCategory, sortOption]);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 relative">
@@ -119,135 +55,89 @@ export default function StorefrontWireframe({
           <div className="flex justify-between items-center h-20">
             
             {isSearchOpen ? (
-              <div className="w-full flex items-center">
-                 <Search className="w-5 h-5 text-white mr-4" />
-                 <input 
-                    type="text" 
-                    autoFocus
-                    placeholder="Search products..."
-                    className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-none shadow-none text-white placeholder-white/70 text-lg"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onBlur={() => !searchQuery && setIsSearchOpen(false)}
-                 />
-                 <button 
-                   onClick={() => setIsSearchOpen(false)}
-                   className="p-2 text-white hover:text-gray-200"
-                 >
-                   <X className="w-6 h-6" />
-                 </button>
+              <div className="flex-1 flex items-center bg-white/20 backdrop-blur-md rounded-full px-4 py-2 mx-4">
+                <Search className="w-4 h-4 text-white/70" />
+                <input
+                  type="text"
+                  placeholder="Search collections..."
+                  className="bg-transparent border-none focus:ring-0 text-white placeholder-white/50 w-full ml-2 text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                />
+                <button onClick={() => setIsSearchOpen(false)}>
+                  <X className="w-4 h-4 text-white/70" />
+                </button>
               </div>
             ) : (
               <>
-                {/* Left: Desktop Navigation */}
-                <div className="hidden md:flex space-x-8">
-                  {['Home', 'Contact Us'].map((item) => (
-                    <a
-                      key={item}
-                      href="#"
+                <div className="flex items-center">
+                  <span className="text-2xl font-bold tracking-tight text-white" style={{ fontFamily: headingFont }}>
+                    {settings?.storeName || 'Mixtas'}
+                  </span>
+                </div>
+
+                <div className="hidden md:flex items-center space-x-8">
+                  {['New Arrivals', 'Shop All', 'Collections', 'About'].map((item) => (
+                    <a 
+                      key={item} 
+                      href="#" 
                       className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+                      style={{ fontFamily: bodyFont }}
                     >
                       {item}
                     </a>
                   ))}
                 </div>
 
-                {/* Mobile Menu Button */}
-                <div className="flex items-center md:hidden">
-                  <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="p-2 text-white hover:text-gray-200"
-                  >
-                    {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                  </button>
-                </div>
-
-                {/* Center: Logo */}
-                <div className="flex-shrink-0 flex items-center justify-center absolute left-1/2 transform -translate-x-1/2">
-                  <span className="text-2xl font-serif font-bold tracking-wider text-white">
-                    {settings?.storeName || 'Mixtas'}
-                  </span>
-                </div>
-
-                {/* Right: Icons */}
-                <div className="flex items-center space-x-6">
-                  <button 
-                    onClick={() => setIsSearchOpen(true)}
-                    className="text-white/90 hover:text-white"
-                  >
+                <div className="flex items-center space-x-5">
+                  <button onClick={() => setIsSearchOpen(true)} className="text-white hover:text-white/80 transition-colors">
                     <Search className="w-5 h-5" />
                   </button>
-
-                  <button className="text-white/90 hover:text-white hidden sm:block">
-                    <Heart className="w-5 h-5" />
-                  </button>
-
-                  <button className="text-white/90 hover:text-white relative">
+                  <button className="text-white hover:text-white/80 transition-colors relative">
                     <ShoppingBag className="w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-black bg-white rounded-full">
-                      0
-                    </span>
+                    <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">0</span>
+                  </button>
+                  <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                    {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                   </button>
                 </div>
               </>
             )}
           </div>
         </div>
-
-        {/* Mobile Menu Dropdown */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden bg-black/60 backdrop-blur-md border-t border-white/10 absolute w-full top-full left-0">
-            <div className="pt-2 pb-4 space-y-1 px-4">
-              {['Home', 'Contact Us'].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md"
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
       </nav>
       )}
 
       {/* Hero Section */}
-      <div className="relative h-[600px] lg:h-[800px] bg-gray-900 overflow-hidden group">
-        {/* Background Image Placeholder - using gradient/color to simulate the blue sky look */}
-        <div className="absolute inset-0 bg-[#547C96]">
-           {settings?.heroImage && (
-             <img src={settings.heroImage} alt="Hero Background" className="w-full h-full object-cover opacity-80" />
-           )}
-           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/90"></div>
+      <section className="relative h-[90vh] flex items-center overflow-hidden bg-gray-50">
+        {/* Hero Background */}
+        <div className="absolute inset-0">
+          {settings?.heroImage ? (
+            <img 
+              src={settings.heroImage} 
+              alt="Hero" 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />
+          )}
+          <div className="absolute inset-0 bg-black/5" />
         </div>
 
-        {onUpdateSettings && (
-          <button 
-            onClick={() => {
-              const url = window.prompt("Enter background image URL:", settings?.heroImage || "");
-              if (url !== null) onUpdateSettings('heroImage', url);
-            }}
-            className="absolute top-4 right-4 z-20 bg-white/90 hover:bg-white text-black px-4 py-2 rounded-md text-sm font-medium shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            Change Background
-          </button>
-        )}
-
-        <div className="relative max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-end pb-24">
-          <div className="max-w-xl text-white text-left">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+          <div className="max-w-2xl">
             {onUpdateSettings ? (
               <EditableText
-                initialValue={settings?.heroTitle || 'Jackets for the Modern Man'}
+                initialValue={settings?.heroTitle || 'Curating Excellence'}
                 onSave={(val) => onUpdateSettings('heroTitle', val)}
                 tagName="h1"
-                className="text-5xl md:text-7xl font-bold leading-tight mb-4"
+                className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight"
                 style={{ fontFamily: headingFont }}
               />
             ) : (
-              <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-4" style={{ fontFamily: headingFont }}>
-                {settings?.heroTitle || 'Jackets for the Modern Man'}
+              <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight" style={{ fontFamily: headingFont }}>
+                {settings?.heroTitle || 'Curating Excellence'}
               </h1>
             )}
             
@@ -256,197 +146,113 @@ export default function StorefrontWireframe({
                 initialValue={settings?.heroDescription || 'Discover the latest trends in fashion with our exclusive collection. Elegant, stylish, and perfect for any occasion.'}
                 onSave={(val) => onUpdateSettings('heroDescription', val)}
                 tagName="p"
-                className="text-lg text-white/80 mb-8 max-w-lg"
+                className="text-lg text-gray-600 mb-8 max-w-lg"
+                style={{ fontFamily: bodyFont }}
                 multiline
               />
             ) : (
-              <p className="text-lg text-white/80 mb-8 max-w-lg">
+              <p className="text-lg text-gray-600 mb-8 max-w-lg" style={{ fontFamily: bodyFont }}>
                 {settings?.heroDescription || 'Discover the latest trends in fashion with our exclusive collection. Elegant, stylish, and perfect for any occasion.'}
               </p>
             )}
 
-            <button 
-              className="inline-flex items-center space-x-2 bg-white text-black px-8 py-4 rounded-full font-medium hover:bg-gray-100 transition-colors"
-              style={{ color: primaryColor }}
-            >
-              {onUpdateSettings ? (
-                <EditableText
-                  initialValue={settings?.heroButtonText || 'Shop Now'}
-                  onSave={(val) => onUpdateSettings('heroButtonText', val)}
-                  tagName="span"
-                />
-              ) : (
-                <span>{settings?.heroButtonText || 'Shop Now'}</span>
-              )}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Product Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Filter and Sort Bar */}
-        <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-100 relative">
-          <div className="relative">
-            <button 
-              onClick={() => {
-                setIsFilterOpen(!isFilterOpen);
-                setIsSortOpen(false);
-              }}
-              className="flex items-center space-x-2 text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors"
-            >
-               <Filter className="w-4 h-4" />
-               <span>Filter {selectedCategory !== 'All' ? `(${selectedCategory})` : ''}</span>
-            </button>
-            
-            {isFilterOpen && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 shadow-lg rounded-md z-20 py-1">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => {
-                      setSelectedCategory(cat);
-                      setIsFilterOpen(false);
-                    }}
-                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedCategory === cat ? 'font-bold text-black' : 'text-gray-600'}`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="relative">
-             <button 
-               onClick={() => {
-                 setIsSortOpen(!isSortOpen);
-                 setIsFilterOpen(false);
-               }}
-               className="flex items-center space-x-2 text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors"
-             >
-               <span>Sort by</span>
-               <ChevronDown className="w-4 h-4" />
-             </button>
-
-             {isSortOpen && (
-               <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-100 shadow-lg rounded-md z-20 py-1">
-                 {[
-                   { label: 'Default', value: 'default' },
-                   { label: 'Price: Low to High', value: 'price-low-high' },
-                   { label: 'Price: High to Low', value: 'price-high-low' },
-                   { label: 'Name: A-Z', value: 'name-a-z' },
-                 ].map((option) => (
-                   <button
-                     key={option.value}
-                     onClick={() => {
-                       setSortOption(option.value);
-                       setIsSortOpen(false);
-                     }}
-                     className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${sortOption === option.value ? 'font-bold text-black' : 'text-gray-600'}`}
-                   >
-                     {option.label}
-                   </button>
-                 ))}
-               </div>
-             )}
-          </div>
-        </div>
-
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 md:gap-x-8 md:gap-y-12">
-          {filteredProducts.map((product) => (
-            <div key={product.id} className="group cursor-pointer">
-              {/* Image Container */}
-              <div className="relative aspect-[3/4] bg-gray-100 mb-4 overflow-hidden">
-                {product.image ? (
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+            <div className="flex items-center space-x-4">
+              <button 
+                className="inline-flex items-center space-x-2 px-8 py-4 rounded-full font-medium text-white transition-colors"
+                style={{ backgroundColor: primaryColor, fontFamily: bodyFont }}
+              >
+                {onUpdateSettings ? (
+                  <EditableText
+                    initialValue={settings?.heroButtonText || 'Shop Now'}
+                    onSave={(val) => onUpdateSettings('heroButtonText', val)}
+                    tagName="span"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-300">
-                    <ShoppingBag className="w-12 h-12" />
-                  </div>
+                  <span>{settings?.heroButtonText || 'Shop Now'}</span>
                 )}
-                
-                {/* Floating Actions */}
-                <div className="absolute top-4 right-4 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                   <button className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow hover:bg-gray-50 transition-colors">
-                     <Heart className="w-4 h-4 text-gray-900" />
-                   </button>
-                </div>
-              </div>
-
-              {/* Product Info */}
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">{product.category}</p>
-                <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-500">
-                    {product.salePrice ? (
-                      <span className="space-x-2">
-                        <span className="line-through">{formatPrice(product.price)}</span>
-                        <span className="text-red-600">{formatPrice(product.salePrice)}</span>
-                      </span>
-                    ) : (
-                      formatPrice(product.price)
-                    )}
-                  </p>
-                </div>
-              </div>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
-          ))}
+          </div>
         </div>
         
-        {filteredProducts.length === 0 && (
-           <div className="text-center py-12 text-gray-500">
-             No products found in this category.
-           </div>
-        )}
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-2">
+          <div className="w-[1px] h-12 bg-gradient-to-b from-white to-transparent" />
+          <span className="text-[10px] text-white/50 uppercase tracking-[0.2em] font-medium">Scroll</span>
+        </div>
+      </section>
+
+      {/* Product Section */}
+      <section className="max-w-7xl mx-auto py-12">
+        <ProductListWireframe 
+          isSection 
+          products={products}
+          storeSettings={{
+            ...settings,
+            storeName: settings?.storeName || 'Mixtas',
+            primaryColor: primaryColor,
+            headingFont: headingFont,
+            bodyFont: bodyFont,
+            currency: '₦'
+          }}
+        />
       </section>
 
       {/* Footer */}
       {showFooter && (
-      <footer className="bg-white border-t border-gray-100 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-          <h2 className="text-2xl font-serif font-bold tracking-wider mb-8">
-            {settings?.storeName || 'Mixtas'}
-          </h2>
+      <footer className="bg-white border-t border-gray-100 pt-20 pb-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div className="col-span-1 md:col-span-2">
+              <span className="text-2xl font-bold tracking-tight mb-6 block" style={{ fontFamily: headingFont }}>
+                {settings?.storeName || 'Mixtas'}
+              </span>
+              <p className="text-gray-500 max-w-sm mb-8" style={{ fontFamily: bodyFont }}>
+                Redefining the modern wardrobe with a focus on quality, sustainability, and timeless design.
+              </p>
+              <div className="flex space-x-5">
+                {[Instagram, Twitter, Facebook, Youtube].map((Icon, i) => (
+                  <a key={i} href="#" className="text-gray-400 hover:text-black transition-colors">
+                    <Icon className="w-5 h-5" />
+                  </a>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-sm font-bold uppercase tracking-wider mb-6" style={{ fontFamily: headingFont }}>Shop</h4>
+              <ul className="space-y-4">
+                {['New Arrivals', 'Best Sellers', 'Sale', 'Gift Cards'].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-sm text-gray-500 hover:text-black transition-colors" style={{ fontFamily: bodyFont }}>{item}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold uppercase tracking-wider mb-6" style={{ fontFamily: headingFont }}>Help</h4>
+              <ul className="space-y-4">
+                {['Shipping', 'Returns', 'Track Order', 'Contact Us'].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-sm text-gray-500 hover:text-black transition-colors" style={{ fontFamily: bodyFont }}>{item}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
           
-          <div className="flex flex-wrap justify-center gap-8 mb-8 text-sm text-gray-500 uppercase tracking-wide">
-            <a href="#" className="hover:text-black">Home</a>
-            <a href="#" className="hover:text-black">Contact</a>
+          <div className="border-t border-gray-100 pt-10 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <p className="text-xs text-gray-400" style={{ fontFamily: bodyFont }}>
+              © {new Date().getFullYear()} {settings?.storeName || 'Mixtas'}. All rights reserved.
+            </p>
+            <div className="flex space-x-6">
+              {['Privacy Policy', 'Terms of Service'].map((item) => (
+                <a key={item} href="#" className="text-xs text-gray-400 hover:text-black transition-colors" style={{ fontFamily: bodyFont }}>{item}</a>
+              ))}
+            </div>
           </div>
-
-          <div className="flex gap-6 mb-8">
-            {settings?.socialInstagram && (
-              <a href={settings.socialInstagram} target="_blank" rel="noopener noreferrer">
-                <Instagram className="w-5 h-5 text-gray-400 hover:text-black cursor-pointer" />
-              </a>
-            )}
-            {settings?.socialTwitter && (
-              <a href={settings.socialTwitter} target="_blank" rel="noopener noreferrer">
-                <Twitter className="w-5 h-5 text-gray-400 hover:text-black cursor-pointer" />
-              </a>
-            )}
-            {settings?.socialFacebook && (
-              <a href={settings.socialFacebook} target="_blank" rel="noopener noreferrer">
-                <Facebook className="w-5 h-5 text-gray-400 hover:text-black cursor-pointer" />
-              </a>
-            )}
-            {settings?.socialYoutube && (
-              <a href={settings.socialYoutube} target="_blank" rel="noopener noreferrer">
-                <Youtube className="w-5 h-5 text-gray-400 hover:text-black cursor-pointer" />
-              </a>
-            )}
-          </div>
-
-          <p className="text-gray-400 text-xs">
-            &copy; {new Date().getFullYear()} {settings?.storeName || 'Mixtas'}. All rights reserved.
-          </p>
         </div>
       </footer>
       )}

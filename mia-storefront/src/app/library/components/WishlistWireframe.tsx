@@ -72,7 +72,7 @@ export default function WishlistWireframe({ wishlistItems, storeSettings }: Wish
   };
 
   return (
-    <div className="w-full h-full bg-white overflow-y-auto" style={{ fontFamily: bodyFont }}>
+    <div className="w-full min-h-full bg-white no-scrollbar" style={{ fontFamily: bodyFont }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-3xl font-bold text-gray-900 mb-8" style={{ fontFamily: headingFont }}>My Wishlist</h1>
 
@@ -125,7 +125,7 @@ export default function WishlistWireframe({ wishlistItems, storeSettings }: Wish
                     <div className="mt-2 flex items-baseline gap-2">
                       {item.salePrice ? (
                         <>
-                          <span className="text-lg font-bold text-red-600">
+                          <span className="text-lg font-bold" style={{ color: primaryColor }}>
                             {currency}{item.salePrice.toFixed(2)}
                           </span>
                           <span className="text-sm text-gray-400 line-through">

@@ -8,6 +8,7 @@ export interface FooterProps {
     headingFont?: string;
     bodyFont?: string;
     footerDescription?: string;
+    footerBigText?: string;
   };
   onUpdateSettings?: (key: string, value: string) => void;
 }
@@ -51,9 +52,20 @@ export default function FooterVariant2({ storeName = "LINOGE", settings, onUpdat
 
         {/* Right Column - Big Typography */}
         <div className="flex-1 text-left md:text-right">
-          <h2 className="text-4xl md:text-6xl font-black uppercase leading-none tracking-tighter" style={{ fontFamily: headingFont }}>
-            Create Your<br/>Own Unique<br/>Look
-          </h2>
+          {onUpdateSettings ? (
+            <EditableText
+              initialValue={settings?.footerBigText || 'Create Your\nOwn Unique\nLook'}
+              onSave={(val) => onUpdateSettings('footerBigText', val)}
+              tagName="h2"
+              className="text-4xl md:text-6xl font-black uppercase leading-none tracking-tighter whitespace-pre-line"
+              style={{ fontFamily: headingFont }}
+              multiline
+            />
+          ) : (
+            <h2 className="text-4xl md:text-6xl font-black uppercase leading-none tracking-tighter whitespace-pre-line" style={{ fontFamily: headingFont }}>
+              {settings?.footerBigText || 'Create Your\nOwn Unique\nLook'}
+            </h2>
+          )}
         </div>
       </div>
 

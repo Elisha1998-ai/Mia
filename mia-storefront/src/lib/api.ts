@@ -132,12 +132,26 @@ class APIService {
 
     try {
       const response = await fetch(url, config);
-      
+      const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let message = `HTTP error! status: ${response.status}`;
+        if (contentType.includes('application/json')) {
+          try {
+            const errJson = await response.json();
+            message = errJson?.error || errJson?.message || message;
+          } catch {}
+        } else {
+          try {
+            const errText = await response.text();
+            if (errText) message = errText;
+          } catch {}
+        }
+        throw new Error(message);
       }
-      
-      return await response.json();
+      if (contentType.includes('application/json')) {
+        return await response.json();
+      }
+      return await response.text();
     } catch (error) {
       console.error('API request failed:', error);
       throw error;

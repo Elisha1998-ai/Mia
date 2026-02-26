@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, User, Heart, ShoppingBag, Menu } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu } from 'lucide-react';
 
 export interface NavbarProps {
   storeName?: string;
@@ -10,9 +10,10 @@ export interface NavbarProps {
     headingFont?: string;
     bodyFont?: string;
   };
+  onSearch?: () => void;
 }
 
-export default function NavbarVariant2({ storeName = "LINOGE", cartCount = 0, transparent = false, settings }: NavbarProps) {
+export default function NavbarVariant2({ storeName = "LINOGE", cartCount = 0, transparent = false, settings, onSearch }: NavbarProps) {
   const primaryColor = settings?.primaryColor || "#000000";
   const headingFont = settings?.headingFont || "inherit";
   const bodyFont = settings?.bodyFont || "inherit";
@@ -39,8 +40,7 @@ export default function NavbarVariant2({ storeName = "LINOGE", cartCount = 0, tr
 
       {/* Icons */}
       <div className="hidden md:flex space-x-6 text-gray-600">
-        <Search className="w-5 h-5 cursor-pointer hover:text-black transition-colors" />
-        <User className="w-5 h-5 cursor-pointer hover:text-black transition-colors" />
+        <Search className="w-5 h-5 cursor-pointer hover:text-black transition-colors" onClick={onSearch} />
         <Heart className="w-5 h-5 cursor-pointer hover:text-black transition-colors" />
         <div className="relative cursor-pointer hover:text-black transition-colors group">
           <ShoppingBag className="w-5 h-5" />

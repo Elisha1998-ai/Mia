@@ -5,6 +5,7 @@ import ProductDetailsWireframe from './components/ProductDetailsWireframe';
 import CartWireframe from './components/CartWireframe';
 import CheckoutWireframe from './components/CheckoutWireframe';
 import CheckoutWireframeVariant2 from './components/CheckoutWireframeVariant2';
+import CheckoutWireframeVariant3 from './components/CheckoutWireframeVariant3';
 import NavbarWireframe from './components/NavbarWireframe';
 import NavbarVariant2 from './components/NavbarVariant2';
 import FooterWireframe from './components/FooterWireframe';
@@ -177,8 +178,10 @@ export default function LibraryPage() {
     }
   ];
 
+  const orderId = "ORD-LIBRARY-PREVIEW";
+
   const realOrderData = realCartData ? {
-    id: `ORD-${Math.floor(Math.random() * 10000)}`,
+    id: orderId,
     items: realCartData,
     subtotal: realCartData.reduce((sum, item) => sum + (item.price * item.quantity), 0),
     total: realCartData.reduce((sum, item) => sum + (item.price * item.quantity), 0),
@@ -263,6 +266,14 @@ export default function LibraryPage() {
                   >
                     V2
                   </button>
+                  {activeTab === 'checkout' && (
+                    <button 
+                      onClick={() => setActiveVariant(3)}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeVariant === 3 ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                    >
+                      V3
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -383,8 +394,13 @@ export default function LibraryPage() {
                   cart={isDataMode ? realCartData : undefined} 
                   storeSettings={isDataMode ? settingsWithNaira : undefined}
                 />
-              ) : (
+              ) : activeVariant === 2 ? (
                 <CheckoutWireframeVariant2 
+                  cart={isDataMode ? realCartData : undefined} 
+                  storeSettings={isDataMode ? settingsWithNaira : undefined}
+                />
+              ) : (
+                <CheckoutWireframeVariant3 
                   cart={isDataMode ? realCartData : undefined} 
                   storeSettings={isDataMode ? settingsWithNaira : undefined}
                 />

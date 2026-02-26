@@ -1,9 +1,44 @@
 import React from 'react';
-import { CheckCircle2, ArrowRight, Package, Calendar, MapPin, Printer, Download } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Package, MapPin, Printer } from 'lucide-react';
+
+interface Address {
+  name: string;
+  line1: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  variant?: string;
+}
+
+interface OrderData {
+  id: string;
+  date: string;
+  email: string;
+  items: OrderItem[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+  shippingAddress: Address;
+}
+
+interface StoreSettings {
+  currency?: string;
+  primaryColor?: string;
+  headingFont?: string;
+  bodyFont?: string;
+}
 
 export interface ConfirmationWireframeProps {
-  order?: any;
-  storeSettings?: any;
+  order?: Partial<OrderData>;
+  storeSettings?: StoreSettings;
 }
 
 const DEFAULT_ORDER = {
@@ -46,19 +81,22 @@ export default function ConfirmationWireframe({ order, storeSettings }: Confirma
   } : DEFAULT_ORDER;
   const currency = storeSettings?.currency || 'USD';
   const currencySymbol = currency.includes('Naira') ? '₦' : '$';
+  const primaryColor = storeSettings?.primaryColor || '#000000';
+  const headingFont = storeSettings?.headingFont || 'inherit';
+  const bodyFont = storeSettings?.bodyFont || 'inherit';
 
   return (
-    <div className="bg-white h-full overflow-y-auto">
+    <div className="bg-white min-h-full no-scrollbar" style={{ fontFamily: bodyFont }}>
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="text-center">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-50">
-            <CheckCircle2 className="h-10 w-10 text-green-600" />
+            <CheckCircle2 className="h-10 w-10" style={{ color: primaryColor }} />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl" style={{ fontFamily: headingFont }}>
             Thank you for your order!
           </h1>
           <p className="mt-4 text-base text-gray-500">
-            We've received your order <span className="font-medium text-gray-900">#{displayOrder.id}</span> and sent a confirmation email to <span className="font-medium text-gray-900">{displayOrder.email}</span>.
+            We&apos;ve received your order <span className="font-medium text-gray-900">#{displayOrder.id}</span> and sent a confirmation email to <span className="font-medium text-gray-900">{displayOrder.email}</span>.
           </p>
         </div>
 
@@ -68,7 +106,7 @@ export default function ConfirmationWireframe({ order, storeSettings }: Confirma
           <div className="rounded-2xl border border-gray-100 bg-gray-50/50 overflow-hidden">
             {/* Order Items */}
             <ul className="divide-y divide-gray-100 p-6 sm:p-8">
-              {displayOrder.items.map((item: any) => (
+              {displayOrder.items.map((item: OrderItem) => (
                 <li key={item.id} className="flex py-4 first:pt-0 last:pb-0">
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{item.name}</h3>
@@ -133,7 +171,7 @@ export default function ConfirmationWireframe({ order, storeSettings }: Confirma
           </div>
 
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 print:hidden">
-            <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-black px-8 py-3 text-sm font-medium text-white transition hover:bg-gray-800">
+            <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3 text-sm font-medium text-white transition hover:opacity-90" style={{ backgroundColor: primaryColor, fontFamily: headingFont }}>
               Continue Shopping <ArrowRight className="h-4 w-4" />
             </button>
             <button 

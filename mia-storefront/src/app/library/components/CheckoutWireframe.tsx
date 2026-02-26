@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle2, Lock, CreditCard, Truck, ShieldCheck, MessageCircle, ChevronRight, ShoppingBag } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, CheckCircle2, Lock, ShieldCheck, MessageCircle, ChevronRight, ShoppingBag } from 'lucide-react';
 
 export interface CartItem {
   id: string;
@@ -141,15 +141,7 @@ export default function CheckoutWireframe({ cart: propCart, storeSettings }: Che
   }
 
   return (
-    <div className="w-full min-h-screen bg-white font-sans text-gray-900" style={{ fontFamily: bodyFont }}>
-      {/* Header Placeholder */}
-      <div className="h-16 border-b border-gray-100 flex items-center justify-between px-4 lg:px-8 bg-white sticky top-0 z-20">
-        <div className="text-lg font-bold tracking-tight" style={{ fontFamily: headingFont }}>{storeName}</div>
-        <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
-          <Lock className="w-3 h-3" /> Secure Checkout
-        </div>
-      </div>
-
+    <div className="w-full min-h-screen bg-white font-sans text-gray-900 no-scrollbar" style={{ fontFamily: bodyFont }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-8 lg:mb-12" style={{ fontFamily: headingFont }}>
           <span className="hover:text-black cursor-pointer">Cart</span>
@@ -286,17 +278,17 @@ export default function CheckoutWireframe({ cart: propCart, storeSettings }: Che
                   }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="p-2 rounded-full" style={{ backgroundColor: paymentMethod === 'paystack' ? primaryColor : '#f3f4f6', color: paymentMethod === 'paystack' ? 'white' : '#6b7280' }}>
-                      <CreditCard className="w-5 h-5" />
+                    <div className="relative flex items-center justify-center">
+                      <div className={`w-4 h-4 border rounded-full flex items-center justify-center`} style={{ borderColor: paymentMethod === 'paystack' ? primaryColor : '#d1d5db' }}>
+                        {paymentMethod === 'paystack' && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></div>}
+                      </div>
                     </div>
                     <div>
                       <p className="text-sm font-bold text-gray-900" style={{ fontFamily: headingFont }}>Card Payment</p>
                       <p className="text-xs text-gray-500 mt-0.5">Secure payment via Paystack</p>
                     </div>
                   </div>
-                  <div className={`w-4 h-4 border rounded-full flex items-center justify-center`} style={{ borderColor: paymentMethod === 'paystack' ? primaryColor : '#d1d5db' }}>
-                    {paymentMethod === 'paystack' && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></div>}
-                  </div>
+                  <img src="/Paystack.png" alt="Paystack" className="h-6 object-contain" />
                 </div>
               </div>
             </section>

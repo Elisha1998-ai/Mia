@@ -26,8 +26,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // First check if we can find the user by ID (if token.sub is already a UUID)
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token.sub || '');
           if (!isUuid) {
-            const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-            if (existingUser) {
+            const [existingUser] = await db
+              .select({ id: users.id })
+              .from(users)
+              .where(eq(users.email, email))
+              .limit(1);
+            if (existingUser?.id) {
               token.sub = existingUser.id;
             }
           }

@@ -72,6 +72,7 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
   const [deliveryMethod, setDeliveryMethod] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave' | 'whatsapp'>('paystack');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [orderNumber] = useState(() => `ORD-${Math.floor(Math.random() * 10000)}`);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -124,7 +125,7 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
             <Check className="w-10 h-10" />
           </div>
           <h2 className="text-3xl font-bold uppercase mb-4 tracking-tight">Order Placed</h2>
-          <p className="text-gray-500 mb-8">Thank you for your purchase. Your order number is #ORD-{Math.floor(Math.random() * 10000)}.</p>
+          <p className="text-gray-500 mb-8">Thank you for your purchase. Your order number is #{orderNumber}.</p>
           <button 
             onClick={() => setIsSuccess(false)}
             className="w-full text-white py-4 uppercase font-bold tracking-widest hover:opacity-90 transition-colors"
@@ -138,7 +139,7 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] font-sans text-[#1a1a1a] pt-12 pb-20" style={{ fontFamily: bodyFont }}>
+    <div className="min-h-screen bg-[#F4F4F4] font-sans text-[#1a1a1a] pt-12 pb-20 no-scrollbar" style={{ fontFamily: bodyFont }}>
       
       <div className="max-w-[1400px] mx-auto px-4 md:px-8">
         
@@ -234,9 +235,7 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
                     <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'paystack'} onChange={() => setPaymentMethod('paystack')} />
                     <span className="text-sm font-medium">Paystack</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                     <span className="text-blue-600 font-bold text-sm tracking-tighter">paystack</span>
-                  </div>
+                  <img src="/Paystack.png" alt="Paystack" className="h-6 object-contain" />
                 </label>
 
                 {/* Flutterwave Option */}
@@ -248,7 +247,7 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
                     <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'flutterwave'} onChange={() => setPaymentMethod('flutterwave')} />
                     <span className="text-sm font-medium">Flutterwave</span>
                   </div>
-                   <span className="text-orange-500 font-bold text-sm">Flutterwave</span>
+                  <img src="/Flutterwave.png" alt="Flutterwave" className="h-6 object-contain" />
                 </label>
 
                 {/* WhatsApp Option */}

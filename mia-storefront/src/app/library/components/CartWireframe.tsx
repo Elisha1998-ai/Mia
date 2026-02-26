@@ -1,12 +1,28 @@
 import React from 'react';
 import { ShoppingBag, ArrowRight, Trash2, Minus, Plus, Check } from 'lucide-react';
 
-export interface CartWireframeProps {
-  cart?: any[];
-  storeSettings?: any;
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string | null;
+  variant?: string;
 }
 
-const DEFAULT_CART = [
+interface StoreSettings {
+  currency?: string;
+  primaryColor?: string;
+  headingFont?: string;
+  bodyFont?: string;
+}
+
+export interface CartWireframeProps {
+  cart?: CartItem[];
+  storeSettings?: StoreSettings;
+}
+
+const DEFAULT_CART: CartItem[] = [
   {
     id: '1',
     name: 'Classic Heavyweight Cotton T-Shirt',
@@ -29,6 +45,9 @@ export default function CartWireframe({ cart, storeSettings }: CartWireframeProp
   const displayCart = cart && cart.length > 0 ? cart : DEFAULT_CART;
   const currency = storeSettings?.currency || 'USD';
   const currencySymbol = currency.includes('Naira') ? '₦' : '$';
+  const primaryColor = storeSettings?.primaryColor || '#000000';
+  const headingFont = storeSettings?.headingFont || 'inherit';
+  const bodyFont = storeSettings?.bodyFont || 'inherit';
 
   // State for quantities (local to wireframe for interactivity)
   const [items, setItems] = React.useState(displayCart);
@@ -68,9 +87,12 @@ export default function CartWireframe({ cart, storeSettings }: CartWireframeProp
             Your cart is empty
           </h1>
           <p className="mt-4 text-gray-500">
-            Looks like you haven't added anything to your collection yet.
+            Looks like you haven&apos;t added anything to your collection yet.
           </p>
-          <button className="mt-8 inline-flex items-center gap-2 rounded-full bg-black px-8 py-3 text-sm font-medium text-white transition hover:bg-gray-800">
+          <button 
+            className="mt-8 inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-medium text-white transition hover:opacity-90"
+            style={{ backgroundColor: primaryColor }}
+          >
             Start Shopping <ArrowRight className="h-4 w-4" />
           </button>
         </div>
@@ -79,11 +101,11 @@ export default function CartWireframe({ cart, storeSettings }: CartWireframeProp
   }
 
   return (
-    <div className="bg-white h-full overflow-y-auto">
+    <div className="bg-white min-h-full no-scrollbar" style={{ fontFamily: bodyFont }}>
       <div className="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <header className="flex items-center justify-between border-b border-gray-100 pb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">Shopping Cart</h1>
+            <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl" style={{ fontFamily: headingFont }}>Shopping Cart</h1>
             <p className="mt-2 text-gray-500">{items.length} items in your bag</p>
           </div>
         </header>
@@ -111,7 +133,7 @@ export default function CartWireframe({ cart, storeSettings }: CartWireframeProp
                     <div className="relative pr-9 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:pr-0">
                       <div>
                         <div className="flex justify-between">
-                          <h3 className="text-lg font-medium text-gray-900 hover:text-gray-700">
+                          <h3 className="text-lg font-medium text-gray-900 hover:text-gray-700" style={{ fontFamily: headingFont }}>
                             <a href="#">{item.name}</a>
                           </h3>
                         </div>
@@ -120,7 +142,7 @@ export default function CartWireframe({ cart, storeSettings }: CartWireframeProp
                             <p>{item.variant}</p>
                           </div>
                         )}
-                        <p className="mt-2 text-lg font-medium text-gray-900">
+                        <p className="mt-2 text-lg font-medium text-gray-900" style={{ fontFamily: headingFont }}>
                           {currencySymbol}{item.price.toLocaleString()}
                         </p>
                       </div>
@@ -171,7 +193,7 @@ export default function CartWireframe({ cart, storeSettings }: CartWireframeProp
 
           <div className="lg:col-span-4 mt-16 lg:mt-0">
             <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-6 sm:p-8">
-              <h2 className="text-lg font-medium text-gray-900">Order Summary</h2>
+              <h2 className="text-lg font-medium text-gray-900" style={{ fontFamily: headingFont }}>Order Summary</h2>
 
               <dl className="mt-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -198,7 +220,8 @@ export default function CartWireframe({ cart, storeSettings }: CartWireframeProp
 
               <div className="mt-6">
                 <button
-                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-transparent bg-black px-6 py-4 text-base font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl px-6 py-4 text-base font-medium text-white shadow-sm hover:opacity-90 transition-all"
+                  style={{ backgroundColor: primaryColor }}
                 >
                   Proceed to Checkout <ArrowRight className="w-5 h-5" />
                 </button>

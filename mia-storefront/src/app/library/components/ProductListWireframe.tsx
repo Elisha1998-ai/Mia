@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, Heart, Filter, ChevronDown, Grid, List } from 'lucide-react';
 
 export interface ProductListProps {
+  isSection?: boolean;
   storeSettings?: {
     primaryColor?: string;
     headingFont?: string;
@@ -21,7 +22,7 @@ export interface ProductListProps {
   }>;
 }
 
-export default function ProductListWireframe({ products, storeSettings }: ProductListProps) {
+export default function ProductListWireframe({ products, storeSettings, isSection = false }: ProductListProps) {
   const getCurrencySymbol = (str?: string) => {
     if (!str) return "₦";
     if (str.includes("₦") || str.toLowerCase().includes("naira")) return "₦";
@@ -87,9 +88,9 @@ export default function ProductListWireframe({ products, storeSettings }: Produc
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   return (
-    <div className="w-full h-full bg-white overflow-y-auto" style={{ fontFamily: bodyFont }}>
+    <div className={`w-full ${isSection ? '' : 'min-h-full no-scrollbar'} bg-white`} style={{ fontFamily: bodyFont }}>
       {/* Header / Filter Bar */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 py-4 sm:px-6 lg:px-8">
+      <div className={`${isSection ? '' : 'sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100'} px-4 py-4 sm:px-6 lg:px-8`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: headingFont }}>
             All Products
@@ -155,7 +156,10 @@ export default function ProductListWireframe({ products, storeSettings }: Produc
                 
                 {/* Badges */}
                 {product.salePrice && (
-                  <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  <div 
+                    className="absolute top-2 left-2 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm"
+                    style={{ backgroundColor: primaryColor }}
+                  >
                     SALE
                   </div>
                 )}
@@ -163,7 +167,10 @@ export default function ProductListWireframe({ products, storeSettings }: Produc
                 {/* Quick Actions (Grid Only) */}
                 {viewMode === 'grid' && (
                   <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                    <button className="p-2 bg-white rounded-full shadow-md text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors">
+                    <button 
+                      className="p-2 bg-white rounded-full shadow-md text-gray-600 hover:opacity-80 transition-opacity"
+                      style={{ color: primaryColor }}
+                    >
                       <Heart className="w-4 h-4" />
                     </button>
                   </div>
@@ -183,7 +190,7 @@ export default function ProductListWireframe({ products, storeSettings }: Produc
                   <div className="flex items-baseline gap-2">
                     {product.salePrice ? (
                       <>
-                        <span className="text-sm font-bold text-red-600">
+                        <span className="text-sm font-bold" style={{ color: primaryColor }}>
                           {currency}{product.salePrice.toFixed(2)}
                         </span>
                         <span className="text-xs text-gray-400 line-through">

@@ -1,0 +1,40 @@
+{
+    "templates": [
+        {
+            "id": "minimal_modern",
+            "name": "Minimal Modern",
+            "category": "Fashion/Luxury",
+            "description": "A clean, high-contrast theme for premium brands.",
+            "copy_fields": {
+                "hero_title": "Elevate Your Style",
+                "hero_subtitle": "Discover our latest collection of curated essentials.",
+                "about_title": "Our Story",
+                "about_content": "We believe in quality over quantity. Every piece is designed to last."
+            }
+        },
+        {
+            "id": "vibrant_tech",
+            "name": "Vibrant Tech",
+            "category": "Gadgets/Electronics",
+            "description": "Bold colors and futuristic layouts for innovative products.",
+            "copy_fields": {
+                "hero_title": "Future Tech, Today",
+                "hero_subtitle": "Upgrade your lifestyle with the smartest gadgets on the market.",
+                "about_title": "Innovation First",
+                "about_content": "We bridge the gap between imagination and reality with cutting-edge tech."
+            }
+        },
+        {
+            "id": "cozy_home",
+            "name": "Cozy Home",
+            "category": "Decor/Lifestyle",
+            "description": "Warm tones and soft layouts for home and wellness brands.",
+            "copy_fields": {
+                "hero_title": "Make Your Space a Sanctuary",
+                "hero_subtitle": "Handcrafted items to bring comfort and joy to your home.",
+                "about_title": "Heart of the Home",
+                "about_content": "We source sustainable materials to create a healthier, happier living space."
+            }
+        }
+    ]
+}

@@ -1,4 +1,4 @@
-export type PageView = 'home' | 'shop' | 'product' | 'cart' | 'checkout';
+export type PageView = 'home' | 'product' | 'cart' | 'wishlist' | 'contact' | 'checkout' | 'thank-you';
 
 export interface SiteConfig {
   branding: {
@@ -10,17 +10,14 @@ export interface SiteConfig {
   };
   variants: {
     navbar: 'v1' | 'v2';
+    hero: 'v1' | 'v2';
     footer: 'v1' | 'v2';
-    checkout: 'v1' | 'v2';
-    storefront: 'v1'; // Only one for now
+    checkout: 'v1' | 'v2' | 'v3';
   };
   copy: {
     heroTitle: string;
-    heroSubtitle: string;
-    heroButton: string;
-    aboutTitle: string;
-    aboutText: string;
-    footerDescription?: string;
-    heroImage?: string;
+    heroDescription: string;
+    heroButtonText: string;
+    footerBigText?: string;
   };
 }

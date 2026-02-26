@@ -113,15 +113,6 @@ export default function ProductDetailsWireframe({ product, storeSettings }: Prod
 
   return (
     <div className="w-full max-w-7xl mx-auto bg-white min-h-screen font-sans text-gray-900" style={{ fontFamily: bodyFont }}>
-      {/* Navigation Placeholder */}
-      <div className="h-16 border-b border-gray-100 flex items-center justify-between px-4 lg:px-8">
-        <div className="text-xl font-bold tracking-tight" style={{ fontFamily: headingFont }}>{storeName}</div>
-        <div className="flex gap-4 items-center text-sm font-medium">
-          <span className="cursor-pointer hover:text-gray-600">Shop</span>
-          <span className="cursor-pointer hover:text-gray-600">About</span>
-          <span className="cursor-pointer hover:text-gray-600">Cart (0)</span>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 p-4 lg:p-8">
         {/* Product Images Section */}

@@ -19,7 +19,6 @@ export default function ContactWireframe({ storeSettings }: ContactProps) {
   const primaryColor = storeSettings?.primaryColor || "#000000";
   const headingFont = storeSettings?.headingFont || "inherit";
   const bodyFont = storeSettings?.bodyFont || "inherit";
-  const storeName = storeSettings?.storeName || "STORE BRAND";
   const email = storeSettings?.contactEmail || "hello@storebrand.com";
   const phone = storeSettings?.contactPhone || "+234 800 123 4567";
   const address = storeSettings?.contactAddress || "123 Fashion Avenue, Lagos, Nigeria";
@@ -54,15 +53,15 @@ export default function ContactWireframe({ storeSettings }: ContactProps) {
   };
 
   return (
-    <div className="w-full h-full bg-white overflow-y-auto" style={{ fontFamily: bodyFont }}>
+    <div className="w-full min-h-full bg-white no-scrollbar" style={{ fontFamily: bodyFont }}>
       {/* Hero Section */}
       <div className="bg-gray-50 py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl mb-4" style={{ fontFamily: headingFont }}>
             Get in Touch
           </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            Have questions about our products, shipping, or just want to say hello? We'd love to hear from you.
+          <p className="text-gray-600 max-w-2xl mx-auto" style={{ fontFamily: bodyFont }}>
+            Have a question or just want to say hello? We&apos;d love to hear from you.
           </p>
         </div>
       </div>
@@ -134,7 +133,7 @@ export default function ContactWireframe({ storeSettings }: ContactProps) {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Message Sent!</h3>
                 <p className="text-gray-500 max-w-xs mx-auto">
-                  Thank you for reaching out. We'll get back to you as soon as possible.
+                  Thank you for reaching out. We&apos;ll get back to you as soon as possible.
                 </p>
                 <button 
                   onClick={() => setIsSent(false)}
