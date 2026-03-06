@@ -717,7 +717,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'mia-electronics'"
+          "default": "'pony-electronics'"
         },
         "currency": {
           "name": "currency",
@@ -752,7 +752,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'jon@mia-agents.ai'"
+          "default": "'jon@pony-agents.ai'"
         },
         "adminRole": {
           "name": "adminRole",

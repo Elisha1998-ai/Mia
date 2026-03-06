@@ -9,6 +9,7 @@ export interface FooterProps {
     bodyFont?: string;
     footerDescription?: string;
     footerBigText?: string;
+    [key: string]: string | boolean | undefined;
   };
   onUpdateSettings?: (key: string, value: string) => void;
 }
@@ -21,11 +22,11 @@ export default function FooterVariant2({ storeName = "LINOGE", settings, onUpdat
   return (
     <footer className="bg-black text-white py-16 px-8" style={{ fontFamily: bodyFont }}>
       <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between gap-12">
-        
+
         {/* Left Column */}
         <div className="max-w-md">
           <h3 className="text-2xl font-bold uppercase mb-4 tracking-wide" style={{ fontFamily: headingFont, color: primaryColor !== '#000000' ? primaryColor : 'white' }}>Get in touch with {storeName}</h3>
-          
+
           {onUpdateSettings ? (
             <EditableText
               initialValue={settings?.footerDescription || 'Contact us and our managers will be happy to answer all your questions.'}

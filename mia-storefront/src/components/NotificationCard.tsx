@@ -19,6 +19,12 @@ interface NotificationCardProps {
   isVisible: boolean;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  showViewMore?: boolean;
+  onViewMore?: () => void;
+  isExpanded?: boolean;
+  isPartOfStack?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export const NotificationCard = ({
@@ -30,7 +36,13 @@ export const NotificationCard = ({
   actions,
   isVisible,
   isCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  showViewMore = false,
+  onViewMore,
+  isExpanded = false,
+  isPartOfStack = false,
+  isFirst = true,
+  isLast = true
 }: NotificationCardProps) => {
   if (!isVisible) return null;
 
@@ -47,60 +59,39 @@ export const NotificationCard = ({
     }
   };
 
+  const containerClasses = isPartOfStack 
+    ? `bg-transparent flex items-center gap-3 relative overflow-hidden group cursor-pointer transition-colors ${!isLast ? 'border-b border-border-custom/50' : ''} p-3`
+    : `bg-foreground/[0.08] dark:bg-foreground/[0.15] border-x border-t border-border-custom rounded-t-2xl p-3 flex items-center gap-3 relative overflow-hidden group cursor-pointer transition-colors ${isCollapsed ? 'border-b rounded-b-2xl mb-2' : 'border-b-0 pb-3'}`;
+
   return (
-    <div className="w-full animate-in slide-in-from-bottom-2 fade-in duration-300">
+    <div className={isPartOfStack ? "w-full" : "w-full animate-in slide-in-from-bottom-2 fade-in duration-300"}>
       <div 
-        className={`bg-foreground/[0.08] dark:bg-foreground/[0.15] border-x border-t border-border-custom rounded-t-2xl p-3 flex items-center gap-3 relative overflow-hidden group cursor-pointer transition-colors ${isCollapsed ? 'border-b rounded-b-2xl mb-2' : 'border-b-0 pb-2'}`}
+        className={containerClasses}
         onClick={onToggleCollapse}
       >
         
-        {/* Icon */}
-        <div className="p-1.5 rounded-xl bg-foreground/5 flex-shrink-0 self-start mt-0.5">
-          {getIcon()}
-        </div>
-
         {/* Content */}
         <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0 flex items-center gap-2">
-            <h3 className="text-xs font-bold text-foreground/90 leading-none truncate">
+          <div className="flex-1 min-w-0 flex items-center gap-2 pl-1 py-0.5">
+            <h3 className="text-xs font-bold text-foreground/90 leading-tight">
               {title}
             </h3>
             {timestamp && <span className="text-[10px] text-foreground/40 font-normal flex-shrink-0">• {timestamp}</span>}
           </div>
           
           <div className="flex items-center gap-3 flex-shrink-0">
-            {/* Actions */}
-            {!isCollapsed && actions && actions.length > 0 && (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                {actions.map((action, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      action.onClick();
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                      action.variant === 'primary'
-                        ? 'bg-foreground text-background hover:opacity-90'
-                        : 'bg-foreground/5 text-foreground/70 hover:bg-foreground/10 hover:text-foreground'
-                    }`}
-                  >
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <div className="flex items-center gap-1">
-               <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleCollapse?.();
-                }}
-                className="text-foreground/40 hover:text-foreground p-1 rounded-lg hover:bg-foreground/5 transition-colors"
-              >
-                {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-              </button>
+               {showViewMore && (
+                 <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewMore?.();
+                  }}
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg transition-all ${isExpanded ? 'bg-accent/10 text-accent' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
+                >
+                  {isExpanded ? 'Show Less' : 'View More'}
+                </button>
+               )}
               <button 
                 onClick={(e) => {
                   e.stopPropagation();

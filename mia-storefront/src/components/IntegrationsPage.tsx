@@ -88,7 +88,7 @@ export const IntegrationsPage = () => {
 
   const handleConnect = async (id: string, name: string) => {
     if (name.toLowerCase() === 'shopify') {
-      const shopUrl = prompt('Enter your Shopify Shop URL (e.g. mia-test-store.myshopify.com):');
+      const shopUrl = prompt('Enter your Shopify Shop URL (e.g. pony-test-store.myshopify.com):');
       const accessToken = prompt('Enter your Shopify Admin API Access Token:');
       
       if (shopUrl && accessToken) {

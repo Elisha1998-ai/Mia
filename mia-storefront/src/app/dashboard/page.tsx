@@ -1,7 +1,6 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { DashboardClient } from "./DashboardClient"
-import { checkOnboardingStatus } from "@/actions/onboarding"
 import { Suspense } from "react"
 
 export default async function DashboardPage() {
@@ -9,12 +8,6 @@ export default async function DashboardPage() {
 
   if (!session) {
     redirect("/auth/signin")
-  }
-
-  const { completed } = await checkOnboardingStatus()
-
-  if (!completed) {
-    redirect("/onboarding")
   }
 
   return (

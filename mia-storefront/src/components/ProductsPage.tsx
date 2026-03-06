@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { useSession } from 'next-auth/react';
-import { 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  Plus, 
-  ChevronLeft, 
+import {
+  Search,
+  Filter,
+  MoreHorizontal,
+  Plus,
+  ChevronLeft,
   ChevronRight,
   Download,
   Settings2,
@@ -43,7 +43,7 @@ interface Product {
 }
 
 const ActionPopover = ({ product, onDelete, onEdit, onShare }: { product: Product, onDelete: (id: string) => void, onEdit: (product: Product) => void, onShare: (product: Product) => void }) => {
-    return (
+  return (
     <Popover.Root>
       <Popover.Trigger asChild>
         <button className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all">
@@ -51,19 +51,19 @@ const ActionPopover = ({ product, onDelete, onEdit, onShare }: { product: Produc
         </button>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content 
+        <Popover.Content
           className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 min-w-[140px] animate-in fade-in zoom-in-95 duration-100"
           sideOffset={5}
           align="end"
         >
-          <button 
+          <button
             onClick={() => onEdit(product)}
             className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors font-medium"
           >
             <Edit2 className="w-4 h-4" />
             Edit Product
           </button>
-          <button 
+          <button
             onClick={() => onShare(product)}
             className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-foreground/60 hover:bg-foreground/5 hover:text-foreground transition-colors font-medium"
           >
@@ -71,7 +71,7 @@ const ActionPopover = ({ product, onDelete, onEdit, onShare }: { product: Produc
             Share
           </button>
           <div className="h-px bg-border-custom my-1" />
-          <button 
+          <button
             onClick={() => onDelete(product.id)}
             className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-red-500 hover:bg-red-500/10 transition-colors font-medium"
           >
@@ -93,30 +93,33 @@ const StatusBadge = ({ status }: { status: Product['status'] }) => {
     'AI Suggested': 'text-accent bg-accent/10',
   };
 
+  const currentStyle = styles[status] || styles['Active'];
+  const dotColor = currentStyle.split(' ')[0].replace('text-', 'bg-');
+
   return (
     <div className="flex items-center gap-2">
-      <div className={`w-1.5 h-1.5 rounded-full ${styles[status].split(' ')[0].replace('text-', 'bg-')}`} />
-      <span className="text-[13px] font-medium">{status}</span>
+      <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+      <span className="text-[13px] font-medium">{status || 'Active'}</span>
     </div>
   );
 };
 
-const MobileProductCard = ({ 
-  product, 
-  isExpanded, 
-  onToggle, 
-  onDelete, 
-  onEdit 
-}: { 
-  product: Product; 
-  isExpanded: boolean; 
-  onToggle: () => void; 
+const MobileProductCard = ({
+  product,
+  isExpanded,
+  onToggle,
+  onDelete,
+  onEdit
+}: {
+  product: Product;
+  isExpanded: boolean;
+  onToggle: () => void;
   onDelete: (id: string) => void;
   onEdit: (product: Product) => void;
 }) => {
   return (
     <div className={`border-b border-border-custom transition-colors ${isExpanded ? 'bg-foreground/[0.02]' : ''}`}>
-      <div 
+      <div
         className="flex items-center justify-between p-4 cursor-pointer"
         onClick={onToggle}
       >
@@ -165,14 +168,14 @@ const MobileProductCard = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={() => onEdit(product)}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-xl text-sm font-bold transition-colors"
             >
               <Edit2 className="w-4 h-4" />
               Edit
             </button>
-            <button 
+            <button
               onClick={() => onDelete(product.id)}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-xl text-sm font-bold transition-colors"
             >
@@ -190,7 +193,7 @@ export const ProductsPage = () => {
   const { data: session } = useSession();
   const { products: apiProducts, loading, fetchProducts, deleteProduct, createProduct, updateProduct } = useProducts();
   const [products, setProducts] = React.useState<Product[]>([]);
-  
+
   React.useEffect(() => {
     fetchProducts();
   }, []);
@@ -228,7 +231,7 @@ export const ProductsPage = () => {
 
   const handleExport = () => {
     if (filteredProducts.length === 0) return;
-    
+
     const headers = ['Name', 'SKU', 'Price', 'Stock', 'Category', 'Status'];
     const csvContent = [
       headers.join(','),
@@ -260,7 +263,7 @@ export const ProductsPage = () => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', 'products');
-    
+
     if (session?.user?.id) {
       formData.append('user_id', session.user.id);
     }
@@ -273,7 +276,7 @@ export const ProductsPage = () => {
       });
 
       if (!response.ok) throw new Error('Import failed');
-      
+
       const result = await response.json();
       alert(`Successfully imported ${result.imported_count} products!`);
       fetchProducts(); // Refresh list
@@ -290,8 +293,8 @@ export const ProductsPage = () => {
   const filteredProducts = React.useMemo(() => {
     return products
       .filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             p.sku.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.sku.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'All Status' || p.status === statusFilter;
         return matchesSearch && matchesStatus;
       })
@@ -368,7 +371,7 @@ export const ProductsPage = () => {
   const handleAddProduct = async (productData: any) => {
     try {
       if (editingProduct) {
-        const updated = await updateProduct(editingProduct.id, {
+        await updateProduct(editingProduct.id, {
           name: productData.name,
           sku: productData.sku,
           price: productData.price,
@@ -384,9 +387,8 @@ export const ProductsPage = () => {
             image_url: v.image_url
           }))
         });
-        setProducts(products.map(p => p.id === editingProduct.id ? updated : p));
       } else {
-        const created = await createProduct({
+        await createProduct({
           name: productData.name,
           sku: productData.sku,
           price: productData.price,
@@ -402,7 +404,6 @@ export const ProductsPage = () => {
             image_url: v.image_url
           }))
         });
-        setProducts([created, ...products]);
       }
       setIsAddModalOpen(false);
       setEditingProduct(null);
@@ -417,10 +418,19 @@ export const ProductsPage = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleShare = (product: Product) => {
-    const shareUrl = `${window.location.origin}/storefront/products/${product.id}`;
-    navigator.clipboard.writeText(shareUrl);
-    alert('Product link copied to clipboard!');
+  const handleShare = async (product: Product) => {
+    try {
+      const shareUrl = `${window.location.origin}/storefront/products/${product.id}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Product link copied to clipboard!');
+      } else {
+        throw new Error('Clipboard API not available');
+      }
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      alert(`Product link: ${window.location.origin}/storefront/products/${product.id}\n\n(Clipboard access blocked, please copy manually)`);
+    }
   };
 
   if (loading) {
@@ -428,7 +438,7 @@ export const ProductsPage = () => {
       <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Products...</p>
+          <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading Dashboard...</p>
         </div>
       </div>
     );
@@ -436,7 +446,7 @@ export const ProductsPage = () => {
 
   return (
     <>
-      <AddProductModal 
+      <AddProductModal
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
@@ -445,58 +455,33 @@ export const ProductsPage = () => {
         onSave={handleAddProduct}
         product={editingProduct}
       />
-      
-      <DeleteConfirmationModal 
+
+      <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, id: null, isBulk: false })}
         onConfirm={confirmDelete}
         title={deleteModal.isBulk ? 'Delete Multiple Products' : 'Delete Product'}
-        description={deleteModal.isBulk 
+        description={deleteModal.isBulk
           ? `Are you sure you want to delete ${selectedIds.length} products? This action cannot be undone.`
           : 'Are you sure you want to delete this product? This action cannot be undone.'
         }
       />
-      
-      <div className="flex-1 flex flex-col bg-background h-full overflow-hidden animate-in fade-in duration-500">
-        {/* Inventory Alerts Banner */}
-        {(inventoryStats.lowStock > 0 || inventoryStats.outOfStock > 0) && (
-          <div className="px-6 py-2 bg-orange-500/5 border-b border-orange-500/10 flex items-center gap-6 overflow-x-auto no-scrollbar">
-            <span className="text-[11px] font-bold text-orange-500 uppercase tracking-wider flex-shrink-0">Inventory Alerts:</span>
-            {inventoryStats.outOfStock > 0 && (
-              <div 
-                className="flex items-center gap-2 px-2 py-1 rounded-lg bg-red-500/10 text-red-500 cursor-pointer hover:bg-red-500/20 transition-all flex-shrink-0"
-                onClick={() => setStatusFilter('Out of Stock')}
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[12px] font-bold">{inventoryStats.outOfStock} Out of Stock</span>
-              </div>
-            )}
-            {inventoryStats.lowStock > 0 && (
-              <div 
-                className="flex items-center gap-2 px-2 py-1 rounded-lg bg-orange-500/10 text-orange-500 cursor-pointer hover:bg-orange-500/20 transition-all flex-shrink-0"
-                onClick={() => setStatusFilter('Low Stock')}
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                <span className="text-[12px] font-bold">{inventoryStats.lowStock} Low Stock</span>
-              </div>
-            )}
-          </div>
-        )}
 
+      <div className="flex-1 flex flex-col bg-background h-full overflow-hidden animate-in fade-in duration-500">
         {/* Desktop Header */}
         <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border-custom">
           <div className="flex items-center gap-4 flex-1 max-w-3xl">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Search products by name or SKU..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-foreground/5 border-none rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 ring-foreground/10 text-foreground transition-all font-medium"
               />
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Popover.Root>
                 <Popover.Trigger asChild>
@@ -508,7 +493,7 @@ export const ProductsPage = () => {
                 <Popover.Portal>
                   <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[160px]" align="start" sideOffset={8}>
                     {['All Status', 'Active', 'Low Stock', 'Out of Stock', 'AI Suggested'].map((status) => (
-                      <button 
+                      <button
                         key={status}
                         onClick={() => setStatusFilter(status)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors font-medium"
@@ -530,7 +515,7 @@ export const ProductsPage = () => {
                 <Popover.Portal>
                   <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[180px]" align="start" sideOffset={8}>
                     {['Newest', 'Price: Low to High', 'Price: High to Low', 'Stock: Low to High'].map((sort) => (
-                      <button 
+                      <button
                         key={sort}
                         onClick={() => setSortBy(sort)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors font-medium"
@@ -546,7 +531,7 @@ export const ProductsPage = () => {
             {selectedIds.length > 0 && (
               <div className="flex items-center gap-2 pl-2 border-l border-border-custom animate-in slide-in-from-left-2 duration-200">
                 <span className="text-[12px] font-bold text-foreground/30 uppercase tracking-wider mr-2">{selectedIds.length} Selected:</span>
-                
+
                 <Popover.Root>
                   <Popover.Trigger asChild>
                     <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-bold hover:bg-foreground/5 text-foreground/60 transition-colors">
@@ -557,7 +542,7 @@ export const ProductsPage = () => {
                   <Popover.Portal>
                     <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[140px]" align="start" sideOffset={8}>
                       {['Active', 'Draft', 'Archived'].map((status) => (
-                        <button 
+                        <button
                           key={status}
                           onClick={() => handleBulkStatusUpdate(status as any)}
                           className="w-full text-left px-3 py-2 text-[13px] hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors font-medium"
@@ -569,7 +554,7 @@ export const ProductsPage = () => {
                   </Popover.Portal>
                 </Popover.Root>
 
-                <button 
+                <button
                   onClick={handleBulkDelete}
                   className="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-500/10 transition-colors"
                 >
@@ -579,30 +564,30 @@ export const ProductsPage = () => {
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={handleExport}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors font-medium"
             >
               <Download className="w-4 h-4" />
               Export
             </button>
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors font-medium"
             >
               <Upload className="w-4 h-4" />
               Import
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleImport} 
-                accept=".csv" 
-                className="hidden" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImport}
+                accept=".csv"
+                className="hidden"
               />
             </button>
-            <button 
+            <button
               onClick={() => {
                 setEditingProduct(null);
                 setIsAddModalOpen(true);
@@ -621,15 +606,15 @@ export const ProductsPage = () => {
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-foreground/5 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground transition-all font-medium"
                 />
               </div>
-              <button 
+              <button
                 onClick={() => {
                   setEditingProduct(null);
                   setIsAddModalOpen(true);
@@ -650,7 +635,7 @@ export const ProductsPage = () => {
                 <Popover.Portal>
                   <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] py-1 w-[160px]" align="start" sideOffset={4}>
                     {['All Status', 'Active', 'Low Stock', 'Out of Stock', 'AI Suggested'].map((status) => (
-                      <button 
+                      <button
                         key={status}
                         onClick={() => setStatusFilter(status)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-foreground/5 text-foreground/60 font-medium"
@@ -672,7 +657,7 @@ export const ProductsPage = () => {
                 <Popover.Portal>
                   <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] py-1 w-[180px]" align="start" sideOffset={4}>
                     {['Newest', 'Price: Low to High', 'Price: High to Low', 'Stock: Low to High'].map((sort) => (
-                      <button 
+                      <button
                         key={sort}
                         onClick={() => setSortBy(sort)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-foreground/5 text-foreground/60 font-medium"
@@ -693,13 +678,12 @@ export const ProductsPage = () => {
             <thead className="sticky top-0 bg-background/80 backdrop-blur-md z-10 border-b border-border-custom">
               <tr>
                 <th className="pl-6 py-4 w-12">
-                  <button 
+                  <button
                     onClick={toggleAll}
-                    className={`w-5 h-5 rounded border transition-all flex items-center justify-center ${
-                      selectedIds.length === filteredProducts.length && filteredProducts.length > 0
-                        ? 'bg-accent border-accent text-white' 
-                        : 'border-border-custom hover:border-foreground/30'
-                    }`}
+                    className={`w-5 h-5 rounded border transition-all flex items-center justify-center ${selectedIds.length === filteredProducts.length && filteredProducts.length > 0
+                      ? 'bg-accent border-accent text-white'
+                      : 'border-border-custom hover:border-foreground/30'
+                      }`}
                   >
                     {selectedIds.length === filteredProducts.length && filteredProducts.length > 0 && <Check className="w-3 h-3 stroke-[3]" />}
                   </button>
@@ -726,76 +710,74 @@ export const ProductsPage = () => {
                 </tr>
               ) : (
                 filteredProducts.map((product) => (
-                <tr 
-                  key={product.id}
-                  className={`group transition-colors hover:bg-foreground/[0.02] ${
-                    selectedIds.includes(product.id) ? 'bg-foreground/[0.03]' : ''
-                  }`}
-                >
-                  <td className="pl-6 py-4">
-                    <button 
-                      onClick={() => toggleOne(product.id)}
-                      className={`w-5 h-5 rounded border transition-all flex items-center justify-center ${
-                        selectedIds.includes(product.id) 
-                          ? 'bg-accent border-accent text-white' 
-                          : 'border-border-custom group-hover:border-foreground/30'
+                  <tr
+                    key={product.id}
+                    className={`group transition-colors hover:bg-foreground/[0.02] ${selectedIds.includes(product.id) ? 'bg-foreground/[0.03]' : ''
                       }`}
-                    >
-                      {selectedIds.includes(product.id) && <Check className="w-3 h-3 stroke-[3]" />}
-                    </button>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-foreground/5 overflow-hidden border border-border-custom flex-shrink-0">
-                        {product.image ? (
-                          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-foreground/20">
-                            <Package className="w-5 h-5" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[14px] font-medium text-foreground">{product.name}</span>
-                          {product.variants && product.variants.length > 0 && (
-                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider">
-                              <Layers className="w-2.5 h-2.5" />
-                              {product.variants.length} Variants
-                            </span>
+                  >
+                    <td className="pl-6 py-4">
+                      <button
+                        onClick={() => toggleOne(product.id)}
+                        className={`w-5 h-5 rounded border transition-all flex items-center justify-center ${selectedIds.includes(product.id)
+                          ? 'bg-accent border-accent text-white'
+                          : 'border-border-custom group-hover:border-foreground/30'
+                          }`}
+                      >
+                        {selectedIds.includes(product.id) && <Check className="w-3 h-3 stroke-[3]" />}
+                      </button>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-foreground/5 overflow-hidden border border-border-custom flex-shrink-0">
+                          {product.image ? (
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-foreground/20">
+                              <Package className="w-5 h-5" />
+                            </div>
                           )}
                         </div>
-                        <span className="text-[12px] text-foreground/40">{product.category}</span>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[14px] font-medium text-foreground">{product.name}</span>
+                            {product.variants && product.variants.length > 0 && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider">
+                                <Layers className="w-2.5 h-2.5" />
+                                {product.variants.length} Variants
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[12px] text-foreground/40">{product.category}</span>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className="px-2 py-1 rounded-lg bg-foreground/5 text-[11px] font-bold text-foreground/60 uppercase tracking-wider border border-border-custom">
-                      {product.sku}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className="text-[14px] font-medium text-foreground/80">₦{product.price.toFixed(2)}</span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`text-[14px] ${product.stock === 0 ? 'text-red-500 font-medium' : 'text-foreground/60'}`}>
-                      {product.stock} in stock
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className="text-[14px] text-foreground/60">{product.category}</span>
-                </td>
-                  <td className="px-4 py-4">
-                    <span className="text-[14px] text-foreground/60">{product.weight || '—'}</span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <StatusBadge status={product.status} />
-                  </td>
-                  <td className="pr-6 py-4 text-right">
-                    <ActionPopover product={product} onDelete={handleDelete} onEdit={handleEdit} onShare={handleShare} />
-                  </td>
-                </tr>
-              )))}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="px-2 py-1 rounded-lg bg-foreground/5 text-[11px] font-bold text-foreground/60 uppercase tracking-wider border border-border-custom">
+                        {product.sku}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="text-[14px] font-medium text-foreground/80">₦{product.price.toFixed(2)}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`text-[14px] ${product.stock === 0 ? 'text-red-500 font-medium' : 'text-foreground/60'}`}>
+                        {product.stock} in stock
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="text-[14px] text-foreground/60">{product.category}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="text-[14px] text-foreground/60">{product.weight || '—'}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <StatusBadge status={product.status} />
+                    </td>
+                    <td className="pr-6 py-4 text-right">
+                      <ActionPopover product={product} onDelete={handleDelete} onEdit={handleEdit} onShare={handleShare} />
+                    </td>
+                  </tr>
+                )))}
             </tbody>
           </table>
         </div>
@@ -812,9 +794,9 @@ export const ProductsPage = () => {
           </div>
           <div className="flex flex-col">
             {filteredProducts.map((product) => (
-              <MobileProductCard 
-                key={product.id} 
-                product={product} 
+              <MobileProductCard
+                key={product.id}
+                product={product}
                 isExpanded={expandedProductId === product.id}
                 onToggle={() => setExpandedProductId(expandedProductId === product.id ? null : product.id)}
                 onDelete={handleDelete}
@@ -846,40 +828,39 @@ export const ProductsPage = () => {
         </div>
 
         {/* Pagination Footer (Mobile) */}
-      <div className="md:hidden px-4 py-6 border-t border-border-custom flex items-center justify-center bg-background">
-        <div className="flex items-center gap-1">
-          <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
-            <ChevronsLeft className="w-5 h-5" />
-          </button>
-          <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          
-          <div className="flex items-center gap-1 mx-2">
-            {[1, 2, 3].map((page) => (
-              <button 
-                key={page}
-                className={`w-8 h-8 rounded-lg text-[13px] font-medium transition-all ${
-                  page === 1 
-                    ? 'bg-foreground/[0.05] text-foreground border border-border-custom' 
-                    : 'text-foreground/40 hover:text-foreground/60'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <span className="px-1 text-foreground/30">...</span>
-            <button className="w-8 h-8 rounded-lg text-[13px] font-medium text-foreground/40">16</button>
-          </div>
+        <div className="md:hidden px-4 py-6 border-t border-border-custom flex items-center justify-center bg-background">
+          <div className="flex items-center gap-1">
+            <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
+              <ChevronsLeft className="w-5 h-5" />
+            </button>
+            <button className="p-2 rounded-lg text-foreground/40 disabled:opacity-30">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
 
-          <button className="p-2 rounded-lg text-foreground/40 hover:text-foreground">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button className="p-2 rounded-lg text-foreground/40 hover:text-foreground">
-            <ChevronsRight className="w-5 h-5" />
-          </button>
+            <div className="flex items-center gap-1 mx-2">
+              {[1, 2, 3].map((page) => (
+                <button
+                  key={page}
+                  className={`w-8 h-8 rounded-lg text-[13px] font-medium transition-all ${page === 1
+                    ? 'bg-foreground/[0.05] text-foreground border border-border-custom'
+                    : 'text-foreground/40 hover:text-foreground/60'
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <span className="px-1 text-foreground/30">...</span>
+              <button className="w-8 h-8 rounded-lg text-[13px] font-medium text-foreground/40">16</button>
+            </div>
+
+            <button className="p-2 rounded-lg text-foreground/40 hover:text-foreground">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button className="p-2 rounded-lg text-foreground/40 hover:text-foreground">
+              <ChevronsRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-      </div>
       </div>
     </>
   );

@@ -99,13 +99,13 @@ CREATE TABLE "session" (
 --> statement-breakpoint
 CREATE TABLE "storeSettings" (
 	"id" text PRIMARY KEY NOT NULL,
-	"storeName" text DEFAULT 'Mia Electronics' NOT NULL,
+	"storeName" text DEFAULT 'Pony Electronics' NOT NULL,
 	"storeDomain" text DEFAULT 'mia-electronics' NOT NULL,
 	"currency" text DEFAULT 'USD ($)' NOT NULL,
 	"location" text DEFAULT 'United States of America' NOT NULL,
 	"aiTone" text DEFAULT 'Professional & Helpful' NOT NULL,
 	"adminName" text DEFAULT 'Jonathan Frazzelle' NOT NULL,
-	"adminEmail" text DEFAULT 'jon@mia-agents.ai' NOT NULL,
+	"adminEmail" text DEFAULT 'jon@pony-agents.ai' NOT NULL,
 	"adminRole" text DEFAULT 'Store Owner' NOT NULL,
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );

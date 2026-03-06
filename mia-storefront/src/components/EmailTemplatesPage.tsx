@@ -46,8 +46,8 @@ const GlobalEmailSettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClos
   React.useEffect(() => {
     if (settings) {
       setFormData({
-        senderName: settings.senderName || 'Mia Store',
-        senderEmail: settings.senderEmail || 'support@miastore.com',
+        senderName: settings.senderName || 'Pony Store',
+        senderEmail: settings.senderEmail || 'support@ponystore.com',
         storeLogo: settings.storeLogo || '',
         primaryColor: settings.primaryColor || '#6366f1'
       });

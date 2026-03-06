@@ -228,7 +228,7 @@ export const AnalyticsPage = () => {
 
           {/* Quick Insights */}
           <div className="bg-foreground/5 border border-border-custom rounded-2xl p-6">
-            <h3 className="text-lg font-semibold mb-6">Mia's Insights</h3>
+            <h3 className="text-lg font-semibold mb-6">Pony's Insights</h3>
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-accent/5 border border-accent/10 space-y-2">
                 <div className="flex items-center gap-2 text-accent">

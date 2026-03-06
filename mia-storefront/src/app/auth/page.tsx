@@ -48,7 +48,7 @@ export default function AuthPage() {
             Create an account
           </h1>
           <p className="text-muted-foreground mb-8">
-            Join us today and start your journey with Mia.
+            Join us today and start your journey with Pony.
           </p>
 
           <form

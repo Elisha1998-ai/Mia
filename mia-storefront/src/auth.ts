@@ -7,7 +7,6 @@ import { authConfig } from "./auth.config"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db),
-  session: { strategy: "jwt" },
   ...authConfig,
   callbacks: {
     ...authConfig.callbacks,
@@ -20,17 +19,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       // If we have a user email, always try to ensure token.sub is the database ID
       const email = user?.email || token.email;
-      
+
       if (email) {
         try {
           // First check if we can find the user by ID (if token.sub is already a UUID)
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token.sub || '');
           if (!isUuid) {
-            const [existingUser] = await db
+            let [existingUser] = await db
               .select({ id: users.id })
               .from(users)
               .where(eq(users.email, email))
               .limit(1);
+
+            if (!existingUser) {
+              // Auto-create user for credentials login
+              [existingUser] = await db
+                .insert(users)
+                .values({ email, name: user?.name || token?.name })
+                .returning({ id: users.id });
+            }
+
             if (existingUser?.id) {
               token.sub = existingUser.id;
             }

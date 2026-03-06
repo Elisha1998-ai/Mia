@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { ProductDetailTemplate1 } from './ProductDetailTemplate1';
+import ProductListWireframeVariant2 from '@/app/library/components/ProductListWireframeVariant2';
+import ProductListWireframeVariant3 from '@/app/library/components/ProductListWireframeVariant3';
 import { Layout, ArrowLeft, Eye, Smartphone, Monitor } from 'lucide-react';
 
 export const PreviewsPage = () => {
@@ -15,6 +17,20 @@ export const PreviewsPage = () => {
       category: 'Product Detail',
       component: <ProductDetailTemplate1 />,
       description: 'A clean, high-contrast product detail page inspired by the Bonfire design.'
+    },
+    {
+      id: 'product-list-v2',
+      name: 'Premium Beverage List',
+      category: 'Product List',
+      component: <ProductListWireframeVariant2 />,
+      description: 'A minimal, contemporary layout optimized for premium beverage and health brands.'
+    },
+    {
+      id: 'product-list-v3',
+      name: 'Editorial Haircare List',
+      category: 'Product List',
+      component: <ProductListWireframeVariant3 />,
+      description: 'A premium, editorial layout with storytelling layers for personalized beauty brands.'
     }
   ];
 
@@ -73,7 +89,7 @@ export const PreviewsPage = () => {
       <div className="p-8 max-w-6xl mx-auto w-full">
         <div className="flex flex-col gap-1 mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Design Previews</h1>
-          <p className="text-muted-foreground">Preview and test the ecommerce page templates Mia is designing for you.</p>
+          <p className="text-muted-foreground">Preview and test the ecommerce page templates Pony is designing for you.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

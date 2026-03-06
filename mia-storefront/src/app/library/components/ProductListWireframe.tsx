@@ -19,6 +19,7 @@ export interface ProductListProps {
     salePrice?: number;
     image?: string;
     category?: string;
+    isDigital?: boolean;
   }>;
 }
 
@@ -87,6 +88,30 @@ export default function ProductListWireframe({ products, storeSettings, isSectio
   const displayProducts = products && products.length > 0 ? products : defaultProducts;
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  const handleAddToCart = (product: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existing = currentCart.find((i: any) => i.id === product.id);
+
+    if (existing && !product.isDigital) {
+      existing.quantity += 1;
+    } else if (!existing) {
+      currentCart.push({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        isDigital: product.isDigital,
+        quantity: 1,
+      });
+    }
+
+    localStorage.setItem('cart', JSON.stringify(currentCart));
+    window.dispatchEvent(new Event('cart-updated'));
+  };
+
   return (
     <div className={`w-full ${isSection ? '' : 'min-h-full no-scrollbar'} bg-white`} style={{ fontFamily: bodyFont }}>
       {/* Header / Filter Bar */}
@@ -96,7 +121,7 @@ export default function ProductListWireframe({ products, storeSettings, isSectio
             All Products
             <span className="ml-2 text-sm font-normal text-gray-500">({displayProducts.length})</span>
           </h2>
-          
+
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors">
               <Filter className="w-4 h-4" />
@@ -108,13 +133,13 @@ export default function ProductListWireframe({ products, storeSettings, isSectio
             </button>
             <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
             <div className="flex bg-gray-100 rounded-md p-0.5">
-              <button 
+              <button
                 onClick={() => setViewMode('grid')}
                 className={`p-1.5 rounded-sm transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <Grid className="w-4 h-4" />
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode('list')}
                 className={`p-1.5 rounded-sm transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
               >
@@ -128,14 +153,14 @@ export default function ProductListWireframe({ products, storeSettings, isSectio
       {/* Product Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className={`
-          ${viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
+          ${viewMode === 'grid'
+            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
             : 'flex flex-col gap-4'
           }
         `}>
           {displayProducts.map((product) => (
-            <div 
-              key={product.id} 
+            <div
+              key={product.id}
               className={`group bg-white rounded-xl overflow-hidden border border-gray-100 transition-all hover:shadow-lg hover:border-gray-200
                 ${viewMode === 'list' ? 'flex flex-row items-center h-32' : 'flex flex-col'}
               `}
@@ -143,8 +168,8 @@ export default function ProductListWireframe({ products, storeSettings, isSectio
               {/* Image Container */}
               <div className={`relative overflow-hidden bg-gray-100 ${viewMode === 'list' ? 'w-32 h-full shrink-0' : 'aspect-[4/5] w-full'}`}>
                 {product.image ? (
-                  <img 
-                    src={product.image} 
+                  <img
+                    src={product.image}
                     alt={product.name}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                   />
@@ -153,10 +178,10 @@ export default function ProductListWireframe({ products, storeSettings, isSectio
                     <ShoppingBag className="w-8 h-8" />
                   </div>
                 )}
-                
+
                 {/* Badges */}
                 {product.salePrice && (
-                  <div 
+                  <div
                     className="absolute top-2 left-2 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm"
                     style={{ backgroundColor: primaryColor }}
                   >
@@ -167,7 +192,7 @@ export default function ProductListWireframe({ products, storeSettings, isSectio
                 {/* Quick Actions (Grid Only) */}
                 {viewMode === 'grid' && (
                   <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                    <button 
+                    <button
                       className="p-2 bg-white rounded-full shadow-md text-gray-600 hover:opacity-80 transition-opacity"
                       style={{ color: primaryColor }}
                     >
@@ -203,8 +228,9 @@ export default function ProductListWireframe({ products, storeSettings, isSectio
                       </span>
                     )}
                   </div>
-                  
-                  <button 
+
+                  <button
+                    onClick={(e) => handleAddToCart(product, e)}
                     className="p-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors shadow-sm active:scale-95"
                     style={{ backgroundColor: primaryColor }}
                   >

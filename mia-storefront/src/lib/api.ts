@@ -111,9 +111,13 @@ interface StoreSettings {
   primaryColor: string;
   headingFont: string;
   bodyFont: string;
+  buttonRadius?: string;
   heroTitle?: string;
   heroDescription?: string;
   footerDescription?: string;
+  paystackEnabled: boolean;
+  flutterwaveEnabled: boolean;
+  shippingEnabled: boolean;
 }
 
 class APIService {
@@ -121,7 +125,7 @@ class APIService {
     const { useInternal, ...fetchOptions } = options;
     const baseUrl = useInternal ? '' : API_BASE_URL;
     const url = `${baseUrl}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -135,16 +139,18 @@ class APIService {
       const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
         let message = `HTTP error! status: ${response.status}`;
-        if (contentType.includes('application/json')) {
+        if (response.status === 401) {
+          message = "Unauthorized: Your session has expired or you need to log in. If you are viewing this in an iframe, third-party cookies might be blocked.";
+        } else if (contentType.includes('application/json')) {
           try {
             const errJson = await response.json();
             message = errJson?.error || errJson?.message || message;
-          } catch {}
+          } catch { }
         } else {
           try {
             const errText = await response.text();
             if (errText) message = errText;
-          } catch {}
+          } catch { }
         }
         throw new Error(message);
       }
@@ -308,10 +314,10 @@ class APIService {
   async connectShopify(shopUrl: string, accessToken: string, userId?: string) {
     return this.request('/connect/shopify', {
       method: 'POST',
-      body: JSON.stringify({ 
-        shop_url: shopUrl, 
+      body: JSON.stringify({
+        shop_url: shopUrl,
         access_token: accessToken,
-        user_id: userId 
+        user_id: userId
       }),
     });
   }

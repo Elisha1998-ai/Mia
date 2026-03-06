@@ -19,11 +19,12 @@ export async function GET() {
     const settings = await db.query.storeSettings.findFirst({
       where: eq(storeSettingsTable.userId, userId)
     });
-    
+
     // If no settings exist, create default for this user
     if (!settings) {
       const [defaultSettings] = await db.insert(storeSettingsTable).values({
         userId: userId,
+        storeDomain: `store-${Date.now()}`,
         adminName: session.user.name || '',
         adminEmail: session.user.email || '',
         currency: 'Nigerian Naira (₦)',
@@ -55,7 +56,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    
+
     // Validate storeDomain if provided
     if (body.storeDomain) {
       const existingWithDomain = await db.query.storeSettings.findFirst({
@@ -82,6 +83,7 @@ export async function PUT(request: Request) {
       [settings] = await db.insert(storeSettingsTable).values({
         ...body,
         userId: userId,
+        storeDomain: body.storeDomain || `store-${Date.now()}`
       }).returning();
     } else {
       [settings] = await db.update(storeSettingsTable)

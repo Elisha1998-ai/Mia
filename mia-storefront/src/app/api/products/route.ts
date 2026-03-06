@@ -1,3 +1,4 @@
+// API Route for products
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { products as productsTable, productVariants as variantsTable, users as usersTable } from '@/lib/schema';
@@ -7,6 +8,17 @@ import { auth } from '@/auth';
 // GET /api/products - Get all products with pagination
 export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const skip = parseInt(searchParams.get('skip') || '0');
+    const limit = parseInt(searchParams.get('limit') || '100');
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({
+        products: [],
+        total: 0,
+        skip,
+        limit
+      });
+    }
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,16 +37,14 @@ export async function GET(request: Request) {
         .from(usersTable)
         .where(eq(usersTable.email, userId))
         .limit(1);
-      
+
       if (userRecord.length > 0) {
         userId = userRecord[0].id;
       }
     }
 
-    const { searchParams } = new URL(request.url);
-    const skip = parseInt(searchParams.get('skip') || '0');
-    const limit = parseInt(searchParams.get('limit') || '100');
-    
+
+
     console.log('Fetching products for user:', userId);
 
     const [products, totalResult] = await Promise.all([
@@ -104,33 +114,40 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { variants, ...productData } = body;
-    
+
+    console.log('Creating product with data:', JSON.stringify(productData, null, 2));
+
     // Generate SKU if not provided
-    const sku = productData.sku && productData.sku.trim() !== '' 
-      ? productData.sku 
+    const sku = productData.sku && productData.sku.trim() !== ''
+      ? productData.sku
       : `SKU-${Math.random().toString(36).toUpperCase().substring(2, 10)}`;
 
     const result = await db.transaction(async (tx) => {
+      // Ensure numeric values are actually numbers/strings as expected by Drizzle
+      const stockQuantity = typeof productData.stock_quantity === 'string'
+        ? parseInt(productData.stock_quantity)
+        : productData.stock_quantity;
+
       const [product] = await tx.insert(productsTable).values({
         userId: userId,
         name: productData.name,
         sku: sku,
-        price: (productData.price || 0).toString(),
-        stockQuantity: productData.stock_quantity || 0,
+        price: (productData.price !== undefined && productData.price !== null) ? productData.price.toString() : '0',
+        stockQuantity: isNaN(stockQuantity) ? 0 : stockQuantity,
         description: productData.description,
         imageUrl: productData.image_url,
         platform: productData.platform
       }).returning();
 
-      let createdVariants = [];
+      let createdVariants: any[] = [];
       if (variants && variants.length > 0) {
         createdVariants = await tx.insert(variantsTable).values(
           variants.map((v: any) => ({
             productId: product.id,
             name: v.name,
             sku: v.sku || `${sku}-${v.name.replace(/\s+/g, '-').toUpperCase()}`,
-            price: v.price ? v.price.toString() : null,
-            stockQuantity: v.stock_quantity || 0,
+            price: (v.price !== undefined && v.price !== null) ? v.price.toString() : null,
+            stockQuantity: typeof v.stock_quantity === 'string' ? parseInt(v.stock_quantity) || 0 : v.stock_quantity || 0,
             imageUrl: v.image_url
           }))
         ).returning();
@@ -158,10 +175,10 @@ export async function POST(request: Request) {
         image_url: v.imageUrl || undefined
       }))
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating product:', error);
     return NextResponse.json(
-      { error: 'Failed to create product' },
+      { error: error.message || 'Failed to create product' },
       { status: 500 }
     );
   }

@@ -127,6 +127,7 @@ export const products = pgTable("product", {
   imageUrl: text("imageUrl"),
   platform: text("platform"),
   aiNotes: text("aiNotes"),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
 });
@@ -189,8 +190,11 @@ export const orders = pgTable("order", {
   shippingAddress: text("shippingAddress"),
   shippingMethod: text("shippingMethod"),
   paymentMethod: text("paymentMethod"),
+  paymentStatus: text("paymentStatus").default("pending").notNull(),
+  sessionId: text("sessionId"),
   customerId: text("customerId").references(() => customers.id),
   storeId: text("storeId").references(() => stores.id),
+  shippedAt: timestamp("shippedAt", { mode: "date" }),
   createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
 });
@@ -245,8 +249,8 @@ export const storeSettings = pgTable("storeSettings", {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
-  storeName: text("storeName").default("Mia Electronics").notNull(),
-  storeDomain: text("storeDomain").default("mia-electronics").notNull().unique(),
+  storeName: text("storeName").default("Pony Electronics").notNull(),
+  storeDomain: text("storeDomain").default("pony-electronics").notNull().unique(),
   niche: text("niche"),
   storeAddress: text("storeAddress"),
   storePhone: text("storePhone"),
@@ -263,9 +267,9 @@ export const storeSettings = pgTable("storeSettings", {
   location: text("location").default("Nigeria").notNull(),
   aiTone: text("aiTone").default("Professional & Helpful").notNull(),
   adminName: text("adminName").default("Jonathan Frazzelle").notNull(),
-  adminEmail: text("adminEmail").default("jon@mia-agents.ai").notNull(),
+  adminEmail: text("adminEmail").default("jon@pony-agents.ai").notNull(),
   adminRole: text("adminRole").default("Store Owner").notNull(),
-  senderName: text("senderName").default("Mia Store"),
+  senderName: text("senderName").default("Pony Store"),
   senderEmail: text("senderEmail"),
   storeLogo: text("storeLogo"),
   primaryColor: text("primaryColor").default("#000000").notNull(),
@@ -275,6 +279,9 @@ export const storeSettings = pgTable("storeSettings", {
   heroTitle: text("heroTitle"),
   heroDescription: text("heroDescription"),
   footerDescription: text("footerDescription"),
+  paystackEnabled: boolean("paystackEnabled").default(false).notNull(),
+  flutterwaveEnabled: boolean("flutterwaveEnabled").default(false).notNull(),
+  shippingEnabled: boolean("shippingEnabled").default(true).notNull(),
   onboardingCompleted: boolean("onboardingCompleted").default(false).notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
 });
@@ -294,3 +301,115 @@ export const discounts = pgTable("discount", {
   createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
 });
+
+// ─────────────────────────────────────────────
+// DIGITAL PRODUCTS HUB TABLES
+// ─────────────────────────────────────────────
+
+export const digitalProducts = pgTable("digitalProduct", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  productType: text("productType").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  compareAtPrice: decimal("compareAtPrice", { precision: 10, scale: 2 }),
+  currency: text("currency").default("NGN").notNull(),
+  coverImageUrl: text("coverImageUrl"),
+  fileUrl: text("fileUrl"),
+  fileName: text("fileName"),
+  fileType: text("fileType"),
+  fileSizeBytes: integer("fileSizeBytes"),
+  status: text("status").default("draft").notNull(),
+  salesCount: integer("salesCount").default(0).notNull(),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0").notNull(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const digitalProductsRelations = relations(digitalProducts, ({ one, many }) => ({
+  user: one(users, { fields: [digitalProducts.userId], references: [users.id] }),
+  orders: many(digitalOrders),
+  downloads: many(digitalDownloads),
+}));
+
+export const digitalOrders = pgTable("digitalOrder", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  orderNumber: text("orderNumber").notNull(),
+  productId: text("productId")
+    .notNull()
+    .references(() => digitalProducts.id, { onDelete: "restrict" }),
+  customerName: text("customerName").notNull(),
+  customerEmail: text("customerEmail").notNull(),
+  amountPaid: decimal("amountPaid", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").default("NGN").notNull(),
+  paymentMethod: text("paymentMethod").default("Bank Transfer").notNull(),
+  paymentReference: text("paymentReference"),
+  status: text("status").default("completed").notNull(),
+  note: text("note"),
+  source: text("source").default("manual").notNull(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const digitalOrdersRelations = relations(digitalOrders, ({ one }) => ({
+  user: one(users, { fields: [digitalOrders.userId], references: [users.id] }),
+  product: one(digitalProducts, { fields: [digitalOrders.productId], references: [digitalProducts.id] }),
+  download: one(digitalDownloads, { fields: [digitalOrders.id], references: [digitalDownloads.orderId] }),
+}));
+
+export const digitalDownloads = pgTable("digitalDownload", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  orderId: text("orderId")
+    .notNull()
+    .references(() => digitalOrders.id, { onDelete: "cascade" }),
+  productId: text("productId")
+    .notNull()
+    .references(() => digitalProducts.id, { onDelete: "cascade" }),
+  customerEmail: text("customerEmail").notNull(),
+  token: text("token").notNull().unique(),
+  downloadCount: integer("downloadCount").default(0).notNull(),
+  maxDownloads: integer("maxDownloads").default(5).notNull(),
+  expiresAt: timestamp("expiresAt", { mode: "date" }),
+  lastDownloadedAt: timestamp("lastDownloadedAt", { mode: "date" }),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const digitalDownloadsRelations = relations(digitalDownloads, ({ one }) => ({
+  user: one(users, { fields: [digitalDownloads.userId], references: [users.id] }),
+  order: one(digitalOrders, { fields: [digitalDownloads.orderId], references: [digitalOrders.id] }),
+  product: one(digitalProducts, { fields: [digitalDownloads.productId], references: [digitalProducts.id] }),
+}));
+
+// ─────────────────────────────────────────────
+// CHAT / AI TABLES
+// ─────────────────────────────────────────────
+
+export const conversations = pgTable("conversation", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  sessionId: text("sessionId").notNull(), // Links chats across sessions (e.g. "admin-store-slug" or buyer session id)
+  storeDomain: text("storeDomain")
+    .notNull()
+    .references(() => storeSettings.storeDomain, { onDelete: "cascade" }),
+  role: text("role").notNull(), // 'user', 'assistant', 'system', 'tool'
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+});
+

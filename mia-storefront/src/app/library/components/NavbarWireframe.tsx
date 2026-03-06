@@ -12,7 +12,7 @@ export interface NavbarProps {
   onSearch?: () => void;
 }
 
-export default function NavbarWireframe({ storeName = "Mia Store", cartCount = 0, settings, onSearch }: NavbarProps) {
+export default function NavbarWireframe({ storeName = "Pony Store", cartCount = 0, settings, onSearch }: NavbarProps) {
   const primaryColor = settings?.primaryColor || "#000000";
   const headingFont = settings?.headingFont || "inherit";
   const bodyFont = settings?.bodyFont || "inherit";

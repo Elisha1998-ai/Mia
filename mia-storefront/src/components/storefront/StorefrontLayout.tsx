@@ -61,7 +61,7 @@ export const StorefrontHeader = ({ session }: { session?: Session | null }) => {
           {/* Logo */}
           <div className="flex-1 md:flex-none flex justify-center md:justify-start">
             <Link href="/store" className="font-store-heading text-2xl font-bold tracking-tight">
-              {settings?.storeName || 'Mia Store'}
+              {settings?.storeName || 'Pony Store'}
             </Link>
           </div>
 
@@ -225,9 +225,9 @@ export const StorefrontFooter = ({ session }: { session?: Session | null }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div className="space-y-6">
-            <h3 className="font-store-heading text-xl font-bold tracking-tight">{settings?.storeName || 'Mia Store'}</h3>
+            <h3 className="font-store-heading text-xl font-bold tracking-tight">{settings?.storeName || 'Pony Store'}</h3>
             <p className="text-gray-500 text-sm font-light leading-relaxed max-w-xs">
-              {settings?.footerDescription || `Agentic storefronts that understand your needs. Experience the future of commerce with ${settings?.storeName || 'Mia'}.`}
+              {settings?.footerDescription || `Agentic storefronts that understand your needs. Experience the future of commerce with ${settings?.storeName || 'Pony'}.`}
             </p>
           </div>
           <div>
@@ -277,7 +277,7 @@ export const StorefrontFooter = ({ session }: { session?: Session | null }) => {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-8 border-t border-gray-100 text-[10px] text-gray-400 uppercase tracking-widest">
-          <p>© 2026 Mia AI Storefront. All rights reserved.</p>
+          <p>© 2026 Pony AI Storefront. All rights reserved.</p>
           <div className="flex gap-8">
             <Link href="#" className="hover:text-black transition-colors">Privacy Policy</Link>
             <Link href="#" className="hover:text-black transition-colors">Terms of Service</Link>

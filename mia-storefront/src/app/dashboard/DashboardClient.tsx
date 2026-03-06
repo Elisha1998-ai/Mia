@@ -13,37 +13,81 @@ import { AnalyticsPage } from '@/components/AnalyticsPage';
 import { DiscountsPage } from '@/components/DiscountsPage';
 import { ThemeEditorPage } from '@/components/ThemeEditorPage';
 import { EmailTemplatesPage } from '@/components/EmailTemplatesPage';
+import { DigitalProductsPage } from '@/components/DigitalProductsPage';
 import { useChat } from '@/hooks/useChat';
 import { useStoreBuilder } from '@/hooks/useStoreBuilder';
 import { StoreBuilderChat } from '@/components/StoreBuilderChat';
-import { StoreBuilderPreview } from '@/components/StoreBuilderPreview';
 import { useSettings } from '@/hooks/useData';
 
-export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' }) {
+export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'products' | 'digital-products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' }) {
     const [mounted, setMounted] = React.useState(false);
     const searchParams = useSearchParams();
-    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' | null;
-    
+    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'digital-products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' | null;
+
     const { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode } = useChat();
     const storeBuilder = useStoreBuilder();
-    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder'>(defaultView || 'products');
+    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'digital-products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder'>(defaultView || 'chat');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
     const { settings, fetchSettings } = useSettings();
+    const [chatWidth, setChatWidth] = React.useState(30); // Width in percentage
+    const isResizing = React.useRef(false);
+
+    React.useEffect(() => {
+        const savedWidth = localStorage.getItem('chat-width');
+        if (savedWidth) setChatWidth(Number(savedWidth));
+    }, []);
+
+    const startResizing = (e: React.MouseEvent) => {
+        isResizing.current = true;
+        document.addEventListener('mousemove', handleHighlightMove);
+        document.addEventListener('mouseup', stopResizing);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none'; // Prevent text selection
+    };
+
+    const stopResizing = () => {
+        isResizing.current = false;
+        document.removeEventListener('mousemove', handleHighlightMove);
+        document.removeEventListener('mouseup', stopResizing);
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = 'auto'; // Re-enable text selection
+    };
+
+    const handleHighlightMove = (e: MouseEvent) => {
+        if (!isResizing.current) return;
+        const newWidth = (e.clientX / window.innerWidth) * 100;
+        if (newWidth > 20 && newWidth < 45) { // Constraints
+            setChatWidth(newWidth);
+            localStorage.setItem('chat-width', newWidth.toString());
+        }
+    };
 
     React.useEffect(() => {
         setMounted(true);
         fetchSettings();
-        if (viewParam && ['products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates', 'store-builder'].includes(viewParam)) {
+        if (viewParam && ['products', 'digital-products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates', 'store-builder'].includes(viewParam)) {
             setActiveView(viewParam);
         } else if (defaultView) {
             setActiveView(defaultView);
         }
     }, [viewParam, defaultView]);
 
+    React.useEffect(() => {
+        if (mounted) {
+            const storedPrompt = localStorage.getItem('pony_onboarding_prompt');
+            if (storedPrompt) {
+                // Switch to chat view if not already there, unless it's store-builder which has its own chat
+                if (activeView !== 'store-builder') {
+                    setActiveView('chat');
+                }
+            }
+        }
+    }, [mounted, activeView]);
+
     const adminName = settings?.adminName || 'User';
     const initials = adminName
         .split(' ')
-        .map(n => n[0])
+        .map((n: string) => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2);
@@ -59,24 +103,35 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
         );
     }
 
+    // Shared StoreBuilderChat props
+    const storeBuilderChatProps = {
+        messages: storeBuilder.messages,
+        isLoading: storeBuilder.isLoading,
+        isBuilding: storeBuilder.isBuilding,
+        buildProgress: storeBuilder.buildProgress,
+        builtStoreUrl: storeBuilder.builtStoreUrl,
+        PROGRESS_STEPS: storeBuilder.PROGRESS_STEPS,
+        sendMessage: storeBuilder.sendMessage,
+        handleFontSelection: storeBuilder.handleFontSelection,
+        reset: storeBuilder.reset,
+    };
+
     return (
         <div className="flex h-screen bg-background text-foreground overflow-hidden transition-colors relative">
             {/* Desktop Layout (3 Columns) */}
-            <div className="hidden md:grid md:grid-cols-[30%_1fr_80px] w-full h-full">
-                {/* Col 1: Chat Interface (30%) */}
-                <div className="border-r border-border-custom h-full overflow-hidden bg-background">
+            <div className="hidden md:grid w-full h-full overflow-hidden" style={{ gridTemplateColumns: `${chatWidth}% 1fr 80px` }}>
+                {/* Col 1: Chat Interface (Resizable) */}
+                <div className="border-r border-border-custom h-full overflow-hidden bg-background relative group/resize">
+                    {/* Resize Handle */}
+                    <div
+                        onMouseDown={startResizing}
+                        className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-accent/40 active:bg-accent/60 transition-colors z-[100] group-active/resize:bg-accent/60" />
+
+                    {/* Visual separation line */}
+                    <div className="absolute right-0 top-0 bottom-0 w-px bg-border-custom" />
+
                     {activeView === 'store-builder' ? (
-                        <StoreBuilderChat 
-                            messages={storeBuilder.messages}
-                            isGenerating={storeBuilder.isGenerating}
-                            prompt={storeBuilder.prompt}
-                            setPrompt={storeBuilder.setPrompt}
-                            handleGenerate={storeBuilder.handleGenerate}
-                            handleFontSelection={storeBuilder.handleFontSelection}
-                            stage={storeBuilder.stage}
-                            progressStep={storeBuilder.progressStep}
-                            PROGRESS_STEPS={storeBuilder.PROGRESS_STEPS}
-                        />
+                        <StoreBuilderChat {...storeBuilderChatProps} />
                     ) : (
                         <ChatInterface
                             messages={messages}
@@ -88,9 +143,10 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
                     )}
                 </div>
 
-                {/* Col 2: Main Content (60%) */}
+                {/* Col 2: Main Content */}
                 <main className="h-full flex flex-col min-h-0 overflow-hidden relative bg-background">
                     {activeView === 'products' && <ProductsPage />}
+                    {activeView === 'digital-products' && <DigitalProductsPage />}
                     {activeView === 'orders' && <OrdersPage />}
                     {activeView === 'customers' && <CustomersPage />}
                     {activeView === 'previews' && <PreviewsPage />}
@@ -98,20 +154,38 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
                     {activeView === 'discounts' && <DiscountsPage />}
                     {activeView === 'theme-editor' && <ThemeEditorPage />}
                     {activeView === 'email-templates' && <EmailTemplatesPage />}
+                    {/* Store builder: show a placeholder / live preview panel */}
                     {activeView === 'store-builder' && (
-                        <StoreBuilderPreview 
-                            config={storeBuilder.config}
-                            currentView={storeBuilder.currentView}
-                            setCurrentView={storeBuilder.setCurrentView}
-                            regenerateVariant={storeBuilder.regenerateVariant}
-                            onUpdateConfig={storeBuilder.setConfig}
-                        />
+                        <div className="h-full flex flex-col items-center justify-center gap-4 text-center p-8">
+                            <div className="w-20 h-20 rounded-3xl bg-foreground/5 border border-border flex items-center justify-center">
+                                <svg viewBox="0 0 24 24" className="w-9 h-9 text-foreground/30" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" strokeLinecap="round" strokeLinejoin="round" />
+                                    <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-foreground/60">Your store preview will appear here</h3>
+                                <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                                    Chat with Pony on the left to build your storefront step by step.
+                                </p>
+                            </div>
+                            {storeBuilder.builtStoreUrl && (
+                                <a
+                                    href={storeBuilder.builtStoreUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-2 px-4 py-2 bg-foreground text-background text-xs font-medium rounded-xl hover:opacity-80 transition-opacity"
+                                >
+                                    Preview Store →
+                                </a>
+                            )}
+                        </div>
                     )}
-                    {/* Fallback for 'chat' view on desktop or others */}
+                    {/* Fallback for 'chat' view on desktop */}
                     {(activeView === 'chat' || !activeView) && <ProductsPage />}
                 </main>
 
-                {/* Col 3: Sidebar (10%) */}
+                {/* Col 3: Sidebar */}
                 <div className="border-l border-border-custom h-full bg-sidebar">
                     <Sidebar
                         activeView={activeView}
@@ -122,11 +196,11 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
                 </div>
             </div>
 
-            {/* Mobile Layout (Original Stack) */}
+            {/* Mobile Layout */}
             <div className="md:hidden flex flex-col h-full w-full">
                 <header className="flex items-center justify-between px-6 py-4 border-b border-border-custom bg-background/80 backdrop-blur-md sticky top-0 z-40">
                     <div className="flex items-center gap-4">
-                        <button 
+                        <button
                             onClick={() => setIsMobileSidebarOpen(true)}
                             className="p-1 -ml-1 text-foreground/60 hover:text-foreground transition-colors"
                         >
@@ -149,6 +223,7 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
                         />
                     )}
                     {activeView === 'products' && <ProductsPage />}
+                    {activeView === 'digital-products' && <DigitalProductsPage />}
                     {activeView === 'orders' && <OrdersPage />}
                     {activeView === 'customers' && <CustomersPage />}
                     {activeView === 'previews' && <PreviewsPage />}
@@ -157,17 +232,7 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
                     {activeView === 'theme-editor' && <ThemeEditorPage />}
                     {activeView === 'email-templates' && <EmailTemplatesPage />}
                     {activeView === 'store-builder' && (
-                        <StoreBuilderChat 
-                            messages={storeBuilder.messages}
-                            isGenerating={storeBuilder.isGenerating}
-                            prompt={storeBuilder.prompt}
-                            setPrompt={storeBuilder.setPrompt}
-                            handleGenerate={storeBuilder.handleGenerate}
-                            handleFontSelection={storeBuilder.handleFontSelection}
-                            stage={storeBuilder.stage}
-                            progressStep={storeBuilder.progressStep}
-                            PROGRESS_STEPS={storeBuilder.PROGRESS_STEPS}
-                        />
+                        <StoreBuilderChat {...storeBuilderChatProps} />
                     )}
                 </main>
 

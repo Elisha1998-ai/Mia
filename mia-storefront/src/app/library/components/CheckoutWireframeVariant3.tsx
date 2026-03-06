@@ -29,10 +29,17 @@ export interface CheckoutProps {
     primaryColor?: string;
     headingFont?: string;
     bodyFont?: string;
+    paystackEnabled?: boolean;
+    flutterwaveEnabled?: boolean;
+    shippingEnabled?: boolean;
   };
 }
 
 export default function CheckoutWireframeVariant3({ cart: propCart, storeSettings }: CheckoutProps) {
+  // Check settings
+  const hasPaymentGateway = storeSettings?.paystackEnabled || storeSettings?.flutterwaveEnabled;
+  const showDelivery = storeSettings?.shippingEnabled !== false; // Default to true if not specified
+
   const getCurrencySymbol = (str?: string) => {
     if (!str) return "₦";
     if (str.includes("₦") || str.toLowerCase().includes("naira")) return "₦";
@@ -70,7 +77,9 @@ export default function CheckoutWireframeVariant3({ cart: propCart, storeSetting
 
   const [cart] = useState(propCart && propCart.length > 0 ? propCart : defaultCart);
   const [deliveryMethod, setDeliveryMethod] = useState<'standard' | 'express'>('standard');
-  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave' | 'whatsapp'>('paystack');
+  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave' | 'whatsapp'>(
+    hasPaymentGateway ? (storeSettings?.paystackEnabled ? 'paystack' : 'flutterwave') : 'whatsapp'
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -137,131 +146,139 @@ export default function CheckoutWireframeVariant3({ cart: propCart, storeSetting
             </section>
 
             {/* Shipping Information */}
-            <section>
-              <h2 className="text-lg font-medium text-gray-900 mb-6" style={{ fontFamily: headingFont }}>Shipping information</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
-                <div>
-                  <label htmlFor="first-name" className="block text-sm font-medium text-gray-700 mb-2">First name</label>
-                  <input type="text" id="first-name" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+            {showDelivery && (
+              <section>
+                <h2 className="text-lg font-medium text-gray-900 mb-6" style={{ fontFamily: headingFont }}>Shipping information</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
+                  <div>
+                    <label htmlFor="first-name" className="block text-sm font-medium text-gray-700 mb-2">First name</label>
+                    <input type="text" id="first-name" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
+                  <div>
+                    <label htmlFor="last-name" className="block text-sm font-medium text-gray-700 mb-2">Last name</label>
+                    <input type="text" id="last-name" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                    <input type="text" id="company" className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                    <input type="text" id="address" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="apartment" className="block text-sm font-medium text-gray-700 mb-2">Apartment, suite, etc.</label>
+                    <input type="text" id="apartment" className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                    <input type="text" id="city" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
+                  <div>
+                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                    <select id="country" className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3 bg-white" style={focusStyle}>
+                      <option>Nigeria</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">State / Province</label>
+                    <input type="text" id="state" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
+                  <div>
+                    <label htmlFor="postal-code" className="block text-sm font-medium text-gray-700 mb-2">Postal code</label>
+                    <input type="text" id="postal-code" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <input type="tel" id="phone" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
+                  </div>
                 </div>
-                <div>
-                  <label htmlFor="last-name" className="block text-sm font-medium text-gray-700 mb-2">Last name</label>
-                  <input type="text" id="last-name" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
-                </div>
-                <div className="sm:col-span-2">
-                  <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">Company</label>
-                  <input type="text" id="company" className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
-                </div>
-                <div className="sm:col-span-2">
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                  <input type="text" id="address" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
-                </div>
-                <div className="sm:col-span-2">
-                  <label htmlFor="apartment" className="block text-sm font-medium text-gray-700 mb-2">Apartment, suite, etc.</label>
-                  <input type="text" id="apartment" className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
-                </div>
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input type="text" id="city" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
-                </div>
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                  <select id="country" className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3 bg-white" style={focusStyle}>
-                    <option>Nigeria</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">State / Province</label>
-                  <input type="text" id="state" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
-                </div>
-                <div>
-                  <label htmlFor="postal-code" className="block text-sm font-medium text-gray-700 mb-2">Postal code</label>
-                  <input type="text" id="postal-code" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
-                </div>
-                <div className="sm:col-span-2">
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input type="tel" id="phone" required className="block w-full rounded-md border-gray-100 shadow-sm focus:border-black focus:ring-black focus:ring-1 sm:text-sm h-11 border px-3" style={focusStyle} />
-                </div>
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* Delivery Method */}
-            <section>
-              <h2 className="text-lg font-medium text-gray-900 mb-6" style={{ fontFamily: headingFont }}>Delivery method</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div 
-                  onClick={() => setDeliveryMethod('standard')}
-                  className={`relative p-4 border rounded-lg cursor-pointer transition-all flex flex-col justify-between h-32 ${deliveryMethod === 'standard' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}
-                  style={{ borderColor: deliveryMethod === 'standard' ? primaryColor : '#F3F4F6' }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">Standard</p>
-                      <p className="text-xs text-gray-500 mt-1">4–10 business days</p>
+            {showDelivery && (
+              <section>
+                <h2 className="text-lg font-medium text-gray-900 mb-6" style={{ fontFamily: headingFont }}>Delivery method</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div 
+                    onClick={() => setDeliveryMethod('standard')}
+                    className={`relative p-4 border rounded-lg cursor-pointer transition-all flex flex-col justify-between h-32 ${deliveryMethod === 'standard' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}
+                    style={{ borderColor: deliveryMethod === 'standard' ? primaryColor : '#F3F4F6' }}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">Standard</p>
+                        <p className="text-xs text-gray-500 mt-1">4–10 business days</p>
+                      </div>
+                      {deliveryMethod === 'standard' && <CheckCircle2 className="w-5 h-5" style={{ color: primaryColor }} />}
                     </div>
-                    {deliveryMethod === 'standard' && <CheckCircle2 className="w-5 h-5" style={{ color: primaryColor }} />}
+                    <p className="text-sm font-bold text-gray-900">{currency}{formatPrice(3000)}</p>
                   </div>
-                  <p className="text-sm font-bold text-gray-900">{currency}{formatPrice(3000)}</p>
-                </div>
 
-                <div 
-                  onClick={() => setDeliveryMethod('express')}
-                  className={`relative p-4 border rounded-lg cursor-pointer transition-all flex flex-col justify-between h-32 ${deliveryMethod === 'express' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}
-                  style={{ borderColor: deliveryMethod === 'express' ? primaryColor : '#F3F4F6' }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">Express</p>
-                      <p className="text-xs text-gray-500 mt-1">2–5 business days</p>
+                  <div 
+                    onClick={() => setDeliveryMethod('express')}
+                    className={`relative p-4 border rounded-lg cursor-pointer transition-all flex flex-col justify-between h-32 ${deliveryMethod === 'express' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}
+                    style={{ borderColor: deliveryMethod === 'express' ? primaryColor : '#F3F4F6' }}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">Express</p>
+                        <p className="text-xs text-gray-500 mt-1">2–5 business days</p>
+                      </div>
+                      {deliveryMethod === 'express' && <CheckCircle2 className="w-5 h-5" style={{ color: primaryColor }} />}
                     </div>
-                    {deliveryMethod === 'express' && <CheckCircle2 className="w-5 h-5" style={{ color: primaryColor }} />}
+                    <p className="text-sm font-bold text-gray-900">{currency}{formatPrice(7500)}</p>
                   </div>
-                  <p className="text-sm font-bold text-gray-900">{currency}{formatPrice(7500)}</p>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* Payment */}
             <section>
               <h2 className="text-lg font-medium text-gray-900 mb-6" style={{ fontFamily: headingFont }}>Payment</h2>
               <div className="space-y-4">
-                <label 
-                  className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === 'paystack' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}
-                  style={{ borderColor: paymentMethod === 'paystack' ? primaryColor : '#F3F4F6' }}
-                >
-                  <div className="flex items-center">
-                    <div className="relative flex items-center justify-center">
-                      <input type="radio" className="sr-only" checked={paymentMethod === 'paystack'} onChange={() => setPaymentMethod('paystack')} />
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'paystack' ? '' : 'border-gray-100'}`} style={{ borderColor: paymentMethod === 'paystack' ? primaryColor : '#F3F4F6' }}>
-                        {paymentMethod === 'paystack' && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />}
+                {storeSettings?.paystackEnabled && (
+                  <label 
+                    className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === 'paystack' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}
+                    style={{ borderColor: paymentMethod === 'paystack' ? primaryColor : '#F3F4F6' }}
+                  >
+                    <div className="flex items-center">
+                      <div className="relative flex items-center justify-center">
+                        <input type="radio" className="sr-only" checked={paymentMethod === 'paystack'} onChange={() => setPaymentMethod('paystack')} />
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'paystack' ? '' : 'border-gray-100'}`} style={{ borderColor: paymentMethod === 'paystack' ? primaryColor : '#F3F4F6' }}>
+                          {paymentMethod === 'paystack' && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />}
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-bold text-gray-900">Paystack</p>
+                        <p className="text-xs text-gray-500">Pay securely with your card or bank account</p>
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-bold text-gray-900">Paystack</p>
-                      <p className="text-xs text-gray-500">Pay securely with your card or bank account</p>
-                    </div>
-                  </div>
-                  <img src="/Paystack.png" alt="Paystack" className="h-6 object-contain" />
-                </label>
+                    <img src="/Paystack.png" alt="Paystack" className="h-6 object-contain" />
+                  </label>
+                )}
 
-                <label 
-                  className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === 'flutterwave' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}
-                  style={{ borderColor: paymentMethod === 'flutterwave' ? primaryColor : '#F3F4F6' }}
-                >
-                  <div className="flex items-center">
-                    <div className="relative flex items-center justify-center">
-                      <input type="radio" className="sr-only" checked={paymentMethod === 'flutterwave'} onChange={() => setPaymentMethod('flutterwave')} />
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'flutterwave' ? '' : 'border-gray-100'}`} style={{ borderColor: paymentMethod === 'flutterwave' ? primaryColor : '#F3F4F6' }}>
-                        {paymentMethod === 'flutterwave' && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />}
+                {storeSettings?.flutterwaveEnabled && (
+                  <label 
+                    className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === 'flutterwave' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}
+                    style={{ borderColor: paymentMethod === 'flutterwave' ? primaryColor : '#F3F4F6' }}
+                  >
+                    <div className="flex items-center">
+                      <div className="relative flex items-center justify-center">
+                        <input type="radio" className="sr-only" checked={paymentMethod === 'flutterwave'} onChange={() => setPaymentMethod('flutterwave')} />
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'flutterwave' ? '' : 'border-gray-100'}`} style={{ borderColor: paymentMethod === 'flutterwave' ? primaryColor : '#F3F4F6' }}>
+                          {paymentMethod === 'flutterwave' && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />}
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-bold text-gray-900">Flutterwave</p>
+                        <p className="text-xs text-gray-500">Fast and secure payments across Africa</p>
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-bold text-gray-900">Flutterwave</p>
-                      <p className="text-xs text-gray-500">Fast and secure payments across Africa</p>
-                    </div>
-                  </div>
-                  <img src="/Flutterwave.png" alt="Flutterwave" className="h-6 object-contain" />
-                </label>
+                    <img src="/Flutterwave.png" alt="Flutterwave" className="h-6 object-contain" />
+                  </label>
+                )}
 
                 <label 
                   className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === 'whatsapp' ? 'bg-white shadow-sm' : 'bg-gray-50'}`}

@@ -7,6 +7,17 @@ import { auth } from '@/auth';
 // GET /api/customers - Get all customers with pagination
 export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const skip = parseInt(searchParams.get('skip') || '0');
+    const limit = parseInt(searchParams.get('limit') || '100');
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({
+        customers: [],
+        total: 0,
+        skip,
+        limit
+      });
+    }
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,9 +40,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const { searchParams } = new URL(request.url);
-    const skip = parseInt(searchParams.get('skip') || '0');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    
     
     // In Drizzle, we'll use a subquery or join to get order counts and last order date
     const customersQuery = db.select({

@@ -1,253 +1,76 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, ArrowLeft, CreditCard, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useSettings } from '@/hooks/useData';
+import CartWireframe from '@/app/library/components/CartWireframe';
 
 interface CartItem {
   id: string;
   name: string;
   price: number;
-  image_url?: string;
   quantity: number;
-  size?: string;
-  color?: string;
+  image_url?: string;
+  image?: string;
+  variant?: string;
 }
 
 export default function CartPage() {
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const { settings, fetchSettings } = useSettings();
+  const router = useRouter();
 
   React.useEffect(() => {
     fetchSettings();
-    const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
-    setCart(savedCart);
+    const saved = JSON.parse(localStorage.getItem('cart') || '[]');
+    setCart(saved);
     setLoading(false);
   }, []);
 
-  const updateQuantity = (id: string, delta: number) => {
-    const newCart = cart.map(item => {
-      if (item.id === id) {
-        const newQty = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    });
-    setCart(newCart);
-    localStorage.setItem('cart', JSON.stringify(newCart));
-    window.dispatchEvent(new Event('cart-updated'));
+  // Keep localStorage in sync when cart changes inside the wireframe
+  // The CartWireframe handles its own quantity/remove state internally;
+  // we just supply the initial data. For a full sync we'd lift state,
+  // but the wireframe is intentionally self-contained for the storefront.
+
+  const storeSettings = {
+    storeName: settings?.storeName,
+    primaryColor: settings?.primaryColor,
+    headingFont: settings?.headingFont,
+    bodyFont: settings?.bodyFont,
+    currency: '₦',
   };
 
-  const removeItem = (id: string) => {
-    const newCart = cart.filter(item => item.id !== id);
-    setCart(newCart);
-    localStorage.setItem('cart', JSON.stringify(newCart));
-    window.dispatchEvent(new Event('cart-updated'));
-  };
-
-  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const shipping = subtotal > 50000 ? 0 : 2500;
-  const total = subtotal + shipping;
+  // Reshape localStorage cart items to what the wireframe expects
+  const wireframeCart = cart.map((item) => ({
+    id: item.id,
+    name: item.name,
+    price: Number(item.price),
+    quantity: item.quantity,
+    image: item.image_url || item.image || null,
+    variant: item.variant,
+  }));
 
   if (loading) {
     return (
-      <div className="max-w-screen-xl mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        <div className="animate-pulse space-y-8">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-4">
-              {[1, 2].map((i) => (
-                <div key={i} className="h-32 bg-gray-100 rounded-lg"></div>
-              ))}
-            </div>
-            <div className="h-64 bg-gray-100 rounded-lg"></div>
+      <div className="max-w-screen-xl mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8 animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/4 mb-8" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-32 bg-gray-100 rounded-lg" />
+            ))}
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (cart.length === 0) {
-    return (
-      <div className="flex h-[80vh] flex-col items-center justify-center bg-white px-4">
-        <div className="mx-auto max-w-md text-center">
-          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gray-50">
-            <ShoppingBag className="h-10 w-10 text-gray-300" />
-          </div>
-          
-          <h1 className="mt-6 text-2xl font-bold tracking-tight text-gray-900 sm:text-4xl font-store-heading">
-            Your cart is empty
-          </h1>
-
-          <p className="mt-4 text-gray-500 font-store-body">
-            Looks like you haven't added anything to your collection yet. 
-            {settings?.storeName || 'Mia'} can help you find something you'll love.
-          </p>
-
-          <Link
-            href="/store"
-            className="mt-8 inline-flex items-center gap-2 rounded-full bg-black px-8 py-3 text-sm font-medium text-white transition hover:bg-gray-800 focus:outline-none focus:ring focus:ring-gray-200"
-          >
-            Start Shopping <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="h-64 bg-gray-100 rounded-lg" />
         </div>
       </div>
     );
   }
 
   return (
-    <section className="bg-white py-8 sm:py-16 font-store-body">
-      <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
-        <header className="flex items-center justify-between border-b border-gray-100 pb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl font-store-heading">Shopping Cart</h1>
-            <p className="mt-2 text-gray-500">{cart.length} items in your bag</p>
-          </div>
-          <Link href="/store" className="hidden sm:flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Continue Shopping
-          </Link>
-        </header>
-
-        <div className="mt-8 lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12 xl:gap-x-16">
-          <div className="lg:col-span-8">
-            <ul className="divide-y divide-gray-100">
-              {cart.map((item) => (
-                <li key={item.id} className="flex py-6 sm:py-10">
-                  <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl border border-gray-100 sm:h-32 sm:w-32">
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="h-full w-full object-cover object-center"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gray-50 text-gray-300 text-xs uppercase">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="ml-4 flex flex-1 flex-col justify-between sm:ml-6">
-                    <div className="relative pr-9 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:pr-0">
-                      <div>
-                        <div className="flex justify-between">
-                          <h3 className="text-lg font-medium text-gray-900 hover:text-gray-700">
-                            <Link href={`/store/products/${item.id}`}>{item.name}</Link>
-                          </h3>
-                        </div>
-                        <div className="mt-1 flex text-sm text-gray-500 space-x-2">
-                          {item.color && <p className="border-r border-gray-200 pr-2">{item.color}</p>}
-                          {item.size && <p>{item.size}</p>}
-                        </div>
-                        <p className="mt-2 text-lg font-medium text-gray-900">
-                          ${item.price.toLocaleString()}
-                        </p>
-                      </div>
-
-                      <div className="mt-4 sm:mt-0 sm:pr-9">
-                        <label htmlFor={`quantity-${item.id}`} className="sr-only">
-                          Quantity, {item.name}
-                        </label>
-                        <div className="flex items-center rounded border border-gray-200 w-max">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, -1)}
-                            className="h-8 w-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="h-8 w-10 flex items-center justify-center text-sm font-medium border-x border-gray-200">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, 1)}
-                            className="h-8 w-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        <div className="absolute right-0 top-0">
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.id)}
-                            className="-m-2 inline-flex p-2 text-gray-400 hover:text-red-500 transition-colors"
-                          >
-                            <span className="sr-only">Remove</span>
-                            <Trash2 className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center space-x-2 text-sm text-green-600">
-                      <Check className="h-4 w-4" />
-                      <span>In stock and ready to ship</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            
-            <div className="mt-8 pt-8 border-t border-gray-100 block sm:hidden">
-               <Link href="/store" className="flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors w-full py-3 bg-gray-50 rounded-lg">
-                <ArrowLeft className="w-4 h-4" />
-                Continue Shopping
-              </Link>
-            </div>
-          </div>
-
-          {/* Order Summary */}
-          <div className="lg:col-span-4 mt-16 lg:mt-0">
-            <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-6 sm:p-8">
-              <h2 className="text-lg font-medium text-gray-900">Order Summary</h2>
-
-              <dl className="mt-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <dt className="text-sm text-gray-600">Subtotal</dt>
-                  <dd className="text-sm font-medium text-gray-900">${subtotal.toLocaleString()}</dd>
-                </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <dt className="flex items-center text-sm text-gray-600">
-                    <span>Shipping estimate</span>
-                  </dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    {shipping === 0 ? (
-                      <span className="text-green-600">Free</span>
-                    ) : (
-                      `$${shipping.toLocaleString()}`
-                    )}
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <dt className="text-base font-medium text-gray-900">Order Total</dt>
-                  <dd className="text-xl font-bold text-gray-900">${total.toLocaleString()}</dd>
-                </div>
-              </dl>
-
-              <div className="mt-6">
-                <Link
-                  href="/store/checkout"
-                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-transparent bg-black px-6 py-4 text-base font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all"
-                >
-                  Proceed to Checkout <ArrowRight className="w-5 h-5" />
-                </Link>
-              </div>
-              
-              <div className="mt-6 flex justify-center space-x-4 text-gray-400 opacity-75">
-                {/* Payment Icons - decorative */}
-                <div className="h-8 w-12 bg-gray-200 rounded animate-pulse" title="Visa"></div>
-                <div className="h-8 w-12 bg-gray-200 rounded animate-pulse" title="Mastercard"></div>
-                <div className="h-8 w-12 bg-gray-200 rounded animate-pulse" title="PayPal"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <CartWireframe
+      cart={wireframeCart}
+      storeSettings={storeSettings}
+    />
   );
 }

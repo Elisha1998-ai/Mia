@@ -17,7 +17,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let finalUserId = userId;
+    // Resolve actual userId if it's an email
+    let resolvedUserId = userId;
     if (userId.includes('@')) {
       const userRecord = await db.select({ id: usersTable.id })
         .from(usersTable)
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
         .limit(1);
       
       if (userRecord.length > 0) {
-        finalUserId = userRecord[0].id;
+        resolvedUserId = userRecord[0].id;
       }
     }
 
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
     .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
     .leftJoin(orderItemsTable, eq(ordersTable.id, orderItemsTable.orderId))
     .leftJoin(productsTable, eq(orderItemsTable.productId, productsTable.id))
-    .where(eq(ordersTable.userId, userId))
+    .where(eq(ordersTable.userId, resolvedUserId))
     .groupBy(ordersTable.id, customersTable.id)
     .orderBy(desc(ordersTable.createdAt))
     .limit(limit)
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
 
     const [totalResult] = await db.select({ count: count() })
       .from(ordersTable)
-      .where(eq(ordersTable.userId, userId));
+      .where(eq(ordersTable.userId, resolvedUserId));
     const total = totalResult?.count || 0;
 
     return NextResponse.json({
@@ -137,6 +138,19 @@ export async function POST(request: Request) {
       items = [] 
     } = body;
 
+    // Resolve actual userId if it's an email
+    let resolvedUserId = userId;
+    if (userId.includes('@')) {
+      const userRecord = await db.select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.email, userId))
+        .limit(1);
+      
+      if (userRecord.length > 0) {
+        resolvedUserId = userRecord[0].id;
+      }
+    }
+
     // In Drizzle, we handle transactions for nested creations
     const result = await db.transaction(async (tx) => {
       let finalCustomerId = customer_id;
@@ -150,7 +164,7 @@ export async function POST(request: Request) {
         const [existingCustomer] = await tx.select()
           .from(customersTable)
           .where(and(
-            eq(customersTable.userId, finalUserId),
+            eq(customersTable.userId, resolvedUserId),
             eq(customersTable.email, finalEmail)
           ))
           .limit(1);
@@ -159,7 +173,7 @@ export async function POST(request: Request) {
           finalCustomerId = existingCustomer.id;
         } else {
           const [newCustomer] = await tx.insert(customersTable).values({
-            userId: finalUserId,
+            userId: resolvedUserId,
             fullName: customer_name,
             email: finalEmail,
             phone: customer_phone || null,
@@ -170,10 +184,10 @@ export async function POST(request: Request) {
 
       // 1. Create the order
       const [order] = await tx.insert(ordersTable).values({
-        userId: finalUserId,
+        userId: resolvedUserId,
         orderNumber: order_number || `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
         customerId: finalCustomerId,
-        totalAmount: total_amount.toString(),
+        totalAmount: (total_amount !== undefined && total_amount !== null) ? total_amount.toString() : '0',
         status: status,
         externalId: external_id,
         shippingAddress: shipping_address,
@@ -182,14 +196,30 @@ export async function POST(request: Request) {
       }).returning();
 
       if (items.length > 0) {
+        // 1. Insert order items
         await tx.insert(orderItemsTable).values(
           items.map((item: any) => ({
             orderId: order.id,
             productId: item.product_id,
-            quantity: item.quantity,
-            price: item.price.toString()
+            quantity: item.quantity || 1,
+            price: (item.price !== undefined && item.price !== null) ? item.price.toString() : '0'
           }))
         );
+
+        // 2. Reduce stock for each product
+        for (const item of items) {
+          if (item.product_id) {
+            const qty = parseInt(item.quantity?.toString() || "0");
+            if (qty > 0) {
+              await tx.update(productsTable)
+                .set({
+                  stockQuantity: sql`${productsTable.stockQuantity} - ${qty}`,
+                  updatedAt: new Date()
+                })
+                .where(eq(productsTable.id, item.product_id));
+            }
+          }
+        }
       }
 
       // Fetch the created order with details to return a complete object
@@ -219,8 +249,16 @@ export async function POST(request: Request) {
       .where(eq(ordersTable.id, order.id))
       .groupBy(ordersTable.id, customersTable.id);
 
+      if (!orderWithDetails || orderWithDetails.length === 0) {
+        throw new Error("Failed to retrieve created order details");
+      }
+
       return orderWithDetails[0];
     });
+
+    if (!result) {
+      throw new Error("Order creation failed - no result returned");
+    }
 
     return NextResponse.json({
       id: result.id,
@@ -246,12 +284,11 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Error creating order:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to create order', 
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      },
+      { error: error.message || 'Failed to create order' },
       { status: 500 }
     );
   }
 }
+
+// DELETE /api/orders/[id] - Delete an order (if needed)
+// ... existing code if any ...

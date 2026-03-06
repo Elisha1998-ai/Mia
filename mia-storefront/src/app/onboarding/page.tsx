@@ -453,7 +453,7 @@ export default function OnboardingPage() {
                         name="storeName"
                         value={formData.storeName}
                         onChange={handleChange}
-                        placeholder="Mia Electronics"
+                        placeholder="Pony Electronics"
                         className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
                       />
                     </div>
@@ -712,7 +712,7 @@ export default function OnboardingPage() {
           </form>
 
           <p className="mt-8 text-center text-xs text-muted-foreground px-8">
-            By completing this setup, you allow Mia to use this information to personalize your business experience.
+            By completing this setup, you allow Pony to use this information to personalize your business experience.
           </p>
         </div>
       </div>

@@ -50,7 +50,7 @@ export const CustomerDetailModal = ({ isOpen, onClose, customer }: CustomerDetai
   const handleWhatsApp = () => {
     if (customer.phone) {
       const phone = customer.phone.replace(/\D/g, '');
-      const message = encodeURIComponent(`Hello ${customer.full_name || ''}, I'm contacting you from Mia.`);
+      const message = encodeURIComponent(`Hello ${customer.full_name || ''}, I'm contacting you from Pony.`);
       window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
     }
   };

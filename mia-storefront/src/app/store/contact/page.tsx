@@ -31,7 +31,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="text-[10px] uppercase tracking-widest font-bold text-gray-900 mb-1">Email Us</h3>
-                <p className="text-gray-500 text-sm">concierge@miastore.ai</p>
+                <p className="text-gray-500 text-sm">concierge@ponystore.ai</p>
               </div>
             </div>
 
@@ -41,7 +41,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="text-[10px] uppercase tracking-widest font-bold text-gray-900 mb-1">Call Us</h3>
-                <p className="text-gray-500 text-sm">+234 800 MIA STORE</p>
+                <p className="text-gray-500 text-sm">+234 800 PONY STORE</p>
               </div>
             </div>
 

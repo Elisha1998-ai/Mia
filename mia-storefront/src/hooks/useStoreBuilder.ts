@@ -1,273 +1,175 @@
-import { useState, useEffect } from 'react';
-import { SiteConfig, PageView } from '@/types/store-builder';
+import { useState, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 
-// --- Generator Logic (Rule-Based AI) ---
+export interface StoreBuilderMessage {
+  role: 'user' | 'ai';
+  text: string;
+  widget?: StoreBuilderWidget | null;
+  intent?: string;
+  isTyping?: boolean;
+}
 
-export const FONTS = ['Inter', 'Playfair Display', 'Montserrat', 'Space Grotesk'];
-const COLORS = ['#000000', '#2563EB', '#DC2626', '#059669', '#7C3AED'];
+export interface FontOption {
+  id: string;
+  name: string;
+  heading: string;
+  body: string;
+  description: string;
+}
 
-const generateConfig = (prompt: string, preferences?: { color?: string, font?: string }): SiteConfig => {
-  const isMinimal = prompt.toLowerCase().includes('minimal') || prompt.toLowerCase().includes('clean');
-  const isFashion = prompt.toLowerCase().includes('fashion') || prompt.toLowerCase().includes('clothing');
-  
-  // Branding
-  const storeName = prompt.match(/called\s+["']?([^"'\s.,!?]+(?: [^"'\s.,!?]+)*)["']?/i)?.[1] || 
-                   prompt.match(/named\s+["']?([^"'\s.,!?]+(?: [^"'\s.,!?]+)*)["']?/i)?.[1] || 
-                   prompt.match(/brand\s+(?:called|named)\s+["']?([^"'\s.,!?]+(?: [^"'\s.,!?]+)*)["']?/i)?.[1] ||
-                   "MIA STORE";
-  
-  // Resolve Color
-  let primaryColor = isMinimal ? '#000000' : COLORS[Math.floor(Math.random() * COLORS.length)];
-  if (preferences?.color && !preferences.color.toLowerCase().includes('surprise')) {
-    // Basic color mapping or pass through if it looks like a hex
-    if (preferences.color.startsWith('#')) {
-      primaryColor = preferences.color;
-    } else {
-      // Map common names to hex
-      const colorMap: Record<string, string> = {
-        'blue': '#2563EB',
-        'red': '#DC2626',
-        'green': '#059669',
-        'purple': '#7C3AED',
-        'black': '#000000',
-        'white': '#FFFFFF',
-        'pink': '#EC4899',
-        'orange': '#F97316',
-      };
-      // Try to find a match in the user's string
-      const matchedColor = Object.keys(colorMap).find(c => preferences.color!.toLowerCase().includes(c));
-      if (matchedColor) primaryColor = colorMap[matchedColor];
-    }
-  }
-
-  // Resolve Font
-  // Priority: User Preference > Prompt Context > Default
-  let headingFont = 'Playfair Display'; // Default fallback
-  
-  if (preferences?.font && !preferences.font.toLowerCase().includes('decide')) {
-     // Direct match from our FONTS list first
-     const exactMatch = FONTS.find(f => preferences.font!.toLowerCase().includes(f.toLowerCase()));
-     if (exactMatch) {
-       headingFont = exactMatch;
-     } else {
-       // Map generic terms
-       const fontMap: Record<string, string> = {
-          'modern': 'Inter',
-          'classic': 'Playfair Display',
-          'serif': 'Playfair Display',
-          'sans': 'Inter',
-          'bold': 'Montserrat',
-          'tech': 'Space Grotesk'
-       };
-       const matchedFont = Object.keys(fontMap).find(f => preferences.font!.toLowerCase().includes(f));
-       if (matchedFont) headingFont = fontMap[matchedFont];
-     }
-  } else {
-    // Fallback logic if no preference was set
-    headingFont = isMinimal ? 'Inter' : 'Playfair Display';
-  }
-  
-  // Variants - Randomize if not specific
-  const navbarVariant = isMinimal ? 'v2' : (Math.random() > 0.5 ? 'v1' : 'v2');
-  const footerVariant = isMinimal ? 'v2' : (Math.random() > 0.5 ? 'v1' : 'v2');
-  const checkoutVariant = isMinimal ? 'v2' : (Math.random() < 0.33 ? 'v1' : Math.random() < 0.66 ? 'v2' : 'v3');
-
-  // Copy Generation (Mock AI)
-  let heroTitle = "Elevate Your Lifestyle";
-  let heroSubtitle = "Discover our curated collection of premium essentials.";
-  
-  if (isFashion) {
-    heroTitle = "Redefine Your Wardrobe";
-    heroSubtitle = "Timeless pieces for the modern individual.";
-  } else if (prompt.toLowerCase().includes('tech')) {
-    heroTitle = "Future of Tech";
-    heroSubtitle = "Innovative gadgets for a smarter life.";
-  }
-
-  return {
-    branding: {
-      storeName,
-      primaryColor,
-      headingFont,
-      bodyFont: 'Inter',
-    },
-    variants: {
-      navbar: navbarVariant,
-      footer: footerVariant,
-      checkout: checkoutVariant,
-      hero: 'v1',
-    },
-    copy: {
-      heroTitle,
-      heroSubtitle,
-      heroButton: "Shop Collection",
-      aboutTitle: `About ${storeName}`,
-      aboutText: "We believe in quality, sustainability, and exceptional design. Our mission is to bring you the best products that enhance your daily life.",
-      footerDescription: "Premium quality essentials for the modern lifestyle. Designed with care and crafted to last.",
-      footerBigText: "Create Your<br/>Own Unique<br/>Look"
-    }
-  };
-};
+export interface StoreBuilderWidget {
+  type: 'font_picker' | 'store_preview' | 'progress';
+  title?: string;
+  description?: string;
+  fonts?: FontOption[];
+  url?: string;
+  storeName?: string;
+}
 
 export const useStoreBuilder = () => {
-  const [prompt, setPrompt] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [config, setConfig] = useState<SiteConfig | null>(null);
-  const [currentView, setCurrentView] = useState<PageView>('home');
-  
-  // New State for Multi-step conversation
-  const [stage, setStage] = useState<'initial' | 'asking_color' | 'asking_font' | 'generating' | 'completed'>('initial');
-  const [storeDescription, setStoreDescription] = useState("");
-  const [preferences, setPreferences] = useState({ color: '', font: '' });
-  const [progressStep, setProgressStep] = useState(0);
-
-  const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string}[]>([
-    { role: 'ai', text: "Hi! I'm Mia, your AI store builder. Describe your dream store, and I'll design it for you in seconds." }
+  const { data: session } = useSession();
+  const [messages, setMessages] = useState<StoreBuilderMessage[]>([
+    {
+      role: 'ai',
+      text: "Hi! I'm Pony. Tell me what kind of store you want and I'll build it for you. You can be as brief or specific as you like.",
+    },
   ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [builtStoreUrl, setBuiltStoreUrl] = useState<string | null>(null);
+  const [buildProgress, setBuildProgress] = useState(0);
+
+  // Stores the conversation history to send to the AI each turn
+  const [history, setHistory] = useState<{ role: string; content: string }[]>([]);
 
   const PROGRESS_STEPS = [
-    "Designing the store layout...",
-    "Adding colors to spice things up...",
-    "Perfecting the layout...",
-    "Writing content...",
-    "Finalizing the design..."
+    'Applying your branding tokens...',
+    'Generating hero copy...',
+    'Configuring storefront pages...',
+    'Optimising for mobile and SEO...',
+    'Activating your live store URL...',
   ];
 
-  // Effect to handle the progress simulation
-  useEffect(() => {
-    if (stage === 'generating') {
-      setIsGenerating(true);
-      let step = 0;
-      setProgressStep(0);
-      
-      const interval = setInterval(() => {
-        step++;
-        if (step < PROGRESS_STEPS.length) {
-          setProgressStep(step);
-        } else {
-          clearInterval(interval);
-          finishGeneration();
+  const sendMessage = useCallback(
+    async (content: string, fontSelection?: string) => {
+      const userText = fontSelection || content;
+      if (!userText.trim()) return;
+
+      // Add user message to UI
+      const userMsg: StoreBuilderMessage = { role: 'user', text: userText };
+      setMessages((prev) => [...prev, userMsg]);
+      setIsLoading(true);
+
+      // Add a typing indicator
+      setMessages((prev) => [...prev, { role: 'ai', text: '', isTyping: true }]);
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userText,
+            user_id: session?.user?.id,
+            history: history.slice(-10), // send last 10 turns for context
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
         }
-      }, 2000); // 2000ms per step
 
-      return () => clearInterval(interval);
-    }
-  }, [stage]);
+        const data = await response.json();
 
-  const finishGeneration = () => {
-    const newConfig = generateConfig(storeDescription, preferences);
-    setConfig(newConfig);
-    
-    let responseText = `I've designed a ${newConfig.variants.navbar === 'v2' ? 'minimalist' : 'standard'} store for "${newConfig.branding.storeName}".`;
-    responseText += ` I chose ${newConfig.branding.headingFont} for the typography to give it a ${newConfig.branding.headingFont === 'Inter' ? 'modern' : 'classic'} feel.`;
-    
-    setMessages(prev => [...prev, { role: 'ai', text: responseText }]);
-    setIsGenerating(false);
-    setStage('completed');
-  };
+        // Update conversation history
+        setHistory((prev) => [
+          ...prev,
+          { role: 'user', content: userText },
+          { role: 'assistant', content: data.content || '' },
+        ]);
 
-  const handleFontSelection = (selectedFont: string) => {
-    setPreferences(prev => ({ ...prev, font: selectedFont }));
-      
-    // Start generation
-    setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        role: 'user', 
-        text: selectedFont 
-      }, { 
-        role: 'ai', 
-        text: "Perfect! I'm starting the design now..." 
-      }]);
-      setStage('generating');
-    }, 500);
-  };
+        // Remove typing indicator
+        setMessages((prev) => prev.filter((m) => !m.isTyping));
 
-  const handleGenerate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim()) return;
+        const aiMessage: StoreBuilderMessage = {
+          role: 'ai',
+          text: data.content || '',
+          widget: data.widget || null,
+          intent: data.intent,
+        };
 
-    const userText = prompt.trim();
-    setPrompt(""); // Clear input
+        setMessages((prev) => [...prev, aiMessage]);
 
-    // Add user message
-    setMessages(prev => [...prev, { role: 'user', text: userText }]);
+        // Handle [CONFIGURE_STORE] — start the progress animation
+        if (data.intent === 'store_setup' && data.widget?.type === 'store_preview') {
+          setIsBuilding(true);
+          setBuildProgress(0);
 
-    if (stage === 'initial' || stage === 'completed') {
-      // Start new flow
-      setStoreDescription(userText);
-      setPreferences({ color: '', font: '' }); // Reset preferences
-      
-      // Ask for color
-      setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          text: "That sounds exciting! To tailor the look, what primary color would you like for your store?" 
-        }]);
-        setStage('asking_color');
-      }, 500);
-    
-    } else if (stage === 'asking_color') {
-      setPreferences(prev => ({ ...prev, color: userText }));
-      
-      // Ask for font
-      setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          text: "Got it. And what font style do you prefer? (e.g., Modern, Classic, Bold)" 
-        }]);
-        setStage('asking_font');
-      }, 500);
-
-    } else if (stage === 'asking_font') {
-      setPreferences(prev => ({ ...prev, font: userText }));
-      
-      // Start generation
-      setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          text: "Perfect! I'm starting the design now..." 
-        }]);
-        setStage('generating');
-      }, 500);
-    }
-  };
-
-  const regenerateVariant = () => {
-    if (config) {
-      const randomVariant = () => (Math.random() > 0.5 ? 'v1' : 'v2') as 'v1' | 'v2';
-      const randomCheckoutVariant = () => {
-        const r = Math.random();
-        if (r < 0.33) return 'v1';
-        if (r < 0.66) return 'v2';
-        return 'v3';
-      };
-      
-      setConfig({
-        ...config,
-        variants: {
-          navbar: randomVariant(),
-          footer: randomVariant(),
-          checkout: randomCheckoutVariant(),
-          hero: randomVariant(),
+          let step = 0;
+          const interval = setInterval(() => {
+            step++;
+            setBuildProgress(step);
+            if (step >= PROGRESS_STEPS.length) {
+              clearInterval(interval);
+              setIsBuilding(false);
+              setBuiltStoreUrl(data.widget?.url || '/store');
+            }
+          }, 1800);
         }
-      });
-    }
-  };
+      } catch (error) {
+        console.error('StoreBuilder sendMessage error:', error);
+        // Remove typing indicator and show error
+        setMessages((prev) => prev.filter((m) => !m.isTyping));
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'ai',
+            text: "I hit a snag on my end. Could you try again?",
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [session, history]
+  );
+
+  const handleFontSelection = useCallback(
+    (font: FontOption) => {
+      // When user picks a font from the widget, send it as a message.
+      // Be very explicit so the AI recognises this as the final confirmed
+      // FONT_PAIR requirement and immediately emits [CONFIGURE_STORE].
+      sendMessage(
+        `I've selected the ${font.name} font pair: heading font is ${font.heading}, body font is ${font.body}. ` +
+        `That's my final choice — please go ahead and build the store now.`,
+        undefined
+      );
+    },
+    [sendMessage]
+  );
+
+  const reset = useCallback(() => {
+    setMessages([
+      {
+        role: 'ai',
+        text: "Hi! I'm Pony. Tell me what kind of store you want and I'll build it for you.",
+      },
+    ]);
+    setHistory([]);
+    setIsLoading(false);
+    setIsBuilding(false);
+    setBuiltStoreUrl(null);
+    setBuildProgress(0);
+  }, []);
 
   return {
-    prompt,
-    setPrompt,
-    isGenerating,
-    config,
-    setConfig,
-    currentView,
-    setCurrentView,
-    stage,
     messages,
-    progressStep,
+    isLoading,
+    isBuilding,
+    buildProgress,
+    builtStoreUrl,
     PROGRESS_STEPS,
-    handleGenerate,
+    sendMessage,
     handleFontSelection,
-    regenerateVariant
+    reset,
   };
 };

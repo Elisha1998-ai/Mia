@@ -23,10 +23,17 @@ export interface CheckoutProps {
     primaryColor?: string;
     headingFont?: string;
     bodyFont?: string;
+    paystackEnabled?: boolean;
+    flutterwaveEnabled?: boolean;
+    shippingEnabled?: boolean;
   };
 }
 
 export default function CheckoutWireframeVariant2({ cart: propCart, storeSettings }: CheckoutProps) {
+  // Check settings
+  const hasPaymentGateway = storeSettings?.paystackEnabled || storeSettings?.flutterwaveEnabled;
+  const showDelivery = storeSettings?.shippingEnabled !== false; // Default to true if not specified
+
   // --- Helpers & Defaults ---
   const getCurrencySymbol = (str?: string) => {
     if (!str) return "₦";
@@ -70,7 +77,9 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
 
   // --- State ---
   const [deliveryMethod, setDeliveryMethod] = useState('standard');
-  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave' | 'whatsapp'>('paystack');
+  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave' | 'whatsapp'>(
+    hasPaymentGateway ? (storeSettings?.paystackEnabled ? 'paystack' : 'flutterwave') : 'whatsapp'
+  );
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderNumber] = useState(() => `ORD-${Math.floor(Math.random() * 10000)}`);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -169,15 +178,17 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide mb-4 text-gray-400">Shipping Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                    <input type="text" placeholder="Country / Region" className="w-full bg-transparent border-b border-gray-300 py-3 text-sm focus:outline-none focus:border-black transition-colors" />
-                    <input type="text" placeholder="City" className="w-full bg-transparent border-b border-gray-300 py-3 text-sm focus:outline-none focus:border-black transition-colors" />
-                    <input type="text" placeholder="Address" className="w-full bg-transparent border-b border-gray-300 py-3 text-sm focus:outline-none focus:border-black transition-colors md:col-span-2" />
-                    <input type="text" placeholder="Zip / Postal code" className="w-full bg-transparent border-b border-gray-300 py-3 text-sm focus:outline-none focus:border-black transition-colors md:col-span-2" />
+                {showDelivery && (
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-wide mb-4 text-gray-400">Shipping Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      <input type="text" placeholder="Country / Region" className="w-full bg-transparent border-b border-gray-300 py-3 text-sm focus:outline-none focus:border-black transition-colors" />
+                      <input type="text" placeholder="City" className="w-full bg-transparent border-b border-gray-300 py-3 text-sm focus:outline-none focus:border-black transition-colors" />
+                      <input type="text" placeholder="Address" className="w-full bg-transparent border-b border-gray-300 py-3 text-sm focus:outline-none focus:border-black transition-colors md:col-span-2" />
+                      <input type="text" placeholder="Zip / Postal code" className="w-full bg-transparent border-b border-gray-300 py-3 text-sm focus:outline-none focus:border-black transition-colors md:col-span-2" />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-center gap-2 mt-4">
                   <input type="checkbox" id="data-processing" className="w-4 h-4 rounded-none border-gray-300 text-black focus:ring-0" />
@@ -187,38 +198,40 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
             </section>
 
             {/* Delivery Section */}
-            <section>
-              <h2 className="text-xl font-medium mb-6 border-b border-gray-200 pb-2">Delivery</h2>
-              <div className="space-y-4">
-                <label className="flex items-center justify-between cursor-pointer group">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${deliveryMethod === 'standard' ? 'border-black' : 'border-gray-300'}`}>
-                      {deliveryMethod === 'standard' && <div className="w-2 h-2 bg-black rounded-full" />}
+            {showDelivery && (
+              <section>
+                <h2 className="text-xl font-medium mb-6 border-b border-gray-200 pb-2">Delivery</h2>
+                <div className="space-y-4">
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${deliveryMethod === 'standard' ? 'border-black' : 'border-gray-300'}`}>
+                        {deliveryMethod === 'standard' && <div className="w-2 h-2 bg-black rounded-full" />}
+                      </div>
+                      <input type="radio" name="delivery" className="hidden" checked={deliveryMethod === 'standard'} onChange={() => setDeliveryMethod('standard')} />
+                      <div>
+                        <span className="block text-sm font-medium">Standard Delivery</span>
+                        <span className="block text-xs text-gray-500">Delivery within 5-7 days</span>
+                      </div>
                     </div>
-                    <input type="radio" name="delivery" className="hidden" checked={deliveryMethod === 'standard'} onChange={() => setDeliveryMethod('standard')} />
-                    <div>
-                      <span className="block text-sm font-medium">Standard Delivery</span>
-                      <span className="block text-xs text-gray-500">Delivery within 5-7 days</span>
-                    </div>
-                  </div>
-                  <span className="text-sm font-medium">Free</span>
-                </label>
+                    <span className="text-sm font-medium">Free</span>
+                  </label>
 
-                <label className="flex items-center justify-between cursor-pointer group">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${deliveryMethod === 'express' ? 'border-black' : 'border-gray-300'}`}>
-                      {deliveryMethod === 'express' && <div className="w-2 h-2 bg-black rounded-full" />}
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${deliveryMethod === 'express' ? 'border-black' : 'border-gray-300'}`}>
+                        {deliveryMethod === 'express' && <div className="w-2 h-2 bg-black rounded-full" />}
+                      </div>
+                      <input type="radio" name="delivery" className="hidden" checked={deliveryMethod === 'express'} onChange={() => setDeliveryMethod('express')} />
+                      <div>
+                        <span className="block text-sm font-medium">Express Shipping</span>
+                        <span className="block text-xs text-gray-500">Delivery within 1-3 days</span>
+                      </div>
                     </div>
-                    <input type="radio" name="delivery" className="hidden" checked={deliveryMethod === 'express'} onChange={() => setDeliveryMethod('express')} />
-                    <div>
-                      <span className="block text-sm font-medium">Express Shipping</span>
-                      <span className="block text-xs text-gray-500">Delivery within 1-3 days</span>
-                    </div>
-                  </div>
-                  <span className="text-sm font-medium">{formatPrice(50000)}</span>
-                </label>
-              </div>
-            </section>
+                    <span className="text-sm font-medium">{formatPrice(50000)}</span>
+                  </label>
+                </div>
+              </section>
+            )}
 
             {/* Payment Section (African Context) */}
             <section>
@@ -227,28 +240,32 @@ export default function CheckoutWireframeVariant2({ cart: propCart, storeSetting
               <div className="space-y-6">
                 
                 {/* Paystack Option */}
-                <label className="flex items-center justify-between cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'paystack' ? 'border-black' : 'border-gray-300'}`}>
-                      {paymentMethod === 'paystack' && <div className="w-2 h-2 bg-black rounded-full" />}
+                {storeSettings?.paystackEnabled && (
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'paystack' ? 'border-black' : 'border-gray-300'}`}>
+                        {paymentMethod === 'paystack' && <div className="w-2 h-2 bg-black rounded-full" />}
+                      </div>
+                      <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'paystack'} onChange={() => setPaymentMethod('paystack')} />
+                      <span className="text-sm font-medium">Paystack</span>
                     </div>
-                    <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'paystack'} onChange={() => setPaymentMethod('paystack')} />
-                    <span className="text-sm font-medium">Paystack</span>
-                  </div>
-                  <img src="/Paystack.png" alt="Paystack" className="h-6 object-contain" />
-                </label>
+                    <img src="/Paystack.png" alt="Paystack" className="h-6 object-contain" />
+                  </label>
+                )}
 
                 {/* Flutterwave Option */}
-                <label className="flex items-center justify-between cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'flutterwave' ? 'border-black' : 'border-gray-300'}`}>
-                      {paymentMethod === 'flutterwave' && <div className="w-2 h-2 bg-black rounded-full" />}
+                {storeSettings?.flutterwaveEnabled && (
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'flutterwave' ? 'border-black' : 'border-gray-300'}`}>
+                        {paymentMethod === 'flutterwave' && <div className="w-2 h-2 bg-black rounded-full" />}
+                      </div>
+                      <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'flutterwave'} onChange={() => setPaymentMethod('flutterwave')} />
+                      <span className="text-sm font-medium">Flutterwave</span>
                     </div>
-                    <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'flutterwave'} onChange={() => setPaymentMethod('flutterwave')} />
-                    <span className="text-sm font-medium">Flutterwave</span>
-                  </div>
-                  <img src="/Flutterwave.png" alt="Flutterwave" className="h-6 object-contain" />
-                </label>
+                    <img src="/Flutterwave.png" alt="Flutterwave" className="h-6 object-contain" />
+                  </label>
+                )}
 
                 {/* WhatsApp Option */}
                 <label className="flex items-center justify-between cursor-pointer">

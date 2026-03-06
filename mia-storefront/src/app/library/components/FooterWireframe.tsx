@@ -8,11 +8,13 @@ export interface FooterProps {
     headingFont?: string;
     bodyFont?: string;
     footerDescription?: string;
+    footerBigText?: string;
+    [key: string]: string | boolean | undefined;
   };
   onUpdateSettings?: (key: string, value: string) => void;
 }
 
-export default function FooterWireframe({ storeName = "Mia Store", settings, onUpdateSettings }: FooterProps) {
+export default function FooterWireframe({ storeName = "Pony Store", settings, onUpdateSettings }: FooterProps) {
   const primaryColor = settings?.primaryColor || "#000000";
   const headingFont = settings?.headingFont || "inherit";
   const bodyFont = settings?.bodyFont || "inherit";
@@ -22,7 +24,7 @@ export default function FooterWireframe({ storeName = "Mia Store", settings, onU
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
           <h3 className="font-bold text-gray-900 mb-4" style={{ fontFamily: headingFont, color: primaryColor }}>{storeName}</h3>
-          
+
           {onUpdateSettings ? (
             <EditableText
               initialValue={settings?.footerDescription || 'Premium quality essentials for the modern lifestyle. Designed with care and crafted to last.'}
@@ -37,7 +39,7 @@ export default function FooterWireframe({ storeName = "Mia Store", settings, onU
             </p>
           )}
         </div>
-        
+
         <div>
           <h4 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wider" style={{ fontFamily: headingFont }}>Shop</h4>
           <ul className="space-y-2 text-sm">
@@ -62,13 +64,13 @@ export default function FooterWireframe({ storeName = "Mia Store", settings, onU
           <h4 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wider" style={{ fontFamily: headingFont }}>Newsletter</h4>
           <p className="text-sm mb-4">Subscribe to receive updates, access to exclusive deals, and more.</p>
           <div className="flex">
-            <input 
-              type="email" 
-              placeholder="Enter your email" 
+            <input
+              type="email"
+              placeholder="Enter your email"
               className="flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:border-black text-sm"
               style={{ borderColor: 'rgba(0,0,0,0.1)' }}
             />
-            <button 
+            <button
               className="text-white px-4 py-2 rounded-r-md text-sm font-medium hover:opacity-90 transition-opacity"
               style={{ backgroundColor: primaryColor }}
             >
@@ -77,7 +79,7 @@ export default function FooterWireframe({ storeName = "Mia Store", settings, onU
           </div>
         </div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center text-sm">
         <p>&copy; {new Date().getFullYear()} {storeName}. All rights reserved.</p>
         <div className="flex gap-4 mt-4 md:mt-0">

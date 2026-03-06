@@ -12,14 +12,17 @@ import FooterWireframe from './components/FooterWireframe';
 import FooterVariant2 from './components/FooterVariant2';
 import ConfirmationWireframe from './components/ConfirmationWireframe';
 import ProductListWireframe from './components/ProductListWireframe';
+import ProductListWireframeVariant2 from './components/ProductListWireframeVariant2';
+import ProductListWireframeVariant3 from './components/ProductListWireframeVariant3';
 import WishlistWireframe from './components/WishlistWireframe';
 import ContactWireframe from './components/ContactWireframe';
 import StorefrontWireframe from './components/StorefrontWireframe';
 import { useProducts, useSettings } from '@/hooks/useData';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings2, X, ChevronRight } from 'lucide-react';
 
 const PAGE_TYPES = [
   { id: 'storefront', label: 'Storefront', tags: ['home', 'hero', 'featured'] },
+  { id: 'sections', label: 'Sections', tags: ['hero', 'cta', 'banner', 'footer', 'philosophy'] },
   { id: 'product_list', label: 'Product List', tags: ['grid', 'filter', 'sort'] },
   { id: 'product_details', label: 'Product Details', tags: ['minimalist', 'fashion', 'high-end'] },
   { id: 'cart', label: 'Cart', tags: [] },
@@ -34,6 +37,7 @@ const PAGE_TYPES = [
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState(PAGE_TYPES[4].id); // Default to checkout
   const [activeVariant, setActiveVariant] = useState(1);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   const activePageType = PAGE_TYPES.find(t => t.id === activeTab);
 
@@ -46,6 +50,30 @@ export default function LibraryPage() {
   const { products, fetchProducts, loading: loadingProducts } = useProducts();
   const { settings, fetchSettings, loading: loadingSettings } = useSettings();
 
+  // Local state for edits in library
+  const [localSettings, setLocalSettings] = useState<any>(null);
+
+  useEffect(() => {
+    if (settings && !localSettings) {
+      setLocalSettings(settings);
+    }
+  }, [settings]);
+
+  const handleUpdateSettings = (key: string, value: string) => {
+    setLocalSettings((prev: any) => ({ 
+      ...(prev || settings || {}), 
+      [key]: value 
+    }));
+  };
+
+  const fonts = [
+    { label: 'Sans Serif', value: 'Inter, sans-serif' },
+    { label: 'Serif', value: 'Playfair Display, serif' },
+    { label: 'Mono', value: 'JetBrains Mono, monospace' },
+    { label: 'Modern', value: 'Plus Jakarta Sans, sans-serif' },
+    { label: 'Display', value: 'Clash Display, sans-serif' }
+  ];
+
   useEffect(() => {
     if (isDataMode) {
       fetchProducts();
@@ -54,14 +82,19 @@ export default function LibraryPage() {
   }, [isDataMode]);
   
   // Force Naira currency for all wireframes as requested
-  const settingsWithNaira = settings ? {
-    ...settings,
+  const settingsWithNaira = (localSettings || settings) ? {
+    ...(localSettings || settings),
     currency: "Nigerian Naira (₦)",
     // Map contact fields for ContactWireframe
-    contactEmail: settings.adminEmail,
-    contactPhone: settings.storePhone,
-    contactAddress: settings.storeAddress
+    contactEmail: (localSettings || settings)?.adminEmail,
+    contactPhone: (localSettings || settings)?.storePhone,
+    contactAddress: (localSettings || settings)?.storeAddress
   } : undefined;
+
+  // Use local settings if available, otherwise fallback
+  const currentPrimaryColor = settingsWithNaira?.primaryColor || '#000000';
+  const currentHeadingFont = settingsWithNaira?.headingFont || 'inherit';
+  const currentBodyFont = settingsWithNaira?.bodyFont || 'inherit';
 
   // Helper to map API product to Wireframe props
   const mapProductToWireframe = (apiProduct: any) => {
@@ -102,6 +135,12 @@ export default function LibraryPage() {
   });
 
   const realProductListData = products.map(mapProductToList);
+
+  // Helper for Collections
+  const realCollectionsData = Array.from(new Set(products.map(p => p.category))).map((cat, i) => ({
+    id: `col-${i}`,
+    name: cat || 'General'
+  }));
 
   // Helper to create cart from products for Checkout
   const createCartFromProducts = (products: any[]) => {
@@ -214,12 +253,107 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900 overflow-hidden h-screen">
+      {/* Side Drawer */}
+      <div 
+        className={`fixed inset-y-0 left-0 w-80 bg-white border-r border-gray-200 z-[60] transform transition-transform duration-300 ease-in-out shadow-2xl ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <div className="h-full flex flex-col">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-800">Store Branding</h2>
+            <button onClick={() => setIsDrawerOpen(false)} className="text-gray-400 hover:text-black">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            {/* Primary Color */}
+            <div className="space-y-4">
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">Primary Color</label>
+              <div className="flex items-center gap-4">
+                <input 
+                  type="color" 
+                  value={currentPrimaryColor}
+                  onChange={(e) => handleUpdateSettings('primaryColor', e.target.value)}
+                  className="w-12 h-12 rounded-lg cursor-pointer border-none p-0 bg-transparent"
+                />
+                <input 
+                  type="text" 
+                  value={currentPrimaryColor}
+                  onChange={(e) => handleUpdateSettings('primaryColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono uppercase"
+                />
+              </div>
+            </div>
+
+            {/* Heading Font */}
+            <div className="space-y-4">
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">Heading Font</label>
+              <div className="grid grid-cols-1 gap-2">
+                {fonts.map(font => (
+                  <button
+                    key={font.value}
+                    onClick={() => handleUpdateSettings('headingFont', font.value)}
+                    className={`px-4 py-3 text-left text-sm border rounded-xl transition-all ${currentHeadingFont === font.value ? 'border-black bg-black text-white' : 'border-gray-100 hover:border-gray-300 bg-gray-50'}`}
+                    style={{ fontFamily: font.value }}
+                  >
+                    {font.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Body Font */}
+            <div className="space-y-4">
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">Body Font</label>
+              <div className="grid grid-cols-1 gap-2">
+                {fonts.map(font => (
+                  <button
+                    key={font.value}
+                    onClick={() => handleUpdateSettings('bodyFont', font.value)}
+                    className={`px-4 py-3 text-left text-sm border rounded-xl transition-all ${currentBodyFont === font.value ? 'border-black bg-black text-white' : 'border-gray-100 hover:border-gray-300 bg-gray-50'}`}
+                    style={{ fontFamily: font.value }}
+                  >
+                    {font.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 border-t border-gray-100">
+            <p className="text-[10px] text-gray-400 leading-relaxed italic">
+              These changes are live and local to this session. Use the settings modal in the main dashboard to save them permanently.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Drawer Toggle Button */}
+      {!isDrawerOpen && (
+        <button 
+          onClick={() => setIsDrawerOpen(true)}
+          className="fixed left-0 top-1/2 -translate-y-1/2 bg-black text-white p-3 rounded-r-2xl shadow-2xl z-50 hover:pl-5 transition-all group"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <Settings2 className="w-5 h-5" />
+            <span className="[writing-mode:vertical-lr] text-[10px] font-bold uppercase tracking-widest py-2">Branding</span>
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </button>
+      )}
+
       {/* Top Bar with Tabs */}
-      <div className="border-b border-gray-200/50 sticky top-0 bg-white/80 backdrop-blur-md z-50 shadow-sm">
+      <div className="border-b border-gray-200/50 sticky top-0 bg-white/80 backdrop-blur-md z-50 shadow-sm flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16 justify-between gap-8">
-            <h1 className="text-lg font-semibold text-gray-800 hidden md:block tracking-tight">Template Library</h1>
+            <div className="flex items-center gap-4">
+              <Settings2 
+                className={`w-5 h-5 cursor-pointer transition-colors ${isDrawerOpen ? 'text-black' : 'text-gray-400 hover:text-black'}`}
+                onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              />
+              <h1 className="text-lg font-semibold text-gray-800 hidden md:block tracking-tight">Template Library</h1>
+            </div>
             <div className="flex space-x-1 overflow-x-auto pb-2 md:pb-0 no-scrollbar w-full md:w-auto mask-image-linear-gradient">
               {PAGE_TYPES.map((type) => (
                 <button
@@ -252,7 +386,7 @@ export default function LibraryPage() {
               </div>
 
               {/* Variant Selector */}
-              {(activeTab === 'checkout' || activeTab === 'navbar' || activeTab === 'footer') && (
+              {(activeTab === 'checkout' || activeTab === 'navbar' || activeTab === 'footer' || activeTab === 'product_list' || activeTab === 'sections') && (
                 <div className="ml-auto flex bg-gray-100 rounded-lg p-1 gap-1">
                   <button 
                     onClick={() => setActiveVariant(1)}
@@ -266,7 +400,7 @@ export default function LibraryPage() {
                   >
                     V2
                   </button>
-                  {activeTab === 'checkout' && (
+                  {(activeTab === 'checkout' || activeTab === 'product_list' || activeTab === 'sections') && (
                     <button 
                       onClick={() => setActiveVariant(3)}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeVariant === 3 ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
@@ -282,10 +416,15 @@ export default function LibraryPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto no-scrollbar">
         
         {/* Controls */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+           <div className="flex items-center gap-2 text-xs text-gray-400">
+             <span className="font-medium">Active Font:</span>
+             <span className="px-2 py-1 bg-gray-100 rounded border border-gray-200 text-gray-600 font-mono" style={{ fontFamily: currentHeadingFont }}>Heading</span>
+             <span className="px-2 py-1 bg-gray-100 rounded border border-gray-200 text-gray-600 font-mono" style={{ fontFamily: currentBodyFont }}>Body</span>
+           </div>
            <div className="bg-white border border-gray-200 p-1 rounded-lg flex text-xs font-medium shadow-sm">
              <button 
                onClick={() => setIsDataMode(false)}
@@ -314,6 +453,27 @@ export default function LibraryPage() {
                 settings={isDataMode ? settingsWithNaira : undefined}
               />
             )
+          ) : activeTab === 'sections' ? (
+            <div className="p-8 space-y-12 bg-gray-50">
+              <section className="space-y-4">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Section Variant {activeVariant}</h3>
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  {activeVariant === 1 ? (
+                    <div className="p-12 text-center text-gray-400 italic">Section V1 under construction</div>
+                  ) : activeVariant === 2 ? (
+                    <div className="p-12 text-center text-gray-400 italic">Section V2 under construction</div>
+                  ) : (
+                    <ProductListWireframeVariant3 
+                      isSection 
+                      products={isDataMode ? realProductListData.slice(0, 4) : undefined}
+                      collections={isDataMode ? realCollectionsData : undefined}
+                      storeSettings={isDataMode ? settingsWithNaira : undefined}
+                      onUpdateSettings={handleUpdateSettings}
+                    />
+                  )}
+                </div>
+              </section>
+            </div>
           ) : activeTab === 'product_details' ? (
             isDataMode && loadingProducts ? (
               <div className="flex items-center justify-center h-[600px]">
@@ -335,10 +495,22 @@ export default function LibraryPage() {
               <div className="flex items-center justify-center h-[600px]">
                 <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
               </div>
-            ) : (
+            ) : activeVariant === 1 ? (
               <ProductListWireframe 
                 products={isDataMode ? realProductListData : undefined}
                 storeSettings={isDataMode ? settingsWithNaira : undefined}
+              />
+            ) : activeVariant === 2 ? (
+              <ProductListWireframeVariant2 
+                products={isDataMode ? realProductListData : undefined}
+                storeSettings={isDataMode ? settingsWithNaira : undefined}
+              />
+            ) : (
+              <ProductListWireframeVariant3 
+                products={isDataMode ? realProductListData : undefined}
+                collections={isDataMode ? realCollectionsData : undefined}
+                storeSettings={isDataMode ? settingsWithNaira : undefined}
+                onUpdateSettings={handleUpdateSettings}
               />
             )
           ) : activeTab === 'wishlist' ? (

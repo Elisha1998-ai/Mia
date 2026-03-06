@@ -43,6 +43,9 @@ export function StoreBuilderPreview({
     headingFont: config.branding.headingFont,
     bodyFont: config.branding.bodyFont,
     currency: "₦",
+    paystackEnabled: false, // Default for builder mode
+    flutterwaveEnabled: false, // Default for builder mode
+    shippingEnabled: true, // Default for builder mode
     heroTitle: config.copy.heroTitle,
     heroDescription: config.copy.heroSubtitle,
     heroButtonText: config.copy.heroButton,

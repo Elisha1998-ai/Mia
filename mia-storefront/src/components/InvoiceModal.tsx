@@ -70,12 +70,12 @@ export const InvoiceModal = ({ isOpen, onClose, order }: InvoiceModalProps) => {
                   <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white">
                     <Package className="w-6 h-6" />
                   </div>
-                  <span className="text-2xl font-black tracking-tight">MIA</span>
+                  <span className="text-2xl font-black tracking-tight">PONY</span>
                 </div>
                 <div className="text-sm text-gray-500 space-y-1">
                   <p>123 Business Avenue</p>
                   <p>Lagos, Nigeria</p>
-                  <p>contact@mia.ai</p>
+                  <p>contact@pony.ai</p>
                 </div>
               </div>
               <div className="text-right">

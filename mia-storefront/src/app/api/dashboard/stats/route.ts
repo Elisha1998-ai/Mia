@@ -7,6 +7,16 @@ import { auth } from '@/auth';
 // GET /api/dashboard/stats - Get dashboard statistics
 export async function GET() {
   try {
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({
+        total_products: 0,
+        total_orders: 0,
+        total_customers: 0,
+        total_revenue: 0,
+        recent_orders: 0,
+        low_stock_products: 0
+      });
+    }
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

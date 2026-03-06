@@ -106,7 +106,7 @@ export default function ConfirmationWireframe({ order, storeSettings }: Confirma
           <div className="rounded-2xl border border-gray-100 bg-gray-50/50 overflow-hidden">
             {/* Order Items */}
             <ul className="divide-y divide-gray-100 p-6 sm:p-8">
-              {displayOrder.items.map((item: OrderItem) => (
+              {(displayOrder.items || []).map((item: OrderItem) => (
                 <li key={item.id} className="flex py-4 first:pt-0 last:pb-0">
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{item.name}</h3>
@@ -157,7 +157,7 @@ export default function ConfirmationWireframe({ order, storeSettings }: Confirma
                 <p>{displayOrder.shippingAddress.country}</p>
               </div>
             </div>
-            
+
             <div>
               <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
                 <Package className="h-4 w-4 text-gray-500" />
@@ -174,7 +174,7 @@ export default function ConfirmationWireframe({ order, storeSettings }: Confirma
             <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3 text-sm font-medium text-white transition hover:opacity-90" style={{ backgroundColor: primaryColor, fontFamily: headingFont }}>
               Continue Shopping <ArrowRight className="h-4 w-4" />
             </button>
-            <button 
+            <button
               onClick={() => window.print()}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
             >

@@ -63,7 +63,7 @@ export const AnalyticsCard = ({
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-sm font-semibold text-foreground/80">{title}</h3>
         {onViewReport && (
-          <button 
+          <button
             onClick={onViewReport}
             className="text-xs font-medium text-accent hover:text-accent/80 transition-colors flex items-center gap-1"
           >
@@ -116,13 +116,13 @@ export const AnalyticsCard = ({
             <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartColor} stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor={chartColor} stopOpacity={0}/>
+                  <stop offset="5%" stopColor={chartColor} stopOpacity={0.1} />
+                  <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(128,128,128,0.1)" />
-              <XAxis 
-                dataKey={dateKey} 
+              <XAxis
+                dataKey={dateKey}
                 tickFormatter={formatDate}
                 axisLine={false}
                 tickLine={false}
@@ -130,11 +130,11 @@ export const AnalyticsCard = ({
                 minTickGap={30}
                 dy={10}
               />
-              <YAxis 
+              <YAxis
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                tickFormatter={(val) => `${valuePrefix}${val >= 1000 ? (val/1000).toFixed(1) + 'k' : val}${valueSuffix}`}
+                tickFormatter={(val) => `${valuePrefix}${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val}${valueSuffix}`}
                 width={40}
               />
               <Tooltip
@@ -146,8 +146,8 @@ export const AnalyticsCard = ({
                   boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                 }}
                 itemStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(val: number) => [`${valuePrefix}${val.toLocaleString()}${valueSuffix}`, title]}
-                labelFormatter={formatDate}
+                formatter={(val: number) => [`${valuePrefix}${val.toLocaleString()}${valueSuffix}`, title] as any}
+                labelFormatter={formatDate as any}
               />
               <Area
                 type="monotone"
@@ -172,7 +172,7 @@ export const AnalyticsCard = ({
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        
+
         {/* Legend */}
         {/* <div className="flex items-center justify-center gap-6 mt-2 text-[10px] text-muted-foreground">
            <div className="flex items-center gap-2">

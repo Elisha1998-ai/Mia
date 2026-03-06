@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { MonaWaitlist } from '@/components/MonaWaitlist';
+import { AgenticLanding } from '@/components/AgenticLanding';
 
 export default async function Home() {
   const session = await auth();
@@ -10,6 +10,6 @@ export default async function Home() {
   }
 
   return (
-    <MonaWaitlist />
+    <AgenticLanding />
   );
 }

@@ -184,7 +184,7 @@ export const InvoiceTemplate = ({ order, items, storeSettings, customer }: Invoi
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.storeInfo}>
-          <Text style={styles.storeName}>{storeSettings?.storeName || 'Mia Store'}</Text>
+          <Text style={styles.storeName}>{storeSettings?.storeName || 'Pony Store'}</Text>
           <Text style={styles.storeDetail}>{storeSettings?.storeAddress || ''}</Text>
           <Text style={styles.storeDetail}>{storeSettings?.storePhone || ''}</Text>
           <Text style={styles.storeDetail}>{storeSettings?.adminEmail || ''}</Text>
@@ -251,7 +251,7 @@ export const InvoiceTemplate = ({ order, items, storeSettings, customer }: Invoi
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>Thank you for your business!</Text>
-        <Text style={styles.footerText}>For any inquiries, please contact {storeSettings?.adminEmail || 'support@mia-auto.ai'}</Text>
+        <Text style={styles.footerText}>For any inquiries, please contact {storeSettings?.adminEmail || 'support@pony-auto.ai'}</Text>
       </View>
     </Page>
   </Document>

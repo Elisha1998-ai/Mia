@@ -375,23 +375,7 @@ export const OrdersPage = () => {
 
   const handleAddOrder = async (orderData: any) => {
     try {
-      const payload = {
-        order_number: orderData.orderNumber,
-        customer_id: orderData.customerId || null,
-        customer_name: orderData.customerName,
-        total_amount: orderData.total,
-        status: orderData.status.toLowerCase(),
-        shipping_address: orderData.address,
-        shipping_method: orderData.shippingMethod,
-        payment_method: orderData.paymentMethod,
-        items: orderData.items.map((item: any) => ({
-          product_id: item.productId,
-          quantity: item.quantity,
-          price: item.price
-        }))
-      };
-      
-      await createOrder(payload);
+      await createOrder(orderData);
       // Re-fetch orders and customers to ensure UI is in sync
       fetchOrders();
       fetchCustomers();

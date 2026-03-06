@@ -2,15 +2,17 @@ import { NotificationType } from '../components/NotificationCard';
 
 export interface NotificationAction {
   label: string;
-  actionId: string; // Identifier for the action to handle in UI
+  actionId: string;
   variant?: 'primary' | 'secondary';
+  chatMessage?: string; // Pre-filled prompt to send to Pony when action is clicked
 }
 
 export interface NotificationData {
   id: string;
-  scenario: 'LOW_STOCK' | 'CUSTOMER_INACTIVITY' | 'NEW_SALE' | 'REVENUE_MILESTONE' | 'ABANDONED_CART';
+  scenario: 'LOW_STOCK' | 'CUSTOMER_INACTIVITY' | 'NEW_SALE' | 'REVENUE_MILESTONE' | 'ABANDONED_CART' | 'DAILY_SUMMARY' | 'UNFULFILLED_ALERT';
   type: NotificationType;
   title: string;
+  description?: string;
   timestamp: string;
   actions: NotificationAction[];
 }
