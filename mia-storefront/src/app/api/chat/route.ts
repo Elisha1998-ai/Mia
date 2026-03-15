@@ -1,4 +1,4 @@
-﻿
+
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import {
@@ -21,6 +21,29 @@ const groq = createOpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
   apiKey: process.env.GROQ_API_KEY,
 });
+
+const FALLBACK_MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama3-70b-8192',
+  'mixtral-8x7b-32768',
+  'llama-3.1-8b-instant'
+];
+
+async function generateTextWithFallback(options: any) {
+  let lastError: any;
+  for (const modelName of FALLBACK_MODELS) {
+    try {
+      return await generateText({
+        ...options,
+        model: groq(modelName),
+      });
+    } catch (error: any) {
+      console.warn(`[Fallback] Model ${modelName} failed. Trying next... Error: ${error?.message || error}`);
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
 
 
 
@@ -165,7 +188,9 @@ You were built here, for here. You understand how Nigerians talk, buy, and think
 - 80% clean English, 20% Pidgin - naturally mixed, never forced
 - Short messages always - this is chat, not email
 - One idea per message - never dump everything at once
-- Emoji used sparingly - celebrations, warmth, humour only
+- EMOJIS: Do NOT use ANY emojis unless the user uses an emoji first. Mirror their emoji usage. Respond text-for-text strictly without emojis otherwise.
+- NO FILLERS: Never use conversational filler phrases like "Let me check...", "Let me look into that...", or "I'll see". Get straight to the answer immediately.
+- BE SPECIFIC: Never refer to a customer as "someone" when looking up their stats. Always use their exact name or email from the data provided.
 - Never say: "I am an AI", "As an AI language model", "I cannot", "I apologize"
 - Never sound corporate - no "kindly", no "please be informed", no "your order has been received"
 - Always sound like someone genuinely happy the seller showed up
@@ -190,7 +215,9 @@ You were built here, for here. You understand how Nigerians talk, buy, and think
 - Never promises a delivery date it cannot confirm
 - Never confirms a payment it has not verified
 - Never says it is built on Claude, Groq, or any AI model
-
+- NEVER outputs raw tool syntax (e.g. <function=...> or similar JSON objects) in standard text.
+- Do NOT use filler words when activating a tool, perform the task transparently.
+- NEVER suggest or create digital products, ebooks, courses, or any non-physical items. You only handle physical products.
 ### SAMPLE SELLER CONVERSATIONS
 Seller: "How much have I made today?"
 Pony: "45,000 today - 3 confirmed orders. You're having a good day!"
@@ -306,16 +333,9 @@ heroTitle and heroDescription must be punchy, specific to the niche, and convers
 7. If there are items in 'INVENTORY ALERTS', bring them to the user's attention ONLY when they ask about store status or stock.
 8. When calling a tool, DO NOT generate any text response. Let the tool execute first.
 
-### DIGITAL PRODUCT CREATION WORKFLOW (CRITICAL)
-When a user asks to "Launch...", "Create a store for...", "Sell..." digital products, ebooks, courses, or plans:
-- Do NOT immediately generate a digital product or call \`generateDigitalProduct\` if you don't know the EXACT name and price.
-- You must STOP and ask: "Great! What is the exact title of the product and how much do you want to sell it for?"
-- Wait for the user to provide the actual name and price.
-- Only AFTER the user provides the name and price should you call \`generateDigitalProduct\`. DO NOT invent a name. DO NOT use 0 as the price or 'undefined' as the name.
-
 ### PHYSICAL PRODUCT ADDITION RULES
-- BEFORE calling \`addProduct\`, you MUST have the exact product name and price from the user.
-- If they are missing, STOP and ask the user for them. DO NOT guess, DO NOT use "undefined", DO NOT use 0 for the price.
+- BEFORE calling addProduct, you MUST have the exact product name and price from the user.
+- If they are missing, STOP and ask the user for them. DO NOT guess, DO NOT use undefined, DO NOT use 0 for the price.
 `;
 
     // Using Llama 3.3 70B via Groq
@@ -325,11 +345,11 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
       ? `Previous conversation:\n${convo.map((m: any) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n')}\n\nNow, continue the conversation. User says: ${message}`
       : message;
 
-    // ── LLM CALL HELPER (with automatic 1-retry on empty response) ──
-    const runLLM = () => generateText({
-      model: groq('llama-3.3-70b-versatile'),
+    // ── LLM CALL HELPER (with automatic model fallback) ──
+    const runLLM = () => generateTextWithFallback({
       system: systemPrompt,
       prompt: transcript,
+      maxSteps: 5,
       tools: {
         editProduct: tool({
           description: 'Edit a product\'s details (price, stock, name, description).',
@@ -341,7 +361,7 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
             name: z.string().optional(),
             description: z.string().optional(),
           }),
-          execute: async ({ identifier, price, stockQuantity, stock, name, description }) => {
+          execute: async ({ identifier, price, stockQuantity, stock, name, description }: { identifier: string; price?: number; stockQuantity?: number; stock?: number; name?: string; description?: string }) => {
             try {
               const finalStock = stockQuantity !== undefined ? stockQuantity : stock;
 
@@ -389,7 +409,7 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
           parameters: z.object({
             identifier: z.string().describe("The name or SKU of the product to delete."),
           }),
-          execute: async ({ identifier }) => {
+          execute: async ({ identifier }: { identifier: string }) => {
             try {
               const product = await db.query.products.findFirst({
                 where: (products, { or, eq, like }) => or(
@@ -538,41 +558,6 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
             }
           },
         }),
-        generateDigitalProduct: tool({
-          description: 'Use this tool when the user wants to sell a new digital product (ebook, course, audio, etc.). Generate professional, high-converting copy and suggest a price, then return this data.',
-          parameters: z.object({
-            title: z.string().optional().describe("A catchy, professional title for the digital product."),
-            name: z.string().optional().describe("Alias for title"),
-            productName: z.string().optional().describe("Alias for title"),
-            description: z.string().describe("A compelling 2-3 paragraph sales copy description highlighting benefits and features."),
-            price: z.number().optional().describe("Suggested price in Nigerian Naira (₦). Must be a number."),
-            product_type: z.enum(['ebook', 'audio', 'video', 'other']).optional().describe("The format of the product."),
-            productType: z.string().optional().describe("Alias for product_type"),
-            duration: z.string().optional()
-          }),
-          execute: async ({ title, name, productName, description, price, product_type, productType }: { title?: string; name?: string; productName?: string; description: string; price?: number; product_type?: 'ebook' | 'audio' | 'video' | 'other'; productType?: string }) => {
-            // In a real V1 this would save to DB directly or return a widget for user approval.
-            // For now, we just return the generated copy so the LLM can present it, or we can use it to drive UI.
-            try {
-              const finalTitle = title || name || productName || "Draft Product";
-              const finalType = (product_type || productType || "other").toLowerCase();
-              const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/,/g, '')) || 0 : price || 0;
-              return {
-                success: true,
-                message: "Generated product copy successfully.",
-                productData: {
-                  title: finalTitle,
-                  description,
-                  price: numericPrice,
-                  product_type: finalType
-                }
-              };
-            } catch (error) {
-              console.error("Zod Validation Error generating product:", error);
-              return { error: "Failed to generate digital product." };
-            }
-          },
-        }),
         createDiscountCode: tool({
           description: 'Create a new discount code or flash sale. Use this when the user asks to create a promo or discount.',
           parameters: z.object({
@@ -632,9 +617,12 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
               // In a real app, send actual emails using Resend. 
               // For V1, we simulate the action if no API key is present or send real ones if possible.
               let emailsSent = 0;
+              const emailedCustomerIds = new Set();
+
               for (const order of unpaidOrders) {
                 if (order.customer?.email) {
                   emailsSent++;
+                  emailedCustomerIds.add(order.customerId);
                   // Simulated send:
                   console.log(`[Pony: Payment Chaser] Sent reminder to ${order.customer.email} for order ${order.orderNumber}`);
                 }
@@ -643,7 +631,8 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
               return {
                 success: true,
                 count: emailsSent,
-                message: `Sent payment reminders to ${emailsSent} customers.`
+                customerCount: emailedCustomerIds.size,
+                message: `Sent payment reminders for ${emailsSent} orders across ${emailedCustomerIds.size} customers.`
               };
             } catch (error) {
               console.error("Chase payments error:", error);
@@ -656,7 +645,7 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
           parameters: z.object({
             timeframeDays: z.number().optional().default(7).describe("Number of days to look back for the report.")
           }),
-          execute: async ({ timeframeDays = 7 }) => {
+          execute: async ({ timeframeDays = 7 }: { timeframeDays?: number }) => {
             try {
               const startDate = new Date();
               startDate.setDate(startDate.getDate() - timeframeDays);
@@ -699,8 +688,7 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
             if (!finalText) return { success: false, error: "No text provided." };
 
             // Call a "sub-agent" (another LLM call) to parse the text
-            const extraction = await generateText({
-              model: groq('llama-3.3-70b-versatile'),
+            const extraction = await generateTextWithFallback({
               system: "Extract products from the text. Return ONLY a JSON list of objects with keys: name, price (number), sku (string).",
               prompt: finalText,
             });
@@ -1043,19 +1031,6 @@ When a user asks to "Launch...", "Create a store for...", "Sell..." digital prod
           finalResponse.content = result.success
             ? `Updated order ${result.orderNumber} to '${result.status}'.`
             : `Failed to update order: ${result.error}`;
-        } else if (lastTool.toolName === "generateDigitalProduct") {
-          finalResponse.intent = "digital_product_draft";
-          if (result.success && result.productData) {
-            finalResponse.content = safeText || `I've drafted your ${result.productData.product_type} product! Take a look.`;
-            finalResponse.widget = {
-              type: "digital_product_draft",
-              title: "Review Digital Product",
-              description: result.productData.description,
-              product: result.productData
-            };
-          } else {
-            finalResponse.content = "Failed to generate digital product copy.";
-          }
         } else if (lastTool.toolName === "createDiscountCode") {
           finalResponse.intent = "promo_creation";
           if (result.success && result.discount) {

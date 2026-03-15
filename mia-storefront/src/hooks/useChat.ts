@@ -43,14 +43,19 @@ export const useChat = () => {
         assistantMsg.widgets = [{
           type: data.widget.type,
           title: data.widget.title,
-          description: data.widget.description || data.widget.content, // Map description or content
+          description: data.widget.description || data.widget.content,
           imageUrl: data.widget.imageUrl,
           link: data.widget.link,
           url: data.widget.url,
           storeName: data.widget.storeName,
           product: data.widget.product,
           prefilled: data.widget.prefilled,
-          fonts: data.widget.fonts
+          fonts: data.widget.fonts,
+          // Invoice widget fields
+          orderNumber: data.widget.orderNumber,
+          buyerName: data.widget.buyerName,
+          totalAmount: data.widget.totalAmount,
+          downloadUrl: data.widget.downloadUrl
         }];
       } else if (data.widgets) {
         assistantMsg.widgets = data.widgets;

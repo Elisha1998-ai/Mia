@@ -1,0 +1,28 @@
+﻿node.exe : ΓÜá Attempted to load @next/swc-win32-x64-msvc, but an error 
+occurred: \\?\C:\Users\HomePC\Documents\trae_projects\Mia\mia-storefront\node_m
+odules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node is not a valid 
+Win32 application.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá Attempted t...32 application. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+\\?\C:\Users\HomePC\Documents\trae_projects\Mia\mia-storefront\node_modules\@ne
+xt\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.160.108:3000
+- Environments: .env.local, .env
+
+Γ£ô Starting...
+  Skipping creating a lockfile at C:\Users\HomePC\Documents\trae_projects\Mia\mia-storefront\.next\dev\lock because we're using WASM bindings
+Error: `turbo.createProject` is not supported by the wasm bindings.
+    at ignore-listed frames
+ΓÜá Attempted to load @next/swc-win32-x64-msvc, but an error occurred: \\?\C:\U
+sers\HomePC\Documents\trae_projects\Mia\mia-storefront\node_modules\@next\swc-w
+in32-x64-msvc\next-swc.win32-x64-msvc.node is not a valid Win32 application.
+\\?\C:\Users\HomePC\Documents\trae_projects\Mia\mia-storefront\node_modules\@ne
+xt\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node
+[?25h

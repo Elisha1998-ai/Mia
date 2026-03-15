@@ -28,17 +28,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let finalUserId = userId;
-    if (userId.includes('@')) {
-      const userRecord = await db.select({ id: usersTable.id })
-        .from(usersTable)
-        .where(eq(usersTable.email, userId))
-        .limit(1);
-      
-      if (userRecord.length > 0) {
-        finalUserId = userRecord[0].id;
-      }
-    }
+    // In Drizzle, we'll use a subquery or join to get order counts and last order date
+
 
     
     

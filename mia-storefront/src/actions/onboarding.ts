@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { users, storeSettings, stores } from "@/lib/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { generateUniqueDomain } from "@/lib/domain";
 
 export async function saveOnboardingData(data: any) {
   try {
@@ -89,7 +90,10 @@ export async function saveOnboardingData(data: any) {
     .limit(1);
   
   const existingSettings = settingsResults[0];
-  const storeSlug = data.storeName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  
+  // Generate a unique store domain based on the store name
+  // If settings already exist for this user, we can ignore their own current domain during uniqueness check
+  const storeSlug = await generateUniqueDomain(data.storeName, activeUserId);
 
   const settingsData = {
     userId: activeUserId,

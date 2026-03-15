@@ -110,14 +110,14 @@ export default function LibraryPage() {
       reviewCount: undefined,
       variants: {
         colors: [], // API variants structure is flat, complex to map to colors without metadata
-        sizes: apiProduct.variants?.map((v: any) => v.name) || [] // simplistic mapping
+        sizes: (apiProduct as any).variants?.map((v: any) => v.name) || [] // simplistic mapping
       },
       policies: {
         description: apiProduct.description,
         fabricCare: undefined,
         shippingReturns: undefined
       },
-      category: "Shop",
+      category: (apiProduct as any).category || "Shop",
       breadcrumbs: ["Home", "Shop", apiProduct.name]
     };
   };

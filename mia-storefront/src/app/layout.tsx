@@ -1,6 +1,5 @@
 import { 
   Inter, 
-  Instrument_Serif, 
   Playfair_Display, 
   Montserrat, 
   Roboto, 
@@ -20,7 +19,6 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
-const instrumentSerif = Instrument_Serif({ subsets: ["latin"], weight: "400", display: "swap", variable: "--font-serif" });
 const playfair = Playfair_Display({ subsets: ["latin"], display: "swap", variable: "--font-playfair" });
 const montserrat = Montserrat({ subsets: ["latin"], display: "swap", variable: "--font-montserrat" });
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "700"], display: "swap", variable: "--font-roboto" });
@@ -50,7 +48,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`
         ${inter.variable} 
-        ${instrumentSerif.variable} 
         ${playfair.variable} 
         ${montserrat.variable} 
         ${roboto.variable} 

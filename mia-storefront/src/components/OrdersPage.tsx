@@ -59,7 +59,7 @@ const ActionPopover = ({ order, onDelete, onViewDetails, onViewInvoice }: {
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
-        <button className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all">
+        <button className="p-2 rounded-lg opacity-100 hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all">
           <MoreHorizontal className="w-5 h-5" />
         </button>
       </Popover.Trigger>
@@ -399,8 +399,8 @@ export const OrdersPage = () => {
     <div className="flex-1 flex flex-col min-h-0 bg-background animate-in fade-in duration-500">
       {/* Desktop Header */}
       <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border-custom">
-        <div className="flex items-center gap-4 flex-1 max-w-2xl">
-          <div className="relative flex-1">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="relative w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
             <input 
               type="text" 
@@ -411,6 +411,43 @@ export const OrdersPage = () => {
             />
           </div>
           
+          {selectedIds.length > 0 && (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200 border-l border-border-custom pl-2">
+              <Popover.Root>
+                <Popover.Trigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors">
+                    <Check className="w-4 h-4" />
+                    Update Status ({selectedIds.length})
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[160px]" align="start" sideOffset={8}>
+                    {['Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'].map((status) => (
+                      <button 
+                        key={status}
+                        onClick={() => handleBulkStatusUpdate(status as Order['status'])}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors"
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
+
+              <button 
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
             <Popover.Root>
               <Popover.Trigger asChild>
@@ -457,49 +494,12 @@ export const OrdersPage = () => {
             </Popover.Root>
           </div>
 
-          {selectedIds.length > 0 && (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors">
-                    <Check className="w-4 h-4" />
-                    Update Status ({selectedIds.length})
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[160px]" align="start" sideOffset={8}>
-                    {['Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'].map((status) => (
-                      <button 
-                        key={status}
-                        onClick={() => handleBulkStatusUpdate(status as Order['status'])}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors"
-                      >
-                        {status}
-                      </button>
-                    ))}
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-
-              <button 
-                onClick={handleBulkDelete}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="w-10 h-10 md:w-auto md:px-6 md:py-2.5 bg-accent hover:bg-accent/90 text-white rounded-full md:rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-accent/20"
+            className="px-6 py-2 bg-accent hover:bg-accent/90 text-white rounded-xl flex items-center justify-center gap-2 transition-all ml-1"
           >
             <Plus className="w-5 h-5" />
-            <span className="hidden md:inline text-sm font-bold">Create Order</span>
+            <span className="text-sm font-bold">Create Order</span>
           </button>
         </div>
       </div>
@@ -599,7 +599,7 @@ export const OrdersPage = () => {
               <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">Total</th>
               <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">Date</th>
               <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">Status</th>
-              <th className="pr-6 py-4 w-16 text-right"></th>
+              <th className="pr-6 py-4 w-16 text-right text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">ACTIONS</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-custom">

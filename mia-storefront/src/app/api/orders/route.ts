@@ -17,19 +17,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Resolve actual userId if it's an email
-    let resolvedUserId = userId;
-    if (userId.includes('@')) {
-      const userRecord = await db.select({ id: usersTable.id })
-        .from(usersTable)
-        .where(eq(usersTable.email, userId))
-        .limit(1);
-      
-      if (userRecord.length > 0) {
-        resolvedUserId = userRecord[0].id;
-      }
-    }
-
     const { searchParams } = new URL(request.url);
     const skip = parseInt(searchParams.get('skip') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -60,7 +47,7 @@ export async function GET(request: Request) {
     .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
     .leftJoin(orderItemsTable, eq(ordersTable.id, orderItemsTable.orderId))
     .leftJoin(productsTable, eq(orderItemsTable.productId, productsTable.id))
-    .where(eq(ordersTable.userId, resolvedUserId))
+    .where(eq(ordersTable.userId, userId))
     .groupBy(ordersTable.id, customersTable.id)
     .orderBy(desc(ordersTable.createdAt))
     .limit(limit)
@@ -68,7 +55,7 @@ export async function GET(request: Request) {
 
     const [totalResult] = await db.select({ count: count() })
       .from(ordersTable)
-      .where(eq(ordersTable.userId, resolvedUserId));
+      .where(eq(ordersTable.userId, userId));
     const total = totalResult?.count || 0;
 
     return NextResponse.json({
@@ -123,6 +110,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+
     const { 
       order_number,
       customer_id, 
@@ -138,19 +126,6 @@ export async function POST(request: Request) {
       items = [] 
     } = body;
 
-    // Resolve actual userId if it's an email
-    let resolvedUserId = userId;
-    if (userId.includes('@')) {
-      const userRecord = await db.select({ id: usersTable.id })
-        .from(usersTable)
-        .where(eq(usersTable.email, userId))
-        .limit(1);
-      
-      if (userRecord.length > 0) {
-        resolvedUserId = userRecord[0].id;
-      }
-    }
-
     // In Drizzle, we handle transactions for nested creations
     const result = await db.transaction(async (tx) => {
       let finalCustomerId = customer_id;
@@ -164,7 +139,7 @@ export async function POST(request: Request) {
         const [existingCustomer] = await tx.select()
           .from(customersTable)
           .where(and(
-            eq(customersTable.userId, resolvedUserId),
+            eq(customersTable.userId, userId),
             eq(customersTable.email, finalEmail)
           ))
           .limit(1);
@@ -173,7 +148,7 @@ export async function POST(request: Request) {
           finalCustomerId = existingCustomer.id;
         } else {
           const [newCustomer] = await tx.insert(customersTable).values({
-            userId: resolvedUserId,
+            userId: userId,
             fullName: customer_name,
             email: finalEmail,
             phone: customer_phone || null,
@@ -184,7 +159,7 @@ export async function POST(request: Request) {
 
       // 1. Create the order
       const [order] = await tx.insert(ordersTable).values({
-        userId: resolvedUserId,
+        userId: userId,
         orderNumber: order_number || `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
         customerId: finalCustomerId,
         totalAmount: (total_amount !== undefined && total_amount !== null) ? total_amount.toString() : '0',

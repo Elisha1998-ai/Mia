@@ -106,7 +106,7 @@ export default function ConfirmationWireframe({ order, storeSettings }: Confirma
           <div className="rounded-2xl border border-gray-100 bg-gray-50/50 overflow-hidden">
             {/* Order Items */}
             <ul className="divide-y divide-gray-100 p-6 sm:p-8">
-              {(displayOrder.items || []).map((item: OrderItem) => (
+              {(displayOrder.items || []).map((item: any) => (
                 <li key={item.id} className="flex py-4 first:pt-0 last:pb-0">
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{item.name}</h3>

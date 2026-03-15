@@ -84,7 +84,7 @@ export async function POST(request: Request) {
             // ---------- AI COPILOT: ORDER CLERK ----------
             try {
               const sellerUser = order.userId ? await db.query.users.findFirst({
-                where: eq(users.id, order.userId)
+                where: (users, { eq }) => eq(users.id, order.userId)
               }) : null;
 
               if (resendUrl && sellerUser?.email) {

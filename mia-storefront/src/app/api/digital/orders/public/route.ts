@@ -31,6 +31,8 @@ export async function POST(req: Request) {
         // Create the order
         const [order] = await db.insert(digitalOrders).values({
             userId: sellerId,
+            orderNumber: `ORD-${Date.now()}`,
+            productId: products[0].id, // Defaulting to first item as primary product
             customerName: customerName || "Guest User",
             customerEmail: customerEmail || "guest@example.com",
             amountPaid: amountPaid ? amountPaid.toString() : "0",

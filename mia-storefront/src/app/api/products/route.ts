@@ -1,7 +1,7 @@
 // API Route for products
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products as productsTable, productVariants as variantsTable, users as usersTable } from '@/lib/schema';
+import { products as productsTable, productVariants as variantsTable, users as usersTable, storeSettings as storeSettingsTable } from '@/lib/schema';
 import { desc, count, eq } from 'drizzle-orm';
 import { auth } from '@/auth';
 
@@ -19,31 +19,54 @@ export async function GET(request: Request) {
         limit
       });
     }
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    let userId: string | undefined = undefined;
 
-    let userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // 1. Check if we are being accessed via a public subdomain
+    const host = request.headers.get('host') || '';
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+    const baseDomain = isLocal ? 'localhost' : 'bloume.shop';
+    const isSubdomain = host.includes(`.${baseDomain}`) && !host.startsWith(`www.${baseDomain}`);
 
-    // In development, the session ID might be an email (from Credentials provider),
-    // but the database might have a different ID for that user.
-    // Let's try to find the actual user record.
-    if (userId.includes('@')) {
-      const userRecord = await db.select({ id: usersTable.id })
-        .from(usersTable)
-        .where(eq(usersTable.email, userId))
-        .limit(1);
+    const queryDomain = searchParams.get('domain');
 
-      if (userRecord.length > 0) {
-        userId = userRecord[0].id;
+    if (isSubdomain || queryDomain) {
+      const subdomain = isSubdomain ? host.split(`.${baseDomain}`)[0] : queryDomain;
+      
+      if (!subdomain) {
+          return NextResponse.json({ error: 'Store not found' }, { status: 404 });
+      }
+
+      const settings = await db.query.storeSettings.findFirst({
+        where: eq(storeSettingsTable.storeDomain, subdomain)
+      });
+      if (settings && settings.userId) {
+        userId = settings.userId;
+      } else {
+        return NextResponse.json({ error: 'Store not found' }, { status: 404 });
+      }
+    } else {
+      // 2. Otherwise we are relying on an active session (dashboard access)
+      const session = await auth();
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      userId = session.user.id;
+
+      if (userId.includes('@')) {
+        const userRecord = await db.select({ id: usersTable.id })
+          .from(usersTable)
+          .where(eq(usersTable.email, userId))
+          .limit(1);
+
+        if (userRecord.length > 0) {
+          userId = userRecord[0].id;
+        }
       }
     }
 
-
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     console.log('Fetching products for user:', userId);
 
@@ -140,14 +163,14 @@ export async function POST(request: Request) {
       }).returning();
 
       let createdVariants: any[] = [];
-      if (variants && variants.length > 0) {
+      if (variants && Array.isArray(variants) && variants.length > 0) {
         createdVariants = await tx.insert(variantsTable).values(
           variants.map((v: any) => ({
             productId: product.id,
             name: v.name,
-            sku: v.sku || `${sku}-${v.name.replace(/\s+/g, '-').toUpperCase()}`,
-            price: (v.price !== undefined && v.price !== null) ? v.price.toString() : null,
-            stockQuantity: typeof v.stock_quantity === 'string' ? parseInt(v.stock_quantity) || 0 : v.stock_quantity || 0,
+            sku: v.sku || `${product.sku}-${v.name.replace(/\s+/g, '-').toUpperCase()}`,
+            price: (v.price !== undefined && v.price !== null && v.price !== '') ? v.price.toString() : null,
+            stockQuantity: typeof v.stock_quantity === 'string' ? parseInt(v.stock_quantity) || 0 : (typeof v.stock_quantity === 'number' ? v.stock_quantity : 0),
             imageUrl: v.image_url
           }))
         ).returning();

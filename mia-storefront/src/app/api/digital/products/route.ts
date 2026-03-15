@@ -2,7 +2,7 @@
 // POST /api/digital/products — create a new digital product
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { digitalProducts, users } from "@/lib/schema";
+import { digitalProducts, users, storeSettings } from "@/lib/schema";
 import { desc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 
@@ -12,12 +12,36 @@ async function resolveUserId(rawId: string): Promise<string> {
     return row?.id ?? rawId;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        let userId: string | undefined = undefined;
 
-        const userId = await resolveUserId(session.user.id);
+        // 1. Check if we are being accessed via a public subdomain
+        const host = request.headers.get('host') || '';
+        const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+        const baseDomain = isLocal ? 'localhost' : 'bloume.shop';
+        const isSubdomain = host.includes(`.${baseDomain}`) && !host.startsWith(`www.${baseDomain}`);
+
+        if (isSubdomain) {
+            const subdomain = host.split(`.${baseDomain}`)[0];
+            const settings = await db.query.storeSettings.findFirst({
+                where: eq(storeSettings.storeDomain, subdomain)
+            });
+            if (settings) {
+                userId = settings.userId;
+            } else {
+                return NextResponse.json({ error: 'Store not found' }, { status: 404 });
+            }
+        } else {
+            // 2. Otherwise we are relying on an active session (dashboard access)
+            const session = await auth();
+            if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            userId = await resolveUserId(session.user.id);
+        }
+
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         const products = await db
             .select()
@@ -43,8 +67,8 @@ export async function GET() {
                 status: p.status,
                 sales_count: p.salesCount,
                 revenue: Number(p.revenue),
-                createdAt: p.createdAt.toISOString(),
-                updatedAt: p.updatedAt.toISOString(),
+                createdAt: (p.createdAt as Date).toISOString(),
+                updatedAt: (p.updatedAt as Date).toISOString(),
             })),
         });
     } catch (err) {

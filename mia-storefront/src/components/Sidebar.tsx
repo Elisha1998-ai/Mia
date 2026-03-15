@@ -25,13 +25,14 @@ import { useTheme } from 'next-themes';
 import { useState, useEffect } from 'react';
 import { SettingsModal } from './SettingsModal';
 import * as Dialog from '@radix-ui/react-dialog';
+import * as Popover from '@radix-ui/react-popover';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useSettings } from '@/hooks/useData';
 import Link from 'next/link';
 
 interface SidebarProps {
-  activeView: 'chat' | 'products' | 'digital-products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder';
-  onViewChange: (view: 'chat' | 'products' | 'digital-products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder') => void;
+  activeView: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder';
+  onViewChange: (view: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder') => void;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
   className?: string;
@@ -58,60 +59,82 @@ export const Sidebar = ({ activeView, onViewChange, isMobileOpen, onMobileClose,
     .slice(0, 2);
 
   const topIcons = [
-    { id: 'chat', icon: MessageSquare, label: 'Pony' },
     { id: 'products', icon: Package, label: 'Products' },
-    { id: 'shop', icon: Layout, label: 'Shop' },
     { id: 'orders', icon: ShoppingCart, label: 'Orders' },
     { id: 'customers', icon: Users, label: 'Customers' },
   ];
+
+  const HoverTooltip = ({ children, label, isActive }: { children: React.ReactNode, label: string, isActive: boolean }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
+        <Popover.Trigger asChild onMouseEnter={() => setIsOpen(true)} onMouseLeave={() => setIsOpen(false)} onFocus={() => setIsOpen(true)} onBlur={() => setIsOpen(false)}>
+          {children}
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content 
+            className="z-[100] px-3 py-1.5 bg-background border border-border-custom rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200" 
+            side="right" 
+            sideOffset={10}
+            align="center"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-bold text-foreground">{label}</span>
+              {isActive && (
+                <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+              )}
+            </div>
+            <Popover.Arrow className="fill-border-custom" width={10} height={5} />
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    );
+  };
 
   const sidebarContent = (
     <>
       <div className="flex flex-col gap-2 w-full items-center overflow-y-auto no-scrollbar py-2">
         {topIcons.map((item) => (
-          <div key={item.id} className="relative group">
+          <HoverTooltip key={item.id} label={item.label} isActive={activeView === item.id}>
             <button
               onClick={() => {
                 onViewChange(item.id as any);
               }}
-              className={`p-2.5 rounded-lg transition-all shrink-0 relative ${activeView === item.id
-                ? 'bg-gray-200 text-black'
-                : 'text-foreground/40 hover:bg-foreground/5 hover:text-foreground'
+              className={`p-1 rounded-lg transition-all shrink-0 relative outline-none ${activeView === item.id
+                ? 'text-black bg-transparent'
+                : 'text-foreground/60 hover:text-foreground'
                 }`}
             >
               <item.icon className="w-5 h-5" />
-              {activeView === item.id && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-black rounded-r-full" />
-              )}
             </button>
-
-            {/* Custom Styled Tooltip */}
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-background border border-border-custom rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] whitespace-nowrap pointer-events-none translate-x-[-10px] group-hover:translate-x-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-bold text-foreground">{item.label}</span>
-                {activeView === item.id && (
-                  <div className="w-1 h-1 rounded-full bg-accent" />
-                )}
-              </div>
-              {/* Arrow */}
-              <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-background border-l border-b border-border-custom rotate-45" />
-            </div>
-          </div>
+          </HoverTooltip>
         ))}
+
+        {/* Separator for external link */}
+        <div className="w-6 h-px bg-border-custom my-1" />
+
+        {/* Shop External Link (In-app Preview) */}
+        <HoverTooltip label="View Shop" isActive={activeView === 'previews'}>
+          <button
+            onClick={() => onViewChange('previews')}
+            className={`p-1 rounded-lg transition-all shrink-0 relative outline-none ${activeView === 'previews'
+              ? 'text-black bg-transparent'
+              : 'text-foreground/60 hover:text-foreground'
+              }`}
+          >
+            <Layout className="w-5 h-5" />
+          </button>
+        </HoverTooltip>
       </div>
 
-      <div className="mt-auto flex flex-col items-center gap-4">
-        <div className="relative group">
+      <div className="mt-auto flex flex-col items-center gap-4 py-2">
+        <HoverTooltip label="Settings" isActive={false}>
           <div
             onClick={() => setIsSettingsOpen(true)}
-            className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-bold text-accent cursor-pointer hover:ring-2 ring-accent/10 transition-all">
+            className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[9px] font-bold text-accent cursor-pointer hover:ring-2 ring-accent/10 transition-all outline-none">
             {initials}
           </div>
-          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-background border border-border-custom rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] whitespace-nowrap pointer-events-none translate-x-[-10px] group-hover:translate-x-0">
-            <span className="text-[13px] font-bold text-foreground">Settings</span>
-            <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-background border-l border-b border-border-custom rotate-45" />
-          </div>
-        </div>
+        </HoverTooltip>
       </div>
     </>
   );
@@ -119,7 +142,9 @@ export const Sidebar = ({ activeView, onViewChange, isMobileOpen, onMobileClose,
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex flex-col items-center py-6 gap-6 z-50 transition-colors bg-sidebar ${className || 'w-[72px] border-r border-border-custom'}`}>
+      <aside 
+        className={`hidden md:flex flex-col items-center py-2 gap-4 z-50 transition-colors bg-sidebar w-full h-full overflow-hidden ${className || ''}`}
+      >
         {sidebarContent}
       </aside>
 
@@ -151,6 +176,20 @@ export const Sidebar = ({ activeView, onViewChange, isMobileOpen, onMobileClose,
                   <span className="text-sm">{item.label}</span>
                 </button>
               ))}
+
+              <a
+                href={settings?.storeDomain ? (
+                    window.location.hostname.includes('localhost') 
+                      ? `http://${settings.storeDomain}.localhost:3000` 
+                      : `https://${settings.storeDomain}.bloume.shop`
+                ) : '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-foreground/60 hover:bg-foreground/5 hover:text-foreground"
+              >
+                <Layout className="w-5 h-5 text-foreground/40" />
+                <span className="text-sm">View Shop</span>
+              </a>
             </div>
 
             <div className="p-4 mt-auto border-t border-border-custom bg-foreground/[0.02] flex flex-col gap-2">

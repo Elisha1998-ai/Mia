@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       FROM "order" WHERE "userId" = ${user.id}
     `);
 
-        const statsRow = statsResult[0] as any || {};
+        const statsRow = (statsResult as any)[0] || {};
 
         const lowStockResult = await db.execute(sql`
       SELECT COUNT(*) as count FROM product WHERE "userId" = ${user.id} AND "stockQuantity" < 5 AND "isActive" = true
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
             todayEarnings: Number(statsRow.today_earnings || 0),
             pendingOrders: Number(statsRow.pending_orders || 0),
             shippedOrders: Number(statsRow.shipped_orders || 0),
-            lowStockProducts: Number((lowStockResult[0] as any)?.count || 0)
+            lowStockProducts: Number(((lowStockResult as any)[0])?.count || 0)
         };
 
         // Fetch conversation history
@@ -94,17 +94,40 @@ export async function POST(req: Request) {
 
         const messages: ChatCompletionMessageParam[] = [
             { role: 'system', content: systemPrompt },
-            ...history.map(h => ({ role: h.role as 'user' | 'assistant' | 'system' | 'tool', content: h.content })),
+            ...history.map(h => ({ 
+                role: h.role as 'user' | 'assistant' | 'system', 
+                content: h.content 
+            }) as ChatCompletionMessageParam),
             { role: 'user', content: message }
         ];
 
         // Call Groq with tools
         let aiMessage = await callGroq(messages, adminTools);
 
-        // Handle tool calls — this is the critical loop
-        if (aiMessage.tool_calls && aiMessage.tool_calls.length > 0) {
+        // ── DETECT TEXT-EMBEDDED TOOL CALLS (some models output these instead of structured calls) ──
+        // If the model wrote a raw <function=...> call in its text content without providing structured tool_calls,
+        // we intercept it, execute the right tool, and re-run the LLM to get a clean answer.
+        const textContent = aiMessage.content || '';
+        const embeddedToolMatch = textContent.match(/<function=(\w+)>([\s\S]*?)<\/function>/);
+
+        if (!aiMessage.tool_calls?.length && embeddedToolMatch) {
+            const embeddedToolName = embeddedToolMatch[1];
+            let embeddedToolArgs: any = {};
+            try { embeddedToolArgs = JSON.parse(embeddedToolMatch[2]); } catch { /* default {} */ }
+
+            const result = await handleToolCall(embeddedToolName, embeddedToolArgs, resolvedDomain, user.id, adminSessionId);
+
+            // Re-prompt the model with only the tool result so it composes a clean, direct answer
+            messages.push({ role: 'user' as const, content: `[Tool executed: ${embeddedToolName}. Result: ${JSON.stringify(result)}. Now give the seller a direct, concise answer using only the data above. No filler. No emojis. No tool syntax.]` });
+            aiMessage = await callGroq(messages, []);
+        }
+        // ── HANDLE STANDARD STRUCTURED TOOL CALLS ──
+        else if (aiMessage.tool_calls && aiMessage.tool_calls.length > 0) {
             // Add AI's tool call decision to messages
             messages.push(aiMessage as ChatCompletionMessageParam);
+
+            // Track tool results for widget injection
+            const toolResults: Record<string, any> = {};
 
             // Execute each tool call
             for (const toolCall of aiMessage.tool_calls) {
@@ -117,6 +140,7 @@ export async function POST(req: Request) {
                 }
 
                 const result = await handleToolCall(toolName, toolArgs, resolvedDomain, user.id, adminSessionId);
+                toolResults[toolName] = result;
 
                 // Add tool result to messages
                 messages.push({
@@ -128,9 +152,34 @@ export async function POST(req: Request) {
 
             // Get AI's natural language response after tools executed
             aiMessage = await callGroq(messages, adminTools);
+
+            // ── WIDGET INJECTION: If generate_invoice was called, attach the download URL ──
+            const invoiceResult = toolResults['generate_invoice'];
+            if (invoiceResult?.success && invoiceResult?.downloadUrl) {
+                const cleaned = (aiMessage.content || '').trim()
+                    .replace(/<function=[\w]+>[\s\S]*?<\/function>/g, '')
+                    .replace(/^(let me check[^.]*\.|one moment[^.]*\.|checking[^.]*\.|i'll look[^.]*\.)/gi, '')
+                    .trim();
+                await db.insert(conversations).values({ sessionId: adminSessionId, storeDomain: resolvedDomain, role: 'user', content: message });
+                await db.insert(conversations).values({ sessionId: adminSessionId, storeDomain: resolvedDomain, role: 'assistant', content: cleaned });
+                return NextResponse.json({
+                    message: cleaned,
+                    widget: {
+                        type: 'invoice_download',
+                        orderNumber: invoiceResult.orderNumber,
+                        buyerName: invoiceResult.buyerName,
+                        totalAmount: invoiceResult.totalAmount,
+                        downloadUrl: invoiceResult.downloadUrl
+                    }
+                });
+            }
         }
 
-        const finalResponse = aiMessage.content;
+        // ── CLEAN FINAL RESPONSE ──
+        // Strip any remaining leaked tool syntax or filler phrases
+        let finalResponse = (aiMessage.content || '').trim();
+        finalResponse = finalResponse.replace(/<function=[\w]+>[\s\S]*?<\/function>/g, '').trim();
+        finalResponse = finalResponse.replace(/^(let me check[^.]*\.|one moment[^.]*\.|checking[^.]*\.|i'll look[^.]*\.)/gi, '').trim();
 
         // Save this turn to conversation history
         await db.insert(conversations).values({

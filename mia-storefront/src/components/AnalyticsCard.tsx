@@ -146,7 +146,7 @@ export const AnalyticsCard = ({
                   boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                 }}
                 itemStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(val: number) => [`${valuePrefix}${val.toLocaleString()}${valueSuffix}`, title] as any}
+                formatter={(val: any) => [`${valuePrefix}${Number(val).toLocaleString()}${valueSuffix}`, title] as any}
                 labelFormatter={formatDate as any}
               />
               <Area

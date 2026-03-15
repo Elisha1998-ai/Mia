@@ -1,174 +1,177 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 
-// Define styles
+// Define styles to match the "Flowly" clean aesthetic
 const styles = StyleSheet.create({
   page: {
-    flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    padding: 40,
+    padding: 50,
     fontFamily: 'Helvetica',
+    fontSize: 10,
+    color: '#1A1A1A',
+    backgroundColor: '#FFFFFF',
   },
-  header: {
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 40,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-    paddingBottom: 20,
   },
-  storeInfo: {
-    flexDirection: 'column',
-  },
-  storeName: {
-    fontSize: 24,
+  title: {
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 4,
-    color: '#111111',
+    letterSpacing: -0.5,
   },
-  storeDetail: {
-    fontSize: 10,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  invoiceTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#111111',
-    textAlign: 'right',
-  },
-  invoiceMeta: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    marginTop: 10,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  metaLabel: {
-    fontSize: 10,
-    color: '#666666',
-    marginRight: 8,
-  },
-  metaValue: {
-    fontSize: 10,
-    color: '#111111',
-    fontWeight: 'bold',
-  },
-  billTo: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
+  invoiceNumber: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#666666',
-    marginBottom: 8,
-    textTransform: 'uppercase',
+    color: '#94a3b8',
+    letterSpacing: 0,
   },
-  customerName: {
+  logoPlaceholder: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#0d666b', // Deep teal from reference
+    borderRadius: 8,
+    // Add a simple geometric pattern simulation
+    borderWidth: 2,
+    borderColor: '#0a5256',
+  },
+  divider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginVertical: 30,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    marginBottom: 40,
+  },
+  infoSection: {
+    flex: 1,
+  },
+  label: {
+    fontSize: 10,
+    color: '#94a3b8',
+    marginBottom: 6,
+    textTransform: 'none',
+  },
+  valueBold: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#111111',
+    color: '#1E293B',
     marginBottom: 4,
   },
-  customerDetail: {
+  valueText: {
     fontSize: 10,
-    color: '#666666',
-    marginBottom: 2,
+    color: '#64748B',
+    lineHeight: 1.5,
+    maxWidth: 200,
+  },
+  datesContainer: {
+    flexDirection: 'row',
+    marginBottom: 50,
+  },
+  dateBlock: {
+    flex: 1,
+  },
+  detailsTitle: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginBottom: 16,
   },
   table: {
-    flexDirection: 'column',
-    marginBottom: 30,
+    width: '100%',
   },
   tableHeader: {
     flexDirection: 'row',
+    paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#000000',
-    paddingBottom: 8,
-    marginBottom: 8,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 10,
   },
   tableRow: {
     flexDirection: 'row',
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-    paddingBottom: 8,
-    marginBottom: 8,
+    borderBottomColor: '#F8FAFC',
   },
-  colItem: { width: '50%' },
-  colQty: { width: '15%', textAlign: 'center' },
-  colPrice: { width: '17.5%', textAlign: 'right' },
-  colTotal: { width: '17.5%', textAlign: 'right' },
-  
+  colDesc: { flex: 4 },
+  colQty: { flex: 1, textAlign: 'center' },
+  colPrice: { flex: 1.5, textAlign: 'right' },
+  colTotal: { flex: 1.5, textAlign: 'right' },
   headerText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#111111',
-    textTransform: 'uppercase',
+    color: '#94a3b8',
   },
-  cellText: {
+  rowText: {
     fontSize: 10,
-    color: '#333333',
+    color: '#334155',
   },
-  cellTextBold: {
-    fontSize: 10,
-    color: '#111111',
+  rowTextBold: {
+    fontSize: 11,
     fontWeight: 'bold',
+    color: '#1E293B',
   },
-  totals: {
-    flexDirection: 'column',
+  totalsContainer: {
+    marginTop: 20,
     alignItems: 'flex-end',
-    marginBottom: 40,
   },
   totalRow: {
     flexDirection: 'row',
-    marginBottom: 8,
-    width: '40%',
+    width: 250,
     justifyContent: 'space-between',
+    paddingVertical: 6,
   },
-  totalLabel: {
-    fontSize: 10,
-    color: '#666666',
-  },
-  totalValue: {
-    fontSize: 10,
-    color: '#111111',
-    fontWeight: 'bold',
-  },
-  grandTotal: {
+  grandTotalRow: {
     flexDirection: 'row',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#000000',
-    width: '40%',
+    width: 250,
     justifyContent: 'space-between',
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
-  grandTotalLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#111111',
-  },
-  grandTotalValue: {
+  grandTotalText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#111111',
+    color: '#1E293B',
+  },
+  notesBox: {
+    marginTop: 60,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 20,
+  },
+  notesTitle: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  notesText: {
+    fontSize: 9,
+    color: '#94a3b8',
+    lineHeight: 1.6,
   },
   footer: {
     position: 'absolute',
-    bottom: 40,
-    left: 40,
-    right: 40,
-    textAlign: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    bottom: 50,
+    left: 50,
+    right: 50,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
   footerText: {
-    fontSize: 8,
-    color: '#999999',
-    marginBottom: 4,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#334155',
   },
+  footerContact: {
+    fontSize: 10,
+    color: '#94a3b8',
+  }
 });
 
 interface InvoiceProps {
@@ -178,81 +181,102 @@ interface InvoiceProps {
   customer: any;
 }
 
-export const InvoiceTemplate = ({ order, items, storeSettings, customer }: InvoiceProps) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.storeInfo}>
-          <Text style={styles.storeName}>{storeSettings?.storeName || 'Pony Store'}</Text>
-          <Text style={styles.storeDetail}>{storeSettings?.storeAddress || ''}</Text>
-          <Text style={styles.storeDetail}>{storeSettings?.storePhone || ''}</Text>
-          <Text style={styles.storeDetail}>{storeSettings?.adminEmail || ''}</Text>
+export const InvoiceTemplate = ({ order, items, storeSettings, customer }: InvoiceProps) => {
+  const subtotal = Number(order.totalAmount);
+  const issuedDate = order.createdAt ? new Date(order.createdAt) : new Date();
+  const dueDate = new Date(issuedDate.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days later
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* Header Section */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.title}>Invoice</Text>
+            <Text style={styles.invoiceNumber}>Invoice Number #{order.orderNumber || 'INV-000'}</Text>
+          </View>
+          <View style={styles.logoPlaceholder} />
         </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={styles.invoiceTitle}>INVOICE</Text>
-          <View style={styles.invoiceMeta}>
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Invoice #:</Text>
-              <Text style={styles.metaValue}>{order.orderNumber}</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Date:</Text>
-              <Text style={styles.metaValue}>{new Date(order.createdAt).toLocaleDateString()}</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Status:</Text>
-              <Text style={styles.metaValue}>{order.status.toUpperCase()}</Text>
-            </View>
+
+        {/* Info Container (Billed By / Billed To) */}
+        <View style={styles.infoContainer}>
+          <View style={styles.infoSection}>
+            <Text style={styles.label}>Billed By :</Text>
+            <Text style={styles.valueBold}>{storeSettings?.storeName || 'Pony Store'}</Text>
+            <Text style={styles.valueText}>{storeSettings?.storeAddress || 'Lagos, Nigeria'}</Text>
+          </View>
+          <View style={styles.infoSection}>
+            <Text style={styles.label}>Billed To :</Text>
+            <Text style={styles.valueBold}>{customer?.fullName || 'Guest Customer'}</Text>
+            <Text style={styles.valueText}>{order.shippingAddress || 'No shipping address provided'}</Text>
           </View>
         </View>
-      </View>
 
-      {/* Bill To */}
-      <View style={styles.billTo}>
-        <Text style={styles.sectionTitle}>Bill To</Text>
-        <Text style={styles.customerName}>{customer?.fullName || 'Guest Customer'}</Text>
-        <Text style={styles.customerDetail}>{customer?.email || ''}</Text>
-        <Text style={styles.customerDetail}>{customer?.phone || ''}</Text>
-        <Text style={styles.customerDetail}>{order.shippingAddress || ''}</Text>
-      </View>
-
-      {/* Items Table */}
-      <View style={styles.table}>
-        <View style={styles.tableHeader}>
-          <View style={styles.colItem}><Text style={styles.headerText}>Item</Text></View>
-          <View style={styles.colQty}><Text style={styles.headerText}>Qty</Text></View>
-          <View style={styles.colPrice}><Text style={styles.headerText}>Price</Text></View>
-          <View style={styles.colTotal}><Text style={styles.headerText}>Total</Text></View>
-        </View>
-        
-        {items.map((item, index) => (
-          <View style={styles.tableRow} key={index}>
-            <View style={styles.colItem}><Text style={styles.cellTextBold}>{item.product?.name || 'Product'}</Text></View>
-            <View style={styles.colQty}><Text style={styles.cellText}>{item.quantity}</Text></View>
-            <View style={styles.colPrice}><Text style={styles.cellText}>₦{Number(item.price).toLocaleString()}</Text></View>
-            <View style={styles.colTotal}><Text style={styles.cellText}>₦{(Number(item.price) * item.quantity).toLocaleString()}</Text></View>
+        {/* Dates Container */}
+        <View style={styles.datesContainer}>
+          <View style={styles.dateBlock}>
+            <Text style={styles.label}>Date Issued :</Text>
+            <Text style={styles.valueBold}>{issuedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</Text>
           </View>
-        ))}
-      </View>
-
-      {/* Totals */}
-      <View style={styles.totals}>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Subtotal</Text>
-          <Text style={styles.totalValue}>₦{Number(order.totalAmount).toLocaleString()}</Text>
+          <View style={styles.dateBlock}>
+            <Text style={styles.label}>Due Date :</Text>
+            <Text style={styles.valueBold}>{dueDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</Text>
+          </View>
         </View>
-        <View style={styles.grandTotal}>
-          <Text style={styles.grandTotalLabel}>Total</Text>
-          <Text style={styles.grandTotalValue}>₦{Number(order.totalAmount).toLocaleString()}</Text>
-        </View>
-      </View>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Thank you for your business!</Text>
-        <Text style={styles.footerText}>For any inquiries, please contact {storeSettings?.adminEmail || 'support@pony-auto.ai'}</Text>
-      </View>
-    </Page>
-  </Document>
-);
+        {/* Invoice Details Table */}
+        <Text style={styles.detailsTitle}>Invoice Details</Text>
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <View style={styles.colDesc}><Text style={styles.headerText}>Items/Service</Text></View>
+            <View style={styles.colQty}><Text style={styles.headerText}>Quantity</Text></View>
+            <View style={styles.colPrice}><Text style={styles.headerText}>Unit Price</Text></View>
+            <View style={styles.colTotal}><Text style={styles.headerText}>Total</Text></View>
+          </View>
+
+          {items.map((item, index) => (
+            <View key={index} style={styles.tableRow}>
+              <View style={styles.colDesc}><Text style={styles.rowTextBold}>{item.product?.name || 'Product'}</Text></View>
+              <View style={styles.colQty}><Text style={styles.rowText}>{item.quantity}</Text></View>
+              <View style={styles.colPrice}><Text style={styles.rowText}>NGN {Number(item.price).toLocaleString()}</Text></View>
+              <View style={styles.colTotal}><Text style={styles.rowTextBold}>NGN {(Number(item.price) * item.quantity).toLocaleString()}</Text></View>
+            </View>
+          ))}
+        </View>
+
+        {/* Totals Section */}
+        <View style={styles.totalsContainer}>
+          <View style={styles.totalRow}>
+            <Text style={styles.rowText}>Subtotal</Text>
+            <Text style={styles.rowTextBold}>NGN {subtotal.toLocaleString()}</Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.rowText}>Tax (0%)</Text>
+            <Text style={styles.rowTextBold}>NGN 0</Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.rowText}>Discount</Text>
+            <Text style={styles.rowTextBold}>NGN 0</Text>
+          </View>
+          <View style={styles.grandTotalRow}>
+            <Text style={styles.grandTotalText}>Grand Total</Text>
+            <Text style={styles.grandTotalText}>NGN {subtotal.toLocaleString()}</Text>
+          </View>
+        </View>
+
+        {/* Notes Box */}
+        <View style={styles.notesBox}>
+          <Text style={styles.notesTitle}>Notes</Text>
+          <Text style={styles.notesText}>• Payment is due by {dueDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.</Text>
+          <Text style={styles.notesText}>• Please include the invoice number in the payment reference to ensure accurate processing.</Text>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>{storeSettings?.storeName || 'Pony Finance Company, IND'}</Text>
+          <Text style={styles.footerContact}>{storeSettings?.storePhone || '(+234) 812-4567-8901'}</Text>
+        </View>
+      </Page>
+    </Document>
+  );
+};

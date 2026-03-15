@@ -15,6 +15,20 @@
       "when": 1772072136184,
       "tag": "0001_greedy_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773338456830,
+      "tag": "0002_aberrant_nicolaos",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773524471258,
+      "tag": "0003_melted_piledriver",
+      "breakpoints": true
     }
   ]
 }

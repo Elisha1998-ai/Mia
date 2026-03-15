@@ -9,7 +9,7 @@ import { useNotificationLogic } from '@/hooks/useNotificationLogic';
 import { NotificationCard } from './NotificationCard';
 
 interface Widget {
-  type: 'invoice' | 'document' | 'link' | 'store_preview' | 'product_list' | 'font_picker' | 'digital_product_draft';
+  type: 'invoice' | 'invoice_download' | 'document' | 'link' | 'store_preview' | 'product_list' | 'font_picker';
   title?: string;
   description?: string;
   imageUrl?: string;
@@ -19,6 +19,11 @@ interface Widget {
   products?: any[];
   product?: any; // Single product for drafts
   fonts?: { id: string; name: string; heading: string; body: string; description: string }[];
+  // Invoice download fields
+  orderNumber?: string;
+  buyerName?: string;
+  totalAmount?: string;
+  downloadUrl?: string;
 }
 
 interface Message {
@@ -315,33 +320,21 @@ const ChatWidget = ({ widget, onPreview, onAction }: { widget: Widget, onPreview
           <img src={widget.imageUrl} alt="" className="w-full h-full object-cover" />
         ) : widget.type === 'store_preview' ? (
           <Layout className="w-7 h-7 text-accent/60 group-hover:text-accent transition-colors" />
-        ) : widget.type === 'digital_product_draft' ? (
-          <div className="flex flex-col items-center justify-center">
-            <div className="text-[10px] font-bold text-accent mb-1 uppercase tracking-widest">{(widget as any).products?.product_type || 'DIGITAL'}</div>
-            <FileText className="w-5 h-5 text-accent/60 group-hover:text-accent transition-colors" />
-          </div>
         ) : (
           <FileText className="w-7 h-7 text-foreground/20 group-hover:text-accent/40 transition-colors" />
         )}
       </div>
       <div className="flex-1 min-w-0">
         <h4 className="text-sm font-bold text-foreground/80 truncate">
-          {widget.type === 'store_preview' ? `Store Preview: ${(widget as any).storeName}` : widget.type === 'digital_product_draft' ? `Draft: ${(widget as any).products?.title || widget.title}` : widget.title}
+          {widget.type === 'store_preview' ? `Store Preview: ${(widget as any).storeName}` : widget.title}
         </h4>
         <p className="text-xs text-foreground/40 mt-0.5 line-clamp-2 leading-relaxed">
-          {widget.type === 'store_preview' ? 'Click to preview your newly built storefront and check out the design.' : widget.type === 'digital_product_draft' ? `₦${widget.product?.price || 0} — ${widget.description}` : widget.description}
+          {widget.type === 'store_preview' ? 'Click to preview your newly built storefront and check out the design.' : widget.description}
         </p>
       </div>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {widget.type === 'digital_product_draft' && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onAction?.('add_product', widget); }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent text-white dark:text-black hover:bg-accent/90 transition-all text-xs font-bold uppercase tracking-wider shadow-lg shadow-accent/20"
-          >
-            Edit & Add <Plus className="w-3.5 h-3.5" />
-          </button>
-        )}
+
         {widget.type === 'invoice' && (
           <>
             <button
@@ -656,6 +649,28 @@ export const ChatInterface = ({ messages, onSend, isLoading, onMessageComplete, 
                             <DocumentCanvas key={wIdx} widget={widget} />
                           ) : widget.type === 'font_picker' ? (
                             <FontPicker key={wIdx} widget={widget} onSelect={(font) => onSend(`I've chosen the ${font.name} style for my store.`)} />
+                          ) : widget.type === 'invoice_download' ? (
+                            <div key={wIdx} className="mt-2 rounded-2xl border border-border-custom bg-foreground/[0.02] p-4 flex flex-col gap-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+                                  <FileText className="w-4 h-4 text-accent" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-foreground">{widget.orderNumber}</p>
+                                  <p className="text-xs text-foreground/50">{widget.buyerName} &bull; {widget.totalAmount}</p>
+                                </div>
+                              </div>
+                              <a
+                                href={widget.downloadUrl}
+                                download
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-white dark:text-black rounded-xl text-sm font-semibold hover:brightness-110 transition-all"
+                              >
+                                <Download className="w-4 h-4" />
+                                Download Invoice PDF
+                              </a>
+                            </div>
                           ) : (
                             <ChatWidget key={wIdx} widget={widget} onPreview={setActivePreviewWidget} onAction={(action, w) => {
                               if (action === 'add_product' && w.product) {

@@ -46,7 +46,7 @@ const ActionPopover = ({ product, onDelete, onEdit, onShare }: { product: Produc
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
-        <button className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all">
+        <button className="p-2 rounded-lg opacity-100 hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all">
           <MoreHorizontal className="w-5 h-5" />
         </button>
       </Popover.Trigger>
@@ -156,14 +156,6 @@ const MobileProductCard = ({
               <span className={`text-sm font-bold ${product.stock === 0 ? 'text-red-500' : 'text-foreground/60'}`}>
                 {product.stock} units
               </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-foreground/30 uppercase tracking-wider">Category</span>
-              <span className="text-sm font-bold text-foreground/60">{product.category}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-foreground/30 uppercase tracking-wider">Weight</span>
-              <span className="text-sm font-bold text-foreground/60">{product.weight || '—'}</span>
             </div>
           </div>
 
@@ -354,7 +346,12 @@ export const ProductsPage = () => {
 
   const handleBulkStatusUpdate = async (newStatus: Product['status']) => {
     try {
-      await Promise.all(selectedIds.map(id => updateProduct(id, { status: newStatus })));
+      // Corrected logic: Use updateProduct which handles partial updates correctly
+      // Ensure we're not inadvertently resetting other fields like stock
+      await Promise.all(selectedIds.map(id => updateProduct(id, { 
+        status: newStatus.toLowerCase() as any 
+      })));
+      
       setProducts(products.map(p => selectedIds.includes(p.id) ? { ...p, status: newStatus } : p));
       setSelectedIds([]);
     } catch (error) {
@@ -370,6 +367,9 @@ export const ProductsPage = () => {
 
   const handleAddProduct = async (productData: any) => {
     try {
+      // Add a small delay for better UX as requested by user
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       if (editingProduct) {
         await updateProduct(editingProduct.id, {
           name: productData.name,
@@ -470,8 +470,8 @@ export const ProductsPage = () => {
       <div className="flex-1 flex flex-col bg-background h-full overflow-hidden animate-in fade-in duration-500">
         {/* Desktop Header */}
         <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border-custom">
-          <div className="flex items-center gap-4 flex-1 max-w-3xl">
-            <div className="relative flex-1">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative w-[300px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
               <input
                 type="text"
@@ -482,6 +482,44 @@ export const ProductsPage = () => {
               />
             </div>
 
+            {selectedIds.length > 0 && (
+              <div className="flex items-center gap-2 pl-2 border-l border-border-custom animate-in slide-in-from-left-2 duration-200">
+                <span className="text-[12px] font-bold text-foreground/30 uppercase tracking-wider mr-2">{selectedIds.length} Selected:</span>
+
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-bold hover:bg-foreground/5 text-foreground/60 transition-colors">
+                      Update Status
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[140px]" align="start" sideOffset={8}>
+                      {['Active', 'Draft', 'Archived'].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => handleBulkStatusUpdate(status as any)}
+                          className="w-full text-left px-3 py-2 text-[13px] hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors font-medium"
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <Popover.Root>
                 <Popover.Trigger asChild>
@@ -528,71 +566,12 @@ export const ProductsPage = () => {
               </Popover.Root>
             </div>
 
-            {selectedIds.length > 0 && (
-              <div className="flex items-center gap-2 pl-2 border-l border-border-custom animate-in slide-in-from-left-2 duration-200">
-                <span className="text-[12px] font-bold text-foreground/30 uppercase tracking-wider mr-2">{selectedIds.length} Selected:</span>
-
-                <Popover.Root>
-                  <Popover.Trigger asChild>
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-bold hover:bg-foreground/5 text-foreground/60 transition-colors">
-                      Update Status
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                  </Popover.Trigger>
-                  <Popover.Portal>
-                    <Popover.Content className="bg-background border border-border-custom rounded-xl shadow-xl z-[110] overflow-hidden py-1 w-[140px]" align="start" sideOffset={8}>
-                      {['Active', 'Draft', 'Archived'].map((status) => (
-                        <button
-                          key={status}
-                          onClick={() => handleBulkStatusUpdate(status as any)}
-                          className="w-full text-left px-3 py-2 text-[13px] hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors font-medium"
-                        >
-                          {status}
-                        </button>
-                      ))}
-                    </Popover.Content>
-                  </Popover.Portal>
-                </Popover.Root>
-
-                <button
-                  onClick={handleBulkDelete}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-500/10 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors font-medium"
-            >
-              <Download className="w-4 h-4" />
-              Export
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 text-foreground/60 transition-colors font-medium"
-            >
-              <Upload className="w-4 h-4" />
-              Import
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImport}
-                accept=".csv"
-                className="hidden"
-              />
-            </button>
             <button
               onClick={() => {
                 setEditingProduct(null);
                 setIsAddModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium hover:brightness-110 transition-all shadow-lg shadow-accent/10 font-medium"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium hover:brightness-110 transition-all shadow-lg shadow-accent/10 font-medium ml-1"
             >
               <Plus className="w-4 h-4" />
               Add Product
@@ -692,10 +671,8 @@ export const ProductsPage = () => {
                 <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">SKU</th>
                 <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">Price</th>
                 <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">Stock</th>
-                <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">Category</th>
-                <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">Weight</th>
                 <th className="px-4 py-4 text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">Status</th>
-                <th className="pr-6 py-4 w-16 text-right"></th>
+                <th className="pr-6 py-4 w-16 text-right text-[13px] font-semibold text-foreground/40 uppercase tracking-wider">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-custom">
@@ -763,12 +740,6 @@ export const ProductsPage = () => {
                       <span className={`text-[14px] ${product.stock === 0 ? 'text-red-500 font-medium' : 'text-foreground/60'}`}>
                         {product.stock} in stock
                       </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-[14px] text-foreground/60">{product.category}</span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-[14px] text-foreground/60">{product.weight || '—'}</span>
                     </td>
                     <td className="px-4 py-4">
                       <StatusBadge status={product.status} />

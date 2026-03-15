@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, Loader2 } from "lucide-react";
+import { Sun, Moon, Loader2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { login, loginWithGoogle } from "@/actions/auth";
 
@@ -10,6 +10,8 @@ export default function SignInPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -81,27 +83,71 @@ export default function SignInPage() {
             onSubmit={async (e) => {
               e.preventDefault();
               setIsLoading(true);
+              setError(null);
               const formData = new FormData(e.currentTarget);
               try {
-                await login(formData);
-              } catch (error) {
-                console.error(error);
+                const result = await login(formData);
+                if (result?.error) {
+                  setError(result.error);
+                }
+              } catch (err) {
+                setError("Something went wrong. Please try again.");
+                console.error(err);
               } finally {
                 setIsLoading(false);
               }
             }}
           >
-            <div className="space-y-2.5">
-              <label className="block text-sm font-medium">
-                Email
-              </label>
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="Enter your email"
-                className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
-              />
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
+                {error}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">
+                  Email
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium">
+                    Password
+                  </label>
+                  <Link href="/auth/forgot-password" size="sm" className="text-xs text-accent hover:underline font-medium">
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
 
             <button
@@ -109,10 +155,11 @@ export default function SignInPage() {
               className="w-full bg-accent text-background py-2.5 rounded-lg font-semibold hover:opacity-90 transition-all mt-2 border-b-2 border-black/20 dark:border-white/20 active:border-b-0 active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Continue with email
+              Sign in
             </button>
 
-            <div className="relative py-2">
+{/* Temporarily disabled Google login */}
+            {/* <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border-custom"></span>
               </div>
@@ -159,7 +206,7 @@ export default function SignInPage() {
                 </svg>
               )}
               Log in with Google
-            </button>
+            </button> */}
           </form>
 
           <div className="mt-8 flex flex-col items-center gap-2 text-sm text-center">

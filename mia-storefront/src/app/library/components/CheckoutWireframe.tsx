@@ -24,6 +24,9 @@ export interface CheckoutProps {
     paystackEnabled?: boolean;
     flutterwaveEnabled?: boolean;
     shippingEnabled?: boolean;
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
   };
 }
 
@@ -96,12 +99,13 @@ export default function CheckoutWireframe({ cart: propCart, storeSettings }: Che
     e.preventDefault();
     setIsProcessing(true);
 
-    // Check if there are any digital products in cart
     const digitalItems = cart.filter((item: any) => item.isDigital);
-    const orderNum = `ORD-${Math.floor(Math.random() * 100000)}`;
+    const physicalItems = cart.filter((item: any) => !item.isDigital);
+    const orderNum = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
 
-    if (digitalItems.length > 0) {
-      try {
+    try {
+      // 1. Process Digital Items (if any)
+      if (digitalItems.length > 0) {
         const res = await fetch('/api/digital/orders/public', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -116,18 +120,59 @@ export default function CheckoutWireframe({ cart: propCart, storeSettings }: Che
         if (data.success) {
           setDownloadTokens(data.tokens);
         }
-      } catch (err) { }
-    }
+      }
 
-    // Simulate standard checkout for physical / everything else
-    setTimeout(() => {
-      setIsProcessing(false);
-      setOrderNumber(orderNum);
+      // 2. Process Physical/Standard Items (Database insert)
+      if (physicalItems.length > 0) {
+        const reqBody = {
+          order_number: orderNum,
+          customer_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+          customer_email: shippingInfo.email,
+          customer_phone: shippingInfo.phone,
+          total_amount: total,
+          status: 'pending', // Because payment happens directly to bank
+          shipping_address: `${shippingInfo.address}, ${shippingInfo.city}`,
+          shipping_method: 'standard',
+          payment_method: paymentMethod,
+          items: physicalItems.map((item) => ({
+            product_id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            isDigital: false
+          }))
+        };
+
+        const response = await fetch('/api/orders/public', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(reqBody)
+        });
+
+        const data = await response.json();
+        if (!response.ok || data.error) {
+          throw new Error(data.error || 'Failed to place order');
+        }
+
+        // Order succeeds!
+        setOrderNumber(data.order?.order_number || orderNum);
+      } else {
+        // Only digital items were bought
+        setOrderNumber(orderNum);
+      }
+
       setIsSuccess(true);
       // clear cart
       localStorage.setItem('cart', '[]');
       window.dispatchEvent(new Event('cart-updated'));
-    }, 1500);
+
+    } catch (error) {
+      console.error("Order error", error);
+      alert("There was an issue processing your order. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isSuccess) {
@@ -300,25 +345,62 @@ export default function CheckoutWireframe({ cart: propCart, storeSettings }: Che
               <div className="space-y-3">
                 <div
                   onClick={() => setPaymentMethod('whatsapp')}
-                  className={`border p-5 rounded-lg flex items-center justify-between cursor-pointer transition-all ${paymentMethod === 'whatsapp' ? 'bg-emerald-50/30 ring-1' : 'hover:border-gray-300 hover:bg-gray-50'}`}
+                  className={`border p-5 rounded-lg flex flex-col cursor-pointer transition-all ${paymentMethod === 'whatsapp' ? 'bg-emerald-50/30 ring-1' : 'hover:border-gray-300 hover:bg-gray-50'}`}
                   style={{
                     borderColor: paymentMethod === 'whatsapp' ? primaryColor : '#e5e7eb',
-                    backgroundColor: paymentMethod === 'whatsapp' ? `${primaryColor}10` : undefined, // 10% opacity
+                    backgroundColor: paymentMethod === 'whatsapp' ? `${primaryColor}10` : undefined,
                     boxShadow: paymentMethod === 'whatsapp' ? `0 0 0 1px ${primaryColor}` : undefined
                   }}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 rounded-full" style={{ backgroundColor: paymentMethod === 'whatsapp' ? `${primaryColor}20` : '#f3f4f6', color: paymentMethod === 'whatsapp' ? primaryColor : '#6b7280' }}>
-                      <MessageCircle className="w-5 h-5" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 rounded-full" style={{ backgroundColor: paymentMethod === 'whatsapp' ? `${primaryColor}20` : '#f3f4f6', color: paymentMethod === 'whatsapp' ? primaryColor : '#6b7280' }}>
+                        <MessageCircle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        {storeSettings?.bankName && storeSettings?.accountNumber ? (
+                          <>
+                            <p className="text-sm font-bold text-gray-900" style={{ fontFamily: headingFont }}>Direct Bank Transfer</p>
+                            <p className="text-xs text-gray-500 mt-0.5">Transfer funds to our account</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-bold text-gray-900" style={{ fontFamily: headingFont }}>Pay via WhatsApp</p>
+                            <p className="text-xs text-gray-500 mt-0.5">Chat with us to complete your order</p>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900" style={{ fontFamily: headingFont }}>Pay via WhatsApp</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Chat with us to complete your order</p>
+                    <div className={`w-4 h-4 border rounded-full flex items-center justify-center`} style={{ borderColor: paymentMethod === 'whatsapp' ? primaryColor : '#d1d5db' }}>
+                      {paymentMethod === 'whatsapp' && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></div>}
                     </div>
                   </div>
-                  <div className={`w-4 h-4 border rounded-full flex items-center justify-center`} style={{ borderColor: paymentMethod === 'whatsapp' ? primaryColor : '#d1d5db' }}>
-                    {paymentMethod === 'whatsapp' && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></div>}
-                  </div>
+
+                  {paymentMethod === 'whatsapp' && storeSettings?.bankName && storeSettings?.accountNumber && (
+                    <div className="mt-4 pt-4 border-t border-gray-200/50 bg-white/50 p-4 rounded-md">
+                      <p className="text-xs font-semibold mb-3 text-gray-700">Please transfer {currency}{(total).toLocaleString('en-NG', { minimumFractionDigits: 2 })} to:</p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Bank</span>
+                          <span className="font-bold">{storeSettings.bankName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Account Number</span>
+                          <span className="font-mono font-bold tracking-wider">{storeSettings.accountNumber}</span>
+                        </div>
+                        {storeSettings.accountName && (
+                          <div className="flex justify-between border-b pb-2 mb-2 border-gray-100">
+                            <span className="text-gray-500">Account Name</span>
+                            <span className="font-bold">{storeSettings.accountName}</span>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-500 mt-2 italic flex items-start gap-1">
+                          <span className="text-[10px] mt-0.5">ℹ️</span>
+                          After transferring, click '{paymentMethod === 'whatsapp' && !storeSettings?.bankName ? 'Pay' : 'Confirm Order'}' and send your receipt to {storeSettings.storePhone ? '+' + storeSettings.storePhone : 'us'} on WhatsApp.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {storeSettings?.paystackEnabled && (

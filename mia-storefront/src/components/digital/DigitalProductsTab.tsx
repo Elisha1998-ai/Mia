@@ -12,14 +12,14 @@ import { DeleteConfirmationModal } from "@/components/DeleteConfirmationModal";
 import type { DigitalProduct, DigitalProductType, DigitalProductStatus } from "@/components/DigitalProductsPage";
 import { useDigitalProducts } from "@/hooks/useDigitalProducts";
 
-const TYPE_ICONS: Record<DigitalProductType, React.ReactNode> = {
+const TYPE_ICONS: Record<string, React.ReactNode> = {
     ebook: <BookOpen className="w-4 h-4" />,
     audio: <Music className="w-4 h-4" />,
     video: <Video className="w-4 h-4" />,
     other: <FileText className="w-4 h-4" />,
 };
 
-const TYPE_LABELS: Record<DigitalProductType, string> = {
+const TYPE_LABELS: Record<string, string> = {
     ebook: "Ebook", audio: "Audio", video: "Video", other: "Other",
 };
 

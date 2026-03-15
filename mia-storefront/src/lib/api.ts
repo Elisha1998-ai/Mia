@@ -112,6 +112,9 @@ interface StoreSettings {
   headingFont: string;
   bodyFont: string;
   buttonRadius?: string;
+  storeLogo?: string;
+  heroImage?: string;
+  customerCount?: string;
   heroTitle?: string;
   heroDescription?: string;
   footerDescription?: string;

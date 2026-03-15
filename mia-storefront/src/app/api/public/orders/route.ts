@@ -2,19 +2,41 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders as ordersTable, customers as customersTable, orderItems as orderItemsTable, products as productsTable, users as usersTable } from '@/lib/schema';
 import { eq, sql, and } from 'drizzle-orm';
+import { storeSettings as storeSettingsTable } from '@/lib/schema';
 
 // POST /api/public/orders - Create a new order (Public)
 export async function POST(request: Request) {
   try {
-    // Determine the merchant (store owner)
-    // For this MVP, we assume the first user in the database is the store owner
-    const [merchant] = await db.select().from(usersTable).limit(1);
+    // Determine the merchant (store owner) based on the subdomain
+    const host = request.headers.get('host') || '';
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+    const baseDomain = isLocal ? 'localhost' : 'bloume.shop';
     
-    if (!merchant) {
-      return NextResponse.json({ error: 'Store configuration error: No merchant found' }, { status: 500 });
+    let userId: string | undefined = undefined;
+
+    // Check if accessed via subdomain (e.g., store-name.bloume.shop)
+    if (host.includes(`.${baseDomain}`) && !host.startsWith(`www.${baseDomain}`)) {
+      const subdomain = host.split(`.${baseDomain}`)[0];
+      const settings = await db.query.storeSettings.findFirst({
+        where: eq(storeSettingsTable.storeDomain, subdomain)
+      });
+      if (settings) {
+        userId = settings.userId || undefined;
+      }
+    }
+
+    // Fallback for development/direct access - keep for now but add a warning
+    if (!userId) {
+      console.warn('⚠️ No merchant identified from host. Falling back to first user for MVP stability.');
+      const [merchant] = await db.select().from(usersTable).limit(1);
+      if (merchant) {
+        userId = merchant.id;
+      }
     }
     
-    const userId = merchant.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Store configuration error: No merchant identified' }, { status: 500 });
+    }
 
     const body = await request.json();
     const { 
@@ -76,15 +98,31 @@ export async function POST(request: Request) {
         paymentMethod: payment_method
       }).returning();
 
-      if (items.length > 0) {
+      if (items && Array.isArray(items) && items.length > 0) {
+        // 1. Insert order items
         await tx.insert(orderItemsTable).values(
           items.map((item: any) => ({
             orderId: order.id,
             productId: item.product_id,
-            quantity: item.quantity,
+            quantity: item.quantity || 1,
             price: item.price.toString()
           }))
         );
+
+        // 2. Reduce stock for each product
+        for (const item of items) {
+          if (item.product_id) {
+            const qty = parseInt(item.quantity?.toString() || "0");
+            if (qty > 0) {
+              await tx.update(productsTable)
+                .set({
+                  stockQuantity: sql`${productsTable.stockQuantity} - ${qty}`,
+                  updatedAt: new Date()
+                })
+                .where(eq(productsTable.id, item.product_id));
+            }
+          }
+        }
       }
 
       // Fetch the created order with details to return a complete object

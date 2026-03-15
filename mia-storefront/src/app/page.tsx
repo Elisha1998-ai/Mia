@@ -9,7 +9,5 @@ export default async function Home() {
     redirect('/dashboard');
   }
 
-  return (
-    <AgenticLanding />
-  );
+  redirect('/auth/signin');
 }

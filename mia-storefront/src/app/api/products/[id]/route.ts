@@ -10,22 +10,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = await params;
+    
     const product = await db.query.products.findFirst({
-      where: and(
-        eq(productsTable.id, id),
-        eq(productsTable.userId, userId)
-      ),
+      where: eq(productsTable.id, id),
       with: {
         variants: true
       }
@@ -120,14 +108,14 @@ export async function PUT(
       await tx.delete(variantsTable).where(eq(variantsTable.productId, id));
 
       let createdVariants: any[] = [];
-      if (variants && variants.length > 0) {
+      if (variants && Array.isArray(variants) && variants.length > 0) {
         createdVariants = await tx.insert(variantsTable).values(
           variants.map((v: any) => ({
             productId: id,
             name: v.name,
             sku: v.sku || `${product.sku}-${v.name.replace(/\s+/g, '-').toUpperCase()}`,
-            price: (v.price !== undefined && v.price !== null) ? v.price.toString() : null,
-            stockQuantity: typeof v.stock_quantity === 'string' ? parseInt(v.stock_quantity) || 0 : v.stock_quantity || 0,
+            price: (v.price !== undefined && v.price !== null && v.price !== '') ? v.price.toString() : null,
+            stockQuantity: typeof v.stock_quantity === 'string' ? parseInt(v.stock_quantity) || 0 : (typeof v.stock_quantity === 'number' ? v.stock_quantity : 0),
             imageUrl: v.image_url
           }))
         ).returning();

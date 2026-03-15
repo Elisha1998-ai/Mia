@@ -463,8 +463,8 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                 <input
                                   type="text"
                                   value={formData.storeDomain || ''}
-                                  readOnly
-                                  className="flex-1 bg-foreground/5 border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none text-foreground/60 cursor-not-allowed min-w-0"
+                                  onChange={(e) => setFormData({ ...formData, storeDomain: slugify(e.target.value) })}
+                                  className="flex-1 bg-input-bg border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ring-accent/20 text-foreground min-w-0"
                                   placeholder="store-name"
                                 />
                               </div>

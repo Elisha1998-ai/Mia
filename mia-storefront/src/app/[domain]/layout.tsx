@@ -6,20 +6,29 @@ import { eq } from 'drizzle-orm';
 
 export default async function StoreLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ domain: string }>;
 }) {
   const session = await auth();
+  const { domain } = await params;
   
-  // Fetch store settings for styling
-  // For now, we fetch the first store settings or the user's settings if logged in
-  let settings = null;
-  if (session?.user?.id) {
+  // Fetch store settings for the specific subdomain/domain
+  let settings = await db.query.storeSettings.findFirst({
+    where: eq(storeSettingsTable.storeDomain, domain)
+  });
+
+  // Fallback to user settings if logged in and store not found by domain 
+  // (useful for previewing via main domain)
+  if (!settings && session?.user?.id) {
     settings = await db.query.storeSettings.findFirst({
       where: eq(storeSettingsTable.userId, session.user.id)
     });
-  } else {
-    // Default settings if not logged in
+  }
+
+  // Final fallback to any first store settings if still null 
+  if (!settings) {
     settings = await db.query.storeSettings.findFirst();
   }
 
@@ -60,7 +69,7 @@ export default async function StoreLayout({
       } as React.CSSProperties}
     >
       <StorefrontHeader session={session} />
-      <main className="flex-1">
+      <main className="flex-1 w-full lg:max-w-[70%] mx-auto px-6">
         {children}
       </main>
       <StorefrontFooter session={session} />

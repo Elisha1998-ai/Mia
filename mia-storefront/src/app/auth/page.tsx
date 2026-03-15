@@ -1,21 +1,48 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, Loader2 } from "lucide-react";
+import { Sun, Moon, Loader2, Eye, EyeOff } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { login, loginWithGoogle } from "@/actions/auth";
+import { register, loginWithGoogle } from "@/actions/auth";
 
 export default function AuthPage() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const isDarkMode = resolvedTheme === "dark";
 
   const toggleTheme = () => {
     setTheme(isDarkMode ? "light" : "dark");
   };
+
+  if (success) {
+    return (
+      <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300 items-center justify-center p-6">
+        <div className="max-w-[400px] w-full text-center space-y-6 animate-in fade-in zoom-in duration-300">
+          <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto text-green-500">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold">Check your email</h1>
+            <p className="text-muted-foreground">{success}</p>
+          </div>
+          <Link 
+            href="/auth/signin" 
+            className="inline-block bg-accent text-background px-8 py-2.5 rounded-lg font-semibold hover:opacity-90 transition-all border-b-2 border-black/20 dark:border-white/20 active:border-b-0 active:translate-y-[1px]"
+          >
+            Back to login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300" suppressHydrationWarning>
@@ -56,54 +83,81 @@ export default function AuthPage() {
             onSubmit={async (e) => {
               e.preventDefault();
               setIsLoading(true);
+              setError(null);
               const formData = new FormData(e.currentTarget);
               try {
-                await login(formData);
-              } catch (error) {
-                console.error(error);
+                const result = await register(formData);
+                if (result?.error) {
+                  setError(result.error);
+                } else if (result?.success) {
+                  setSuccess(result.success);
+                }
+              } catch (err) {
+                setError("Failed to create account. Please try again.");
+                console.error(err);
               } finally {
                 setIsLoading(false);
               }
             }}
           >
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2.5">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
+                {error}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div className="space-y-2">
                 <label className="block text-sm font-medium">
-                  First Name
+                  Full Name
                 </label>
                 <input
-                  name="firstName"
+                  name="name"
                   type="text"
                   required
-                  placeholder="Jonathan"
+                  placeholder="Enter your full name"
                   className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
                 />
               </div>
-              <div className="space-y-2.5">
-                <label className="block text-sm font-medium">
-                  Last Name
-                </label>
-                <input
-                  name="lastName"
-                  type="text"
-                  required
-                  placeholder="Frazzelle"
-                  className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
-                />
-              </div>
-            </div>
 
-            <div className="space-y-2.5">
-              <label className="block text-sm font-medium">
-                Email
-              </label>
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="Enter your email"
-                className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">
+                  Email
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="At least 8 characters"
+                    className="w-full px-3.5 py-2.5 bg-input-bg border border-border-custom rounded-lg focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-muted-foreground/30 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
 
             <button
@@ -111,10 +165,11 @@ export default function AuthPage() {
               className="w-full bg-accent text-background py-2.5 rounded-lg font-semibold hover:opacity-90 transition-all mt-2 border-b-2 border-black/20 dark:border-white/20 active:border-b-0 active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Continue with email
+              Create account
             </button>
 
-            <div className="relative py-2">
+{/* Temporarily disabled Google login */}
+            {/* <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border-custom"></span>
               </div>
@@ -161,7 +216,7 @@ export default function AuthPage() {
                 </svg>
               )}
               Sign up with Google
-            </button>
+            </button> */}
           </form>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">

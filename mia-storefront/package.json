@@ -2,6 +2,9 @@
   "name": "mia-ui",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -15,14 +18,18 @@
     "@ai-sdk/openai": "^3.0.29",
     "@auth/drizzle-adapter": "^1.11.1",
     "@neondatabase/serverless": "^1.0.2",
+    "@next/swc-win32-x64-msvc": "^16.1.6",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-visually-hidden": "^1.2.4",
+    "@react-email/render": "^2.0.4",
     "@react-pdf/renderer": "^4.3.2",
+    "@types/bcryptjs": "^2.4.6",
     "@types/ws": "^8.18.1",
     "ai": "^6.0.86",
+    "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.1",

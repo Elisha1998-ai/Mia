@@ -206,7 +206,7 @@ export default function StorefrontWireframe({
       <section className="max-w-7xl mx-auto py-12">
         <ProductListWireframe
           isSection
-          products={products as any[]}
+          products={products as any}
           storeSettings={{
             ...settings,
             storeName: settings?.storeName || 'Mixtas',

@@ -9,7 +9,7 @@ export default function VerifyPaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reference = searchParams.get('reference');
-  
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your payment...');
   const [orderDetails, setOrderDetails] = useState<any>(null);
@@ -82,8 +82,8 @@ export default function VerifyPaymentPage() {
             A confirmation email has been sent to your inbox.
           </p>
         </div>
-        <Link 
-          href="/store" 
+        <Link
+          href="/"
           className="inline-flex items-center gap-3 bg-black text-white px-12 py-5 text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-gray-900 transition-all rounded-sm shadow-2xl"
         >
           Return to Collection
@@ -102,14 +102,14 @@ export default function VerifyPaymentPage() {
         {message}
       </p>
       <div className="flex justify-center gap-4">
-        <Link 
-          href="/store/checkout" 
+        <Link
+          href="/checkout"
           className="inline-flex items-center gap-3 bg-black text-white px-8 py-4 text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-gray-900 transition-all rounded-sm shadow-xl"
         >
           Try Again
         </Link>
-        <Link 
-          href="/store" 
+        <Link
+          href="/"
           className="inline-flex items-center gap-3 bg-white text-black border border-gray-200 px-8 py-4 text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-gray-50 transition-all rounded-sm"
         >
           Return to Store

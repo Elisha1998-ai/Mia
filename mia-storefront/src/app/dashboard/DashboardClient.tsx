@@ -9,6 +9,7 @@ import { ProductsPage } from '@/components/ProductsPage';
 import { OrdersPage } from '@/components/OrdersPage';
 import { CustomersPage } from '@/components/CustomersPage';
 import { PreviewsPage } from '@/components/PreviewsPage';
+import { LiveStorefrontPreview } from '@/components/LiveStorefrontPreview';
 import { AnalyticsPage } from '@/components/AnalyticsPage';
 import { DiscountsPage } from '@/components/DiscountsPage';
 import { ThemeEditorPage } from '@/components/ThemeEditorPage';
@@ -19,18 +20,37 @@ import { useStoreBuilder } from '@/hooks/useStoreBuilder';
 import { StoreBuilderChat } from '@/components/StoreBuilderChat';
 import { useSettings } from '@/hooks/useData';
 
-export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'products' | 'digital-products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' }) {
+export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' }) {
     const [mounted, setMounted] = React.useState(false);
     const searchParams = useSearchParams();
-    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'digital-products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' | null;
+    const viewParam = searchParams.get('view') as 'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder' | null;
 
     const { messages, sendMessage, isLoading, markMessageComplete, triggerDemoMode } = useChat();
     const storeBuilder = useStoreBuilder();
-    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'digital-products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder'>(defaultView || 'chat');
+    const [activeView, setActiveView] = React.useState<'chat' | 'products' | 'orders' | 'customers' | 'previews' | 'analytics' | 'discounts' | 'theme-editor' | 'email-templates' | 'store-builder'>(defaultView || 'chat');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
     const { settings, fetchSettings } = useSettings();
     const [chatWidth, setChatWidth] = React.useState(30); // Width in percentage
+    const mainContentRef = React.useRef<HTMLElement>(null);
+    const [mainContentWidth, setMainContentWidth] = React.useState(0);
     const isResizing = React.useRef(false);
+
+    // Track main content width for responsive preview
+    React.useEffect(() => {
+        if (!mounted || activeView !== 'previews') return;
+
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setMainContentWidth(entry.contentRect.width);
+            }
+        });
+
+        if (mainContentRef.current) {
+            observer.observe(mainContentRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [mounted, activeView]);
 
     React.useEffect(() => {
         const savedWidth = localStorage.getItem('chat-width');
@@ -65,7 +85,7 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
     React.useEffect(() => {
         setMounted(true);
         fetchSettings();
-        if (viewParam && ['products', 'digital-products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates', 'store-builder'].includes(viewParam)) {
+        if (viewParam && ['products', 'orders', 'customers', 'previews', 'analytics', 'discounts', 'theme-editor', 'email-templates', 'store-builder'].includes(viewParam)) {
             setActiveView(viewParam);
         } else if (defaultView) {
             setActiveView(defaultView);
@@ -119,7 +139,7 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
     return (
         <div className="flex h-screen bg-background text-foreground overflow-hidden transition-colors relative">
             {/* Desktop Layout (3 Columns) */}
-            <div className="hidden md:grid w-full h-full overflow-hidden" style={{ gridTemplateColumns: `${chatWidth}% 1fr 80px` }}>
+            <div className="hidden md:grid w-full h-full overflow-hidden" style={{ gridTemplateColumns: `${chatWidth}% 1fr 3%` }}>
                 {/* Col 1: Chat Interface (Resizable) */}
                 <div className="border-r border-border-custom h-full overflow-hidden bg-background relative group/resize">
                     {/* Resize Handle */}
@@ -144,12 +164,12 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
                 </div>
 
                 {/* Col 2: Main Content */}
-                <main className="h-full flex flex-col min-h-0 overflow-hidden relative bg-background">
+                <main ref={mainContentRef} className="h-full flex flex-col min-h-0 overflow-hidden relative bg-background">
                     {activeView === 'products' && <ProductsPage />}
-                    {activeView === 'digital-products' && <DigitalProductsPage />}
+
                     {activeView === 'orders' && <OrdersPage />}
                     {activeView === 'customers' && <CustomersPage />}
-                    {activeView === 'previews' && <PreviewsPage />}
+                    {activeView === 'previews' && <LiveStorefrontPreview storeDomain={settings?.storeDomain} containerWidth={mainContentWidth} />}
                     {activeView === 'analytics' && <AnalyticsPage />}
                     {activeView === 'discounts' && <DiscountsPage />}
                     {activeView === 'theme-editor' && <ThemeEditorPage />}
@@ -186,7 +206,7 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
                 </main>
 
                 {/* Col 3: Sidebar */}
-                <div className="border-l border-border-custom h-full bg-sidebar">
+                <div className="border-l border-border-custom h-full bg-sidebar min-w-0 overflow-hidden">
                     <Sidebar
                         activeView={activeView}
                         onViewChange={setActiveView}
@@ -223,10 +243,10 @@ export function DashboardClient({ defaultView }: { defaultView?: 'chat' | 'produ
                         />
                     )}
                     {activeView === 'products' && <ProductsPage />}
-                    {activeView === 'digital-products' && <DigitalProductsPage />}
+
                     {activeView === 'orders' && <OrdersPage />}
                     {activeView === 'customers' && <CustomersPage />}
-                    {activeView === 'previews' && <PreviewsPage />}
+                    {activeView === 'previews' && <LiveStorefrontPreview storeDomain={settings?.storeDomain} />}
                     {activeView === 'analytics' && <AnalyticsPage />}
                     {activeView === 'discounts' && <DiscountsPage />}
                     {activeView === 'theme-editor' && <ThemeEditorPage />}
